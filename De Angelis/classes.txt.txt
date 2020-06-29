@@ -1,0 +1,11 @@
+Di seguito riportiamo i path delle classi che sono state testate per i diversi progetti.
+
+Bookkeeper:
+	- bookkeeper.bookkeeper-server.src.main.java.org.apache.bookkeeper.bookie.BookieStatus.java
+	- bookkeeper.bookkeeper-server.src.main.java.org.apache.bookkeeper.bookie.BufferedChannel.java
+
+Tajo:
+	- tajo.tajo-common.src.main.java.org.apache.tajo.datum.Float4Datum.java
+	- tajo.tajo-common.src.main.java.org.apache.tajo.datum.Int4Datum.java
+	- tajo.tajo-common.src.main.java.org.apache.tajo.datum.TextDatum.java
+	- tajo.tajo-common.src.main.java.org.apache.tajo.datum.TimeDatum.java
