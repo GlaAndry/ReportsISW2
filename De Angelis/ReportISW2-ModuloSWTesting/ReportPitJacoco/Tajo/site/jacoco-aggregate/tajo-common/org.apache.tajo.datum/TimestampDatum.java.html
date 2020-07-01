@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TimestampDatum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">TimestampDatum.java</span></div><h1>TimestampDatum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.common.primitives.Longs;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.util.TimeZone;
+
+import static org.apache.tajo.type.Type.Timestamp;
+
+public class TimestampDatum extends Datum {
+  public static final int SIZE = 8;
+
+  private long timestamp;
+
+  /**
+   *
+   * @param timestamp UTC based Julian time microseconds
+   */
+  public TimestampDatum(long timestamp) {
+<span class="fc" id="L43">    super(Timestamp);</span>
+<span class="fc" id="L44">    this.timestamp = timestamp;</span>
+<span class="fc" id="L45">  }</span>
+
+  /**
+   * It's the same value to asInt8().
+   * @return The Timestamp
+   */
+  public long getTimestamp() {
+<span class="nc" id="L52">    return timestamp;</span>
+  }
+
+  public int getEpoch() {
+<span class="nc" id="L56">    return DateTimeUtil.julianTimeToEpoch(timestamp);</span>
+  }
+
+  public long getJavaTimestamp() {
+<span class="nc" id="L60">    return DateTimeUtil.julianTimeToJavaTime(timestamp);</span>
+  }
+
+
+  public int getCenturyOfEra() {
+<span class="nc" id="L65">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L66">    return tm.getCenturyOfEra();</span>
+  }
+
+  public int getYear() {
+<span class="nc" id="L70">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L71">    return tm.years;</span>
+  }
+
+  public int getMonthOfYear() {
+<span class="nc" id="L75">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L76">    return tm.monthOfYear;</span>
+  }
+
+  public int getDayOfYear() {
+<span class="nc" id="L80">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L81">    return tm.getDayOfYear();</span>
+  }
+
+  public int getDayOfWeek() {
+<span class="nc" id="L85">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L86">    return tm.getDayOfYear();</span>
+  }
+
+  public int getWeekOfYear() {
+<span class="nc" id="L90">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L91">    return tm.getWeekOfYear();</span>
+  }
+
+  public int getDayOfMonth() {
+<span class="nc" id="L95">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L96">    return tm.dayOfMonth;</span>
+  }
+
+  public int getHourOfDay() {
+<span class="nc" id="L100">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L101">    return tm.hours;</span>
+  }
+
+  public int getMinuteOfHour() {
+<span class="nc" id="L105">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L106">    return tm.minutes;</span>
+  }
+
+  public int getSecondOfMinute() {
+<span class="nc" id="L110">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L111">    return tm.secs;</span>
+  }
+
+  public int getMillisOfSecond() {
+<span class="nc" id="L115">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L116">    return tm.fsecs / 1000;</span>
+  }
+
+  public int getUnixTime() {
+<span class="nc" id="L120">    return (int)(DateTimeUtil.julianTimeToJavaTime(timestamp) / 1000);</span>
+  }
+
+  public String toString() {
+<span class="nc" id="L124">    return asChars();</span>
+  }
+
+  /**
+   *
+   * @param tm TimeMeta
+   * @param timeZone Timezone
+   * @param includeTimeZone Add timezone if it is true. It is usually used for TIMEZONEZ
+   * @return A timestamp string
+   */
+  public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
+<span class="nc" id="L135">    DateTimeUtil.toUserTimezone(tm, timeZone);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">    if (includeTimeZone) {</span>
+<span class="nc" id="L137">      tm.timeZone = tm.getZonedOffset(DateTimeUtil.toJulianTimestamp(tm), timeZone) / 1000;</span>
+    }
+<span class="nc" id="L139">    return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);</span>
+  }
+
+  public String toString(TimeZone timeZone, boolean includeTimeZone) {
+<span class="nc" id="L143">    return asChars(asTimeMeta(), timeZone, includeTimeZone);</span>
+  }
+
+  @Override
+  public long asInt8() {
+<span class="nc" id="L148">    return timestamp;</span>
+  }
+
+  @Override
+  public String asChars() {
+<span class="nc" id="L153">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L154">    return asChars(tm, TimeZone.getDefault(), true);</span>
+  }
+
+  @Override
+  public int size() {
+<span class="nc" id="L159">    return SIZE;</span>
+  }
+
+  @Override
+  public byte [] asByteArray() {
+<span class="nc" id="L164">    return Bytes.toBytes(timestamp);</span>
+  }
+
+  @Override
+  public byte[] asTextBytes() {
+<span class="nc" id="L169">    return asChars().getBytes(TextDatum.DEFAULT_CHARSET);</span>
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">    if (datum.kind() == TajoDataTypes.Type.TIMESTAMP) {</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">      return timestamp == datum.asInt8() ? BooleanDatum.TRUE : BooleanDatum.FALSE;</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">    } else if (datum.isNull()) {</span>
+<span class="nc" id="L177">      return datum;</span>
+    } else {
+<span class="nc" id="L179">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    if (datum.kind() == TajoDataTypes.Type.TIMESTAMP) {</span>
+<span class="nc" id="L186">      TimestampDatum another = (TimestampDatum) datum;</span>
+<span class="nc" id="L187">      return Longs.compare(timestamp, another.timestamp);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">    } else if (datum.isNull()) {</span>
+<span class="nc" id="L189">      return -1;</span>
+    } else {
+<span class="nc" id="L191">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">    if (obj instanceof TimestampDatum) {</span>
+<span class="fc" id="L198">      TimestampDatum another = (TimestampDatum) obj;</span>
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">      return timestamp == another.timestamp;</span>
+    } else {
+<span class="nc" id="L201">      return false;</span>
+    }
+  }
+
+  @Override
+  public Datum plus(Datum datum) {
+<span class="nc bnc" id="L207" title="All 3 branches missed.">    switch (datum.kind()) {</span>
+    case INTERVAL:
+<span class="nc" id="L209">      IntervalDatum interval = (IntervalDatum) datum;</span>
+<span class="nc" id="L210">      TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L211">      tm.plusInterval(interval.months, interval.milliseconds);</span>
+<span class="nc" id="L212">      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));</span>
+    case TIME:
+<span class="nc" id="L214">      TimeMeta tm1 = asTimeMeta();</span>
+<span class="nc" id="L215">      TimeMeta tm2 = datum.asTimeMeta();</span>
+<span class="nc" id="L216">      tm1.plusTime(DateTimeUtil.toTime(tm2));</span>
+<span class="nc" id="L217">      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));</span>
+    default:
+<span class="nc" id="L219">      throw new InvalidOperationException(&quot;operator does not exist: &quot; + type() + &quot; + &quot; + datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum minus(Datum datum) {
+<span class="nc bnc" id="L225" title="All 4 branches missed.">    switch (datum.kind()) {</span>
+    case INTERVAL:
+<span class="nc" id="L227">      IntervalDatum interval = (IntervalDatum) datum;</span>
+<span class="nc" id="L228">      TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L229">      tm.plusInterval(-interval.months, -interval.milliseconds);</span>
+<span class="nc" id="L230">      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));</span>
+    case TIMESTAMP:
+<span class="nc" id="L232">      return new IntervalDatum((timestamp - ((TimestampDatum) datum).timestamp) / 1000);</span>
+    case TIME:
+<span class="nc" id="L234">      TimeMeta tm1 = asTimeMeta();</span>
+<span class="nc" id="L235">      TimeMeta tm2 = datum.asTimeMeta();</span>
+<span class="nc" id="L236">      tm1.plusTime(0 - DateTimeUtil.toTime(tm2));</span>
+<span class="nc" id="L237">      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));</span>
+    default:
+<span class="nc" id="L239">      throw new InvalidOperationException(&quot;operator does not exist: &quot; + type() + &quot; - &quot; + datum.type());</span>
+    }
+  }
+
+  @Override
+  public int hashCode(){
+<span class="nc" id="L245">    return Longs.hashCode(timestamp);</span>
+  }
+
+  @Override
+  public TimeMeta asTimeMeta() {
+<span class="fc" id="L250">    TimeMeta tm = new TimeMeta();</span>
+<span class="fc" id="L251">    DateTimeUtil.toJulianTimeMeta(timestamp, tm);</span>
+
+<span class="fc" id="L253">    return tm;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

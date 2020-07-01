@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TimeMeta.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util.datetime</a> &gt; <span class="el_source">TimeMeta.java</span></div><h1>TimeMeta.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util.datetime;
+
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+
+import java.util.TimeZone;
+
+<span class="fc" id="L25">public class TimeMeta implements Comparable&lt;TimeMeta&gt; {</span>
+  public int      fsecs;    // 1/1,000,000 secs
+  public int			secs;
+  public int			minutes;
+  public int			hours;
+  public int			dayOfMonth;
+  public int      dayOfYear;   //used for only DateTimeFormat
+  public int			monthOfYear; // origin 0, not 1
+  public int			years;		   // relative to 1900
+  public boolean	isDST;       // daylight savings time
+  public int      dayOfWeek;
+<span class="fc" id="L36">  public int      timeZone = Integer.MAX_VALUE;   //sec, used for only Text -&gt; Timestamp</span>
+
+  @Override
+  public String toString() {
+<span class="nc" id="L40">    return DateTimeUtil.encodeDateTime(this, DateStyle.ISO_DATES);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L45">    final int prime = 31;</span>
+<span class="nc" id="L46">    int result = 1;</span>
+<span class="nc" id="L47">    result = prime * result + dayOfMonth;</span>
+<span class="nc" id="L48">    result = prime * result + dayOfWeek;</span>
+<span class="nc" id="L49">    result = prime * result + dayOfYear;</span>
+<span class="nc" id="L50">    result = prime * result + fsecs;</span>
+<span class="nc" id="L51">    result = prime * result + hours;</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">    result = prime * result + (isDST ? 1231 : 1237);</span>
+<span class="nc" id="L53">    result = prime * result + minutes;</span>
+<span class="nc" id="L54">    result = prime * result + monthOfYear;</span>
+<span class="nc" id="L55">    result = prime * result + secs;</span>
+<span class="nc" id="L56">    result = prime * result + timeZone;</span>
+<span class="nc" id="L57">    result = prime * result + years;</span>
+<span class="nc" id="L58">    return result;</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    if (!(o instanceof TimeMeta)) {</span>
+<span class="nc" id="L64">      return false;</span>
+    }
+<span class="nc" id="L66">    TimeMeta other = (TimeMeta)o;</span>
+
+<span class="nc bnc" id="L68" title="All 18 branches missed.">    return fsecs == other.fsecs &amp;&amp;</span>
+        secs == other.secs &amp;&amp;
+        minutes == other.minutes &amp;&amp;
+        hours == other.hours &amp;&amp;
+        dayOfMonth == other.dayOfMonth &amp;&amp;
+        dayOfYear == other.dayOfYear &amp;&amp;
+        monthOfYear == other.monthOfYear &amp;&amp;
+        years == other.years &amp;&amp;
+        isDST == other.isDST
+        ;
+  }
+
+  public void plusMonths(int months) {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">    if (months == 0) {</span>
+<span class="nc" id="L82">      return;</span>
+    }
+<span class="nc" id="L84">    int thisYear = years;</span>
+<span class="nc" id="L85">    int thisMonth = monthOfYear;</span>
+
+    int yearToUse;
+    // Initially, monthToUse is zero-based
+<span class="nc" id="L89">    int monthToUse = thisMonth - 1 + months;</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">    if (monthToUse &gt;= 0) {</span>
+<span class="nc" id="L91">      yearToUse = thisYear + (monthToUse / DateTimeConstants.MONTHS_PER_YEAR);</span>
+<span class="nc" id="L92">      monthToUse = (monthToUse % DateTimeConstants.MONTHS_PER_YEAR) + 1;</span>
+    } else {
+<span class="nc" id="L94">      yearToUse = thisYear + (monthToUse / DateTimeConstants.MONTHS_PER_YEAR) - 1;</span>
+<span class="nc" id="L95">      monthToUse = Math.abs(monthToUse);</span>
+<span class="nc" id="L96">      int remMonthToUse = monthToUse % DateTimeConstants.MONTHS_PER_YEAR;</span>
+      // Take care of the boundary condition
+<span class="nc bnc" id="L98" title="All 2 branches missed.">      if (remMonthToUse == 0) {</span>
+<span class="nc" id="L99">        remMonthToUse = DateTimeConstants.MONTHS_PER_YEAR;</span>
+      }
+<span class="nc" id="L101">      monthToUse = DateTimeConstants.MONTHS_PER_YEAR - remMonthToUse + 1;</span>
+      // Take care MONTHS_PER_YEAR the boundary condition
+<span class="nc bnc" id="L103" title="All 2 branches missed.">      if (monthToUse == 1) {</span>
+<span class="nc" id="L104">        yearToUse += 1;</span>
+      }
+    }
+    // End of do not refactor.
+    // ----------------------------------------------------------
+
+    //
+    // Quietly force DOM to nearest sane value.
+    //
+<span class="nc" id="L113">    int dayToUse = dayOfMonth;</span>
+<span class="nc" id="L114">    int maxDay = DateTimeUtil.getDaysInYearMonth(yearToUse, monthToUse);</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">    if (dayToUse &gt; maxDay) {</span>
+<span class="nc" id="L116">      dayToUse = maxDay;</span>
+    }
+
+<span class="nc" id="L119">    this.years = yearToUse;</span>
+<span class="nc" id="L120">    this.monthOfYear = monthToUse;</span>
+<span class="nc" id="L121">    this.dayOfMonth = dayToUse;</span>
+<span class="nc" id="L122">  }</span>
+
+  public void plusDays(int days) {
+<span class="fc" id="L125">    long timestamp = DateTimeUtil.toJulianTimestamp(this);</span>
+<span class="fc" id="L126">    timestamp += days * DateTimeConstants.USECS_PER_DAY;</span>
+
+<span class="fc" id="L128">    DateTimeUtil.toJulianTimeMeta(timestamp, this);</span>
+<span class="fc" id="L129">  }</span>
+
+  public void plusMillis(long millis) {
+<span class="fc" id="L132">    plusTime(millis * 1000);</span>
+<span class="fc" id="L133">  }</span>
+
+  public void convertToUTC(TimeZone zone) {
+<span class="nc" id="L136">    long timestamp = DateTimeUtil.toJulianTimestamp(this);</span>
+
+<span class="nc" id="L138">    timestamp -= (getZonedOffset(timestamp, zone) * 1000L);</span>
+<span class="nc" id="L139">    DateTimeUtil.toJulianTimeMeta(timestamp, this);</span>
+<span class="nc" id="L140">  }</span>
+
+  public void convertToLocalTime(TimeZone zone) {
+<span class="nc" id="L143">    long timestamp = DateTimeUtil.toJulianTimestamp(this);</span>
+
+<span class="nc" id="L145">    timestamp += (getZonedOffset(timestamp, zone) * 1000L);</span>
+<span class="nc" id="L146">    DateTimeUtil.toJulianTimeMeta(timestamp, this);</span>
+<span class="nc" id="L147">  }</span>
+
+  public int getZonedOffset(long julianTimestamp, TimeZone zone) {
+<span class="nc" id="L150">    return zone.getOffset(DateTimeUtil.julianTimeToJavaTime(julianTimestamp));</span>
+  }
+
+  public void plusTime(long time) {
+<span class="fc" id="L154">    long timestamp = DateTimeUtil.toJulianTimestamp(this);</span>
+<span class="fc" id="L155">    timestamp += time;</span>
+<span class="fc" id="L156">    DateTimeUtil.toJulianTimeMeta(timestamp, this);</span>
+<span class="fc" id="L157">  }</span>
+
+  public void plusInterval(int months, long milliseconds) {
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">    if (months != 0) {</span>
+<span class="nc" id="L161">      plusMonths(months);</span>
+    }
+<span class="fc bfc" id="L163" title="All 2 branches covered.">    if (milliseconds != 0) {</span>
+<span class="fc" id="L164">      plusMillis(milliseconds);</span>
+    }
+<span class="fc" id="L166">  }</span>
+
+  public int getCenturyOfEra() {
+<span class="nc" id="L169">    return DateTimeUtil.getCenturyOfEra(years);</span>
+  }
+
+  public int getDayOfYear() {
+<span class="nc" id="L173">    int dayOfYear = 0;</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">    for (int i = 0; i &lt; monthOfYear - 1; i++) {</span>
+<span class="nc" id="L175">      dayOfYear += DateTimeUtil.getDaysInYearMonth(years, i + 1);</span>
+    }
+
+<span class="nc" id="L178">    return dayOfYear + dayOfMonth;</span>
+  }
+
+  public int getWeekOfYear() {
+<span class="nc" id="L182">    return DateTimeUtil.date2isoweek(years, monthOfYear, dayOfMonth);</span>
+  }
+
+  public int getWeekyear() {
+<span class="nc" id="L186">    return DateTimeUtil.date2isoyear(years, monthOfYear, dayOfMonth);</span>
+  }
+
+  public int getISODayOfWeek() {
+<span class="nc" id="L190">    int dow = getDayOfWeek();</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">    if (dow == 0) {   //Sunday</span>
+<span class="nc" id="L192">      return 7;</span>
+    } else {
+<span class="nc" id="L194">      return dow;</span>
+    }
+  }
+
+  public int getDayOfWeek() {
+<span class="nc" id="L199">    return (DateTimeUtil.date2j(years, monthOfYear, dayOfMonth) + 1) % 7;</span>
+  }
+
+  @Override
+  public int compareTo(TimeMeta o) {
+<span class="nc" id="L204">    int result = 1;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">    if (o != null) {</span>
+<span class="nc" id="L206">      long leftjulianTimestamp = DateTimeUtil.toJulianTimestamp(this);</span>
+<span class="nc" id="L207">      long rightjulianTimestamp = DateTimeUtil.toJulianTimestamp(o);</span>
+      
+<span class="nc" id="L209">      result = (int) Math.signum(leftjulianTimestamp - rightjulianTimestamp);</span>
+    }
+<span class="nc" id="L211">    return result;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

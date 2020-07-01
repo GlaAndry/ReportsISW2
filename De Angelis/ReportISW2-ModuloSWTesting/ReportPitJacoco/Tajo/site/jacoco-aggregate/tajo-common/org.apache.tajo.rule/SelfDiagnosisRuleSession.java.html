@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SelfDiagnosisRuleSession.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.rule</a> &gt; <span class="el_source">SelfDiagnosisRuleSession.java</span></div><h1>SelfDiagnosisRuleSession.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.rule;
+
+import java.util.*;
+import java.util.Map.Entry;
+
+import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
+
+public class SelfDiagnosisRuleSession {
+  
+  private final SelfDiagnosisRuleEngine ruleEngine;
+  private final Set&lt;String&gt; categoryPredicate;
+  private final Set&lt;String&gt; rulePredicate;
+
+<span class="nc" id="L33">  protected SelfDiagnosisRuleSession(SelfDiagnosisRuleEngine engine) {</span>
+<span class="nc" id="L34">    ruleEngine = engine;</span>
+<span class="nc" id="L35">    categoryPredicate = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L36">    rulePredicate = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L37">  }</span>
+  
+  public SelfDiagnosisRuleSession withCategoryNames(String...categories) {
+<span class="nc" id="L40">    categoryPredicate.addAll(Arrays.asList(categories));</span>
+<span class="nc" id="L41">    return this;</span>
+  }
+  
+  public SelfDiagnosisRuleSession withRuleNames(String...rules) {
+<span class="nc" id="L45">    rulePredicate.addAll(Arrays.asList(rules));</span>
+<span class="nc" id="L46">    return this;</span>
+  }
+  
+  public SelfDiagnosisRuleSession reset() {
+<span class="nc" id="L50">    categoryPredicate.clear();</span>
+<span class="nc" id="L51">    rulePredicate.clear();</span>
+<span class="nc" id="L52">    return this;</span>
+  }
+  
+  public void fireRules(EvaluationContext context) throws EvaluationFailedException {
+<span class="nc" id="L56">    List&lt;RuleWrapper&gt; candidateRules = getCandidateRules();</span>
+    
+<span class="nc bnc" id="L58" title="All 2 branches missed.">    for (RuleWrapper wrapper: candidateRules) {</span>
+<span class="nc" id="L59">      EvaluationResult result = wrapper.getRule().evaluate(context);</span>
+      
+<span class="nc bnc" id="L61" title="All 2 branches missed.">      if (result.getReturnCode() == EvaluationResultCode.ERROR) {</span>
+<span class="nc" id="L62">        throw new EvaluationFailedException(result.getMessage(), result.getThrowable());</span>
+      }
+<span class="nc" id="L64">    }</span>
+<span class="nc" id="L65">  }</span>
+  
+  protected List&lt;RuleWrapper&gt; getCandidateRules() {
+<span class="nc" id="L68">    Map&lt;String, Map&lt;String, RuleWrapper&gt;&gt; wrapperMap = null;</span>
+<span class="nc" id="L69">    List&lt;RuleWrapper&gt; candidateRules = new ArrayList&lt;&gt;();</span>
+    
+<span class="nc" id="L71">    wrapperMap = ruleEngine.getRules();</span>
+<span class="nc" id="L72">    Class&lt;?&gt; callerClazz = getCallerClassName();</span>
+    
+<span class="nc bnc" id="L74" title="All 2 branches missed.">    for (Entry&lt;String, Map&lt;String, RuleWrapper&gt;&gt; entry: wrapperMap.entrySet()) {</span>
+<span class="nc" id="L75">      String categoryName = entry.getKey();</span>
+<span class="nc bnc" id="L76" title="All 4 branches missed.">      if (categoryPredicate.size() &gt; 0 &amp;&amp; !categoryPredicate.contains(categoryName)) {</span>
+<span class="nc" id="L77">        continue;</span>
+      }
+      
+<span class="nc" id="L80">      Map&lt;String, RuleWrapper&gt; ruleMap = entry.getValue();</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">      for (Entry&lt;String, RuleWrapper&gt; wrapperEntry: ruleMap.entrySet()) {</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">        if (rulePredicate.size() &gt; 0 &amp;&amp; !rulePredicate.contains(wrapperEntry.getKey())) {</span>
+<span class="nc" id="L83">          continue;</span>
+        }
+        
+<span class="nc" id="L86">        RuleWrapper ruleWrapper = wrapperEntry.getValue();        </span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (callerClazz != null &amp;&amp; ruleWrapper.getAcceptedCallers().length &gt; 0 </span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">            &amp;&amp; !hasCallerClazz(callerClazz, ruleWrapper.getAcceptedCallers())) {</span>
+<span class="nc" id="L89">          continue;</span>
+        }
+        
+<span class="nc" id="L92">        candidateRules.add(ruleWrapper);</span>
+<span class="nc" id="L93">      }</span>
+<span class="nc" id="L94">    }</span>
+    
+<span class="nc" id="L96">    Collections.sort(candidateRules);</span>
+<span class="nc" id="L97">    return candidateRules;</span>
+  }
+  
+  protected boolean hasCallerClazz(Class&lt;?&gt; callerClazz, Class&lt;?&gt;[] acceptedCallers) {
+<span class="nc" id="L101">    boolean result = false;</span>
+    
+<span class="nc" id="L103">    String callerClazzName = callerClazz.getName();</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">    for (Class&lt;?&gt; acceptedCaller: acceptedCallers) {</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">      if (callerClazzName.equals(acceptedCaller.getName())) {</span>
+<span class="nc" id="L106">        result = true;</span>
+<span class="nc" id="L107">        break;</span>
+      }
+    }
+    
+<span class="nc" id="L111">    return result;</span>
+  }
+  
+  protected Class&lt;?&gt; getCallerClassName() {
+<span class="nc" id="L115">    return new RuleSessionSecurityManager().getCallerClassName();</span>
+  }
+  
+<span class="nc" id="L118">  static class RuleSessionSecurityManager extends SecurityManager {</span>
+    public Class&lt;?&gt; getCallerClassName() {
+<span class="nc" id="L120">      Class&lt;?&gt;[] clazzArray = getClassContext();</span>
+<span class="nc" id="L121">      int clazzIdx = 2;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      for (; clazzIdx &lt; clazzArray.length; clazzIdx++) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (!clazzArray[clazzIdx].getName().equals(SelfDiagnosisRuleSession.class.getName())) {</span>
+<span class="nc" id="L124">          break;</span>
+        }
+      }
+<span class="nc bnc" id="L127" title="All 2 branches missed.">      return clazzIdx &lt; clazzArray.length?clazzArray[clazzIdx]:null;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

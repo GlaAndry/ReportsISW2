@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>IdentifierUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.schema</a> &gt; <span class="el_source">IdentifierUtil.java</span></div><h1>IdentifierUtil.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.schema;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.schema.IdentifierPolicy.IdentifierCase;
+import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
+
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+
+import static org.apache.tajo.schema.Identifier._;
+import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
+import static org.apache.tajo.schema.QualifiedIdentifier.$;
+
+/**
+ * Util methods for Identifiers
+ */
+<span class="nc" id="L39">public class IdentifierUtil {</span>
+
+  public final static String IDENTIFIER_DELIMITER_REGEXP = &quot;\\.&quot;;
+  public final static String IDENTIFIER_DELIMITER = &quot;.&quot;;
+  public final static String IDENTIFIER_QUOTE_STRING = &quot;\&quot;&quot;;
+  public final static int MAX_IDENTIFIER_LENGTH = 128;
+
+<span class="nc" id="L46">  public static final Set&lt;String&gt; RESERVED_KEYWORDS_SET = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L47">  public static final String [] RESERVED_KEYWORDS = {</span>
+      &quot;AS&quot;, &quot;ALL&quot;, &quot;AND&quot;, &quot;ANY&quot;, &quot;ASYMMETRIC&quot;, &quot;ASC&quot;,
+      &quot;BOTH&quot;,
+      &quot;CASE&quot;, &quot;CAST&quot;, &quot;CREATE&quot;, &quot;CROSS&quot;, &quot;CURRENT_DATE&quot;, &quot;CURRENT_TIME&quot;, &quot;CURRENT_TIMESTAMP&quot;,
+      &quot;DESC&quot;, &quot;DISTINCT&quot;,
+      &quot;END&quot;, &quot;ELSE&quot;, &quot;EXCEPT&quot;,
+      &quot;FALSE&quot;, &quot;FULL&quot;, &quot;FROM&quot;,
+      &quot;GROUP&quot;,
+      &quot;HAVING&quot;,
+      &quot;ILIKE&quot;, &quot;IN&quot;, &quot;INNER&quot;, &quot;INTERSECT&quot;, &quot;INTO&quot;, &quot;IS&quot;,
+      &quot;JOIN&quot;,
+      &quot;LEADING&quot;, &quot;LEFT&quot;, &quot;LIKE&quot;, &quot;LIMIT&quot;,
+      &quot;NATURAL&quot;, &quot;NOT&quot;, &quot;NULL&quot;,
+      &quot;ON&quot;, &quot;OUTER&quot;, &quot;OR&quot;, &quot;ORDER&quot;,
+      &quot;RIGHT&quot;,
+      &quot;SELECT&quot;, &quot;SOME&quot;, &quot;SYMMETRIC&quot;,
+      &quot;TABLE&quot;, &quot;THEN&quot;, &quot;TRAILING&quot;, &quot;TRUE&quot;,
+      &quot;OVER&quot;,
+      &quot;UNION&quot;, &quot;UNIQUE&quot;, &quot;USING&quot;,
+      &quot;WHEN&quot;, &quot;WHERE&quot;, &quot;WINDOW&quot;, &quot;WITH&quot;
+  };
+
+  public static QualifiedIdentifier makeIdentifier(String raw, IdentifierPolicy policy) {
+<span class="nc bnc" id="L70" title="All 4 branches missed.">    if (raw == null || raw.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L71">      return $(raw);</span>
+    }
+
+<span class="nc" id="L74">    final String [] splitted = raw.split(IDENTIFIER_DELIMITER_REGEXP);</span>
+<span class="nc" id="L75">    final ImmutableList.Builder&lt;Identifier&gt; builder = ImmutableList.builder();</span>
+
+<span class="nc bnc" id="L77" title="All 2 branches missed.">    for (String part : splitted) {</span>
+<span class="nc" id="L78">      boolean quoted = isDelimited(part, policy);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">      if (quoted) {</span>
+<span class="nc" id="L80">        builder.add(_(stripQuote(part), true));</span>
+      } else {
+<span class="nc" id="L82">        builder.add(internIdentifierPart(part, policy));</span>
+      }
+    }
+<span class="nc" id="L85">    return $(builder.build());</span>
+  }
+
+  public static Identifier internIdentifierPart(String rawPart, IdentifierPolicy policy) {
+<span class="nc" id="L89">    IdentifierCase unquotedIdentifierCase = policy.storesUnquotedIdentifierAs();</span>
+    final String interned;
+<span class="nc bnc" id="L91" title="All 2 branches missed.">    if (unquotedIdentifierCase == IdentifierCase.LowerCase) {</span>
+<span class="nc" id="L92">      interned = rawPart.toLowerCase(Locale.ENGLISH);</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    } else if (unquotedIdentifierCase == IdentifierCase.UpperCase) {</span>
+<span class="nc" id="L94">      interned = rawPart.toUpperCase(Locale.ENGLISH);</span>
+    } else {
+<span class="nc" id="L96">      interned = rawPart;</span>
+    }
+
+<span class="nc" id="L99">    return _(interned, false);</span>
+  }
+
+  /**
+   * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
+   *
+   * Identifier can be composed of multiple parts as follows:
+   * &lt;pre&gt;
+   *   database_name.table_name.column_name
+   * &lt;/pre&gt;
+   *
+   * Each regular identifier part can be composed alphabet ([a-z][A-Z]), number([0-9]), and underscore([_]).
+   * Also, the first letter must be an alphabet character.
+   *
+   * &lt;code&gt;normalizeIdentifier&lt;/code&gt; normalizes each part of an identifier.
+   *
+   * In detail, for each part, it performs as follows:
+   * &lt;ul&gt;
+   *   &lt;li&gt;changing a part without double quotation to be lower case letters&lt;/li&gt;
+   *   &lt;li&gt;eliminating double quotation marks from identifier&lt;/li&gt;
+   * &lt;/ul&gt;
+   *
+   * @param identifier The identifier to be normalized
+   * @return The normalized identifier
+   */
+  public static String normalizeIdentifier(String identifier) {
+<span class="nc bnc" id="L125" title="All 4 branches missed.">    if (identifier == null || identifier.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L126">      return identifier;</span>
+    }
+<span class="nc" id="L128">    String [] splitted = identifier.split(IDENTIFIER_DELIMITER_REGEXP);</span>
+
+<span class="nc" id="L130">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L131">    boolean first = true;</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">    for (String part : splitted) {</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">      if (first) {</span>
+<span class="nc" id="L134">        first = false;</span>
+      } else {
+<span class="nc" id="L136">        sb.append(IDENTIFIER_DELIMITER);</span>
+      }
+<span class="nc" id="L138">      sb.append(normalizeIdentifierPart(part));</span>
+    }
+<span class="nc" id="L140">    return sb.toString();</span>
+  }
+
+  public static String normalizeIdentifierPart(String part) {
+<span class="nc bnc" id="L144" title="All 2 branches missed.">    return isDelimited(part) ? stripQuote(part) : part.toLowerCase();</span>
+  }
+
+  /**
+   * Denormalize an identifier. Denormalize means a translation from a stored identifier
+   * to be a printable identifier name.
+   *
+   * In detail, for each part, it performs as follows:
+   * &lt;ul&gt;
+   *   &lt;li&gt;changing a part including upper case character or non-ascii character to be lower case letters&lt;/li&gt;
+   *   &lt;li&gt;eliminating double quotation marks from identifier&lt;/li&gt;
+   * &lt;/ul&gt;
+   *
+   * @param identifier The identifier to be normalized
+   * @return The denormalized identifier
+   */
+  public static String denormalizeIdentifier(String identifier) {
+<span class="nc" id="L161">    String [] splitted = identifier.split(IDENTIFIER_DELIMITER_REGEXP);</span>
+
+<span class="nc" id="L163">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L164">    boolean first = true;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">    for (String part : splitted) {</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">      if (first) {</span>
+<span class="nc" id="L167">        first = false;</span>
+      } else {
+<span class="nc" id="L169">        sb.append(IDENTIFIER_DELIMITER);</span>
+      }
+<span class="nc" id="L171">      sb.append(denormalizePart(part));</span>
+    }
+<span class="nc" id="L173">    return sb.toString();</span>
+  }
+
+  public static String denormalizePart(String identifier) {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">    if (isShouldBeQuoted(identifier)) {</span>
+<span class="nc" id="L178">      return StringUtils.doubleQuote(identifier);</span>
+    } else {
+<span class="nc" id="L180">      return identifier;</span>
+    }
+  }
+
+  public static boolean isShouldBeQuoted(String interned) {
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    for (char character : interned.toCharArray()) {</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">      if (Character.isUpperCase(character)) {</span>
+<span class="nc" id="L187">        return true;</span>
+      }
+
+<span class="nc bnc" id="L190" title="All 2 branches missed.">      if (!StringUtils.isPartOfAnsiSQLIdentifier(character)) {</span>
+<span class="nc" id="L191">        return true;</span>
+      }
+
+<span class="nc bnc" id="L194" title="All 2 branches missed.">      if (RESERVED_KEYWORDS_SET.contains(interned.toUpperCase())) {</span>
+<span class="nc" id="L195">        return true;</span>
+      }
+    }
+
+<span class="nc" id="L199">    return false;</span>
+  }
+
+  public static String stripQuote(String raw) {
+<span class="nc" id="L203">    return raw.substring(1, raw.length() - 1);</span>
+  }
+
+  public static boolean isDelimited(String raw) {
+<span class="nc" id="L207">    return isDelimited(raw, DefaultPolicy());</span>
+  }
+
+  public static boolean isDelimited(String raw, IdentifierPolicy policy) {
+<span class="nc" id="L211">    char quoteString = policy.getIdentifierQuoteString();</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">    boolean openQuote = raw.charAt(0) == quoteString;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">    boolean closeQuote = raw.charAt(raw.length() - 1) == quoteString;</span>
+
+    // if at least one quote mark exists, the identifier must be grater than equal to 2 characters,
+<span class="nc bnc" id="L216" title="All 4 branches missed.">    if (openQuote ^ closeQuote &amp;&amp; raw.length() &lt; 2) {</span>
+<span class="nc" id="L217">      throw new IllegalArgumentException(&quot;Invalid Identifier: &quot; + raw);</span>
+    }
+
+    // does not allow the empty identifier (''),
+<span class="nc bnc" id="L221" title="All 6 branches missed.">    if (openQuote &amp;&amp; closeQuote &amp;&amp; raw.length() == 2) {</span>
+<span class="nc" id="L222">      throw new IllegalArgumentException(&quot;zero-length delimited identifier: &quot; + raw);</span>
+    }
+
+    // Ensure the quote open and close
+<span class="nc bnc" id="L226" title="All 4 branches missed.">    return openQuote &amp;&amp; closeQuote;</span>
+  }
+
+  /**
+   * True if a given name is a simple identifier, meaning is not a dot-chained name.
+   *
+   * @param columnOrTableName Column or Table name to be checked
+   * @return True if a given name is a simple identifier. Otherwise, it will return False.
+   */
+  public static boolean isSimpleIdentifier(String columnOrTableName) {
+<span class="nc bnc" id="L236" title="All 2 branches missed.">    return columnOrTableName.split(IDENTIFIER_DELIMITER_REGEXP).length == 1;</span>
+  }
+
+  public static boolean isFQColumnName(String tableName) {
+<span class="nc bnc" id="L240" title="All 2 branches missed.">    return tableName.split(IDENTIFIER_DELIMITER_REGEXP).length == 3;</span>
+  }
+
+  public static boolean isFQTableName(String tableName) {
+<span class="nc" id="L244">    int lastDelimiterIdx = tableName.lastIndexOf(IDENTIFIER_DELIMITER);</span>
+<span class="nc bnc" id="L245" title="All 2 branches missed.">    return lastDelimiterIdx &gt; -1;</span>
+  }
+
+  public static String [] splitFQTableName(String qualifiedName) {
+<span class="nc" id="L249">    String [] splitted = splitTableName(qualifiedName);</span>
+<span class="nc bnc" id="L250" title="All 2 branches missed.">    if (splitted.length == 1) {</span>
+<span class="nc" id="L251">      throw new IllegalArgumentException(&quot;Table name is expected to be qualified, but was \&quot;&quot;</span>
+          + qualifiedName + &quot;\&quot;.&quot;);
+    }
+<span class="nc" id="L254">    return splitted;</span>
+  }
+
+  public static String [] splitTableName(String tableName) {
+<span class="nc" id="L258">    int lastDelimiterIdx = tableName.lastIndexOf(IDENTIFIER_DELIMITER);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">    if (lastDelimiterIdx &gt; -1) {</span>
+<span class="nc" id="L260">      return new String [] {</span>
+<span class="nc" id="L261">          tableName.substring(0, lastDelimiterIdx),</span>
+<span class="nc" id="L262">          tableName.substring(lastDelimiterIdx + 1, tableName.length())</span>
+      };
+    } else {
+<span class="nc" id="L265">      return new String [] {tableName};</span>
+    }
+  }
+
+  public static String buildFQName(String... identifiers) {
+<span class="nc" id="L270">    boolean first = true;</span>
+<span class="nc" id="L271">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">    for(String id : identifiers) {</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">      if (first) {</span>
+<span class="nc" id="L274">        first = false;</span>
+      } else {
+<span class="nc" id="L276">        sb.append(IDENTIFIER_DELIMITER);</span>
+      }
+
+<span class="nc" id="L279">      sb.append(id);</span>
+    }
+
+<span class="nc" id="L282">    return sb.toString();</span>
+  }
+
+  public static Pair&lt;String, String&gt; separateQualifierAndName(String name) {
+<span class="nc" id="L286">    Preconditions.checkArgument(isFQTableName(name), &quot;Must be a qualified name.&quot;);</span>
+<span class="nc" id="L287">    return new Pair&lt;&gt;(extractQualifier(name), extractSimpleName(name));</span>
+  }
+
+  /**
+   * Extract a qualification name from an identifier.
+   *
+   * For example, consider a table identifier like 'database1.table1'.
+   * In this case, this method extracts 'database1'.
+   *
+   * @param name The identifier to be extracted
+   * @return The extracted qualifier
+   */
+  public static String extractQualifier(String name) {
+<span class="nc" id="L300">    int lastDelimiterIdx = name.lastIndexOf(IDENTIFIER_DELIMITER);</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">    if (lastDelimiterIdx &gt; -1) {</span>
+<span class="nc" id="L302">      return name.substring(0, lastDelimiterIdx);</span>
+    } else {
+<span class="nc" id="L304">      return TajoConstants.EMPTY_STRING;</span>
+    }
+  }
+
+  /**
+   * Extract a simple name from an identifier.
+   *
+   * For example, consider a table identifier like 'database1.table1'.
+   * In this case, this method extracts 'table1'.
+   *
+   * @param name The identifier to be extracted
+   * @return The extracted simple name
+   */
+  public static String extractSimpleName(String name) {
+<span class="nc" id="L318">    int lastDelimiterIdx = name.lastIndexOf(IDENTIFIER_DELIMITER);</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">    if (lastDelimiterIdx &gt; -1) {</span>
+      // plus one means skipping a delimiter.
+<span class="nc" id="L321">      return name.substring(lastDelimiterIdx + 1, name.length());</span>
+    } else {
+<span class="nc" id="L323">      return name;</span>
+    }
+  }
+
+  public static String getCanonicalTableName(String databaseName, String tableName) {
+<span class="nc" id="L328">    StringBuilder sb = new StringBuilder(databaseName);</span>
+<span class="nc" id="L329">    sb.append(IDENTIFIER_DELIMITER);</span>
+<span class="nc" id="L330">    sb.append(tableName);</span>
+<span class="nc" id="L331">    return sb.toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

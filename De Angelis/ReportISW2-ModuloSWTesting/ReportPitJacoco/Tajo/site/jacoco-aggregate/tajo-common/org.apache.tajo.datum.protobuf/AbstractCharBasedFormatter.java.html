@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractCharBasedFormatter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum.protobuf</a> &gt; <span class="el_source">AbstractCharBasedFormatter.java</span></div><h1>AbstractCharBasedFormatter.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum.protobuf;
+
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.Message;
+import com.google.protobuf.Message.Builder;
+import com.google.protobuf.UnknownFieldSet;
+
+import java.io.*;
+import java.nio.charset.Charset;
+
+<span class="nc" id="L29">public abstract class AbstractCharBasedFormatter extends ProtobufFormatter {</span>
+
+	@Override
+	public void print(Message message, OutputStream output, Charset cs)
+			throws IOException {
+<span class="nc" id="L34">		OutputStreamWriter writer = new OutputStreamWriter(output, cs);</span>
+<span class="nc" id="L35">		print(message, writer);</span>
+<span class="nc" id="L36">		writer.flush();</span>
+<span class="nc" id="L37">	}</span>
+	
+	abstract public void print(Message message, Appendable output) throws IOException;
+
+
+	@Override
+	public void print(UnknownFieldSet fields, OutputStream output, Charset cs)
+			throws IOException {
+<span class="nc" id="L45">		OutputStreamWriter writer = new OutputStreamWriter(output, cs);</span>
+<span class="nc" id="L46">		print(fields, writer);</span>
+<span class="nc" id="L47">		writer.flush();</span>
+<span class="nc" id="L48">	}</span>
+	
+	abstract public void print(UnknownFieldSet fields, Appendable output) throws IOException;
+
+	@Override
+	public void merge(InputStream input, Charset cs, 
+			ExtensionRegistry extensionRegistry, Builder builder) throws IOException {
+<span class="nc" id="L55">		InputStreamReader reader = new InputStreamReader(input, cs);</span>
+<span class="nc" id="L56">		merge(reader, extensionRegistry, builder);</span>
+<span class="nc" id="L57">	}</span>
+	
+	
+	abstract public void merge(CharSequence input, ExtensionRegistry extensionRegistry,
+            Message.Builder builder) throws IOException;
+
+	/**
+     * Parse a text-format message from {@code input} and merge the contents into {@code builder}.
+     * Extensions will be recognized if they are registered in {@code extensionRegistry}.
+     */
+    public void merge(Readable input,
+    		ExtensionRegistry extensionRegistry,
+    		Message.Builder builder) throws IOException {
+        // Read the entire input to a String then parse that.
+
+        // If StreamTokenizer were not quite so crippled, or if there were a kind
+        // of Reader that could read in chunks that match some particular regex,
+        // or if we wanted to write a custom Reader to tokenize our stream, then
+        // we would not have to read to one big String. Alas, none of these is
+        // the case. Oh well.
+
+<span class="nc" id="L78">		merge(TextUtils.toStringBuilder(input), extensionRegistry, builder);</span>
+<span class="nc" id="L79">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

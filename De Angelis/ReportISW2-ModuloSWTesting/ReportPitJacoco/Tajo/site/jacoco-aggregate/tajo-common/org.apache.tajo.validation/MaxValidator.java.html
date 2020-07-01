@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MaxValidator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.validation</a> &gt; <span class="el_source">MaxValidator.java</span></div><h1>MaxValidator.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.validation;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Collection;
+import java.util.Collections;
+
+import org.apache.commons.lang.math.NumberUtils;
+
+public class MaxValidator extends AbstractValidator {
+  
+  private final String maxValue;
+  
+<span class="fc" id="L32">  public MaxValidator(String maxValue) {</span>
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">    if (!NumberUtils.isNumber(maxValue)) {</span>
+<span class="nc" id="L34">      throw new IllegalArgumentException(maxValue + &quot; is not a Java number.&quot;);</span>
+    }
+    
+<span class="fc" id="L37">    this.maxValue = maxValue;</span>
+<span class="fc" id="L38">  }</span>
+
+  @Override
+  protected &lt;T&gt; String getErrorMessage(T object) {
+<span class="nc" id="L42">    return object + &quot; should be less than &quot; + maxValue;</span>
+  }
+
+  @Override
+  protected &lt;T&gt; boolean validateInternal(T object) {
+<span class="nc" id="L47">    boolean result = false;</span>
+    
+<span class="nc bnc" id="L49" title="All 2 branches missed.">    if (object != null) {</span>
+<span class="nc bnc" id="L50" title="All 6 branches missed.">      if ((object instanceof Byte) || (object instanceof Short) || (object instanceof Integer)) {</span>
+<span class="nc" id="L51">        Integer objInteger = Integer.decode(object.toString());</span>
+<span class="nc" id="L52">        Integer maxInteger = Integer.decode(maxValue);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">        result = objInteger.compareTo(maxInteger) &lt;= 0;</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">      } else if (object instanceof Long) {</span>
+<span class="nc" id="L55">        Long objLong = Long.decode(object.toString());</span>
+<span class="nc" id="L56">        Long maxLong = Long.decode(maxValue);</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        result = objLong.compareTo(maxLong) &lt;= 0;</span>
+<span class="nc bnc" id="L58" title="All 4 branches missed.">      } else if ((object instanceof Float) || (object instanceof Double)) {</span>
+<span class="nc" id="L59">        Double objDouble = Double.valueOf(object.toString());</span>
+<span class="nc" id="L60">        Double maxDouble = Double.valueOf(maxValue);</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        result = objDouble.compareTo(maxDouble) &lt;= 0;</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">      } else if (object instanceof BigInteger) {</span>
+<span class="nc" id="L63">        BigInteger objInteger = (BigInteger) object;</span>
+<span class="nc" id="L64">        BigInteger maxInteger = new BigInteger(maxValue);</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        result = objInteger.compareTo(maxInteger) &lt;= 0;</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">      } else if (object instanceof BigDecimal) {</span>
+<span class="nc" id="L67">        BigDecimal objDecimal = (BigDecimal) object;</span>
+<span class="nc" id="L68">        BigDecimal maxDecimal = new BigDecimal(maxValue);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        result = objDecimal.compareTo(maxDecimal) &lt;= 0;</span>
+<span class="nc" id="L70">      }</span>
+    } else {
+<span class="nc" id="L72">      result = true;</span>
+    }
+    
+<span class="nc" id="L75">    return result;</span>
+  }
+
+  @Override
+  protected Collection&lt;Validator&gt; getDependantValidators() {
+<span class="nc" id="L80">    return Collections.emptySet();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

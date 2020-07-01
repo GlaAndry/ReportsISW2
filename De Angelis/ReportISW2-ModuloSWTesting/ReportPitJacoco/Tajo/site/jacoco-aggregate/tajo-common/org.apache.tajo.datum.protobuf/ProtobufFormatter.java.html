@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProtobufFormatter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum.protobuf</a> &gt; <span class="el_source">ProtobufFormatter.java</span></div><h1>ProtobufFormatter.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum.protobuf;
+
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.Message;
+import com.google.protobuf.UnknownFieldSet;
+
+import java.io.*;
+import java.nio.charset.Charset;
+
+<span class="nc" id="L28">public abstract class ProtobufFormatter {</span>
+<span class="nc" id="L29">    private Charset defaultCharset = Charset.defaultCharset();</span>
+
+    /**
+     * Set the default character set to use for input / output data streams
+     * @param cs the character set to use by default, when unspecified
+     */
+    public void setDefaultCharset(Charset cs) {
+<span class="nc" id="L36">        defaultCharset = cs;</span>
+<span class="nc" id="L37">    }</span>
+    
+    /**
+     * Get the default character set to use for input / output streams
+     * @return the character set to use by default, when unspecified
+     */
+    public Charset getDefaultCharset() {
+<span class="nc" id="L44">        return defaultCharset;</span>
+    }
+	
+	/**
+	 * @see print( com.google.protobuf.Message , java.io.OutputStream, java.nio.charset.Charset)
+	 * @param message the protobuf message to format
+	 * @param output the stream to write the formatted message using the default charset
+	 * @throws java.io.IOException
+	 */
+	public void print(final Message message, OutputStream output) throws IOException {
+<span class="nc" id="L54">		print(message, output, defaultCharset);</span>
+<span class="nc" id="L55">	}</span>
+
+	/**
+	 * Outputs a textual representation of the Protocol Message supplied into
+	 * the parameter output. (This representation is the new version of the
+	 * classic &quot;ProtocolPrinter&quot; output from the original Protocol Buffer system)
+	 *
+	 * @param message the protobuf message to format
+	 * @param output the stream to write the formatted message
+	 * @param cs the character set to use
+	 * @throws java.io.IOException
+	 */
+	abstract public void print(final Message message, OutputStream output, Charset cs) throws IOException;
+
+
+	/**
+	 * @see print( com.google.protobuf.UnknownFieldSet , java.io.OutputStream, java.nio.charset.Charset)
+	 * @param fields unknown fields to format
+	 * @param output output the stream to write the formatted message using the default charset
+	 * @throws java.io.IOException
+	 */
+	public void print(final UnknownFieldSet fields, OutputStream output) throws IOException {
+<span class="nc" id="L77">		print(fields, output, defaultCharset);</span>
+<span class="nc" id="L78">	}</span>
+
+	/**
+	 * @param fields unknown fields to format
+	 * @param output output the stream to write the formatted message
+	 * @param cs the character set to use
+	 * @throws java.io.IOException
+	 */
+	abstract public void print(final UnknownFieldSet fields, OutputStream output, Charset cs) throws IOException;
+	
+
+	/**
+     * Like {@code print()}, but writes directly to a {@code String} and returns it.
+     */
+	public String printToString(final Message message) {
+		try {
+<span class="nc" id="L94">            ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="nc" id="L95">            print(message, out, defaultCharset);</span>
+<span class="nc" id="L96">            out.flush();</span>
+<span class="nc" id="L97">            return out.toString();</span>
+<span class="nc" id="L98">        } catch (IOException e) {</span>
+<span class="nc" id="L99">            throw new RuntimeException(&quot;Writing to a StringBuilder threw an IOException (should never happen).&quot;,</span>
+                                       e);
+        }
+	}
+	
+	/**
+     * Like {@code print()}, but writes directly to a {@code String} and returns it.
+     */
+	public String printToString(final UnknownFieldSet fields) {
+		try {
+<span class="nc" id="L109">            ByteArrayOutputStream out = new ByteArrayOutputStream();</span>
+<span class="nc" id="L110">            print(fields, out, defaultCharset);</span>
+<span class="nc" id="L111">            out.flush();</span>
+<span class="nc" id="L112">            return out.toString();</span>
+<span class="nc" id="L113">        } catch (IOException e) {</span>
+<span class="nc" id="L114">            throw new RuntimeException(&quot;Writing to a StringBuilder threw an IOException (should never happen).&quot;,</span>
+                                       e);
+        }
+	}
+	
+	/**
+     * Thrown when parsing an invalid text format message.
+     */
+    public static class ParseException extends IOException {
+    	private static final long serialVersionUID = 1L;
+
+		public ParseException(String message) {
+<span class="nc" id="L126">            super(message);</span>
+<span class="nc" id="L127">        }</span>
+    }
+	
+	
+	/**
+	 * Parse a text-format message from {@code input} and merge the contents
+	 * into {@code builder}.
+	 */
+	abstract public void merge(final InputStream input, Charset cs,
+			ExtensionRegistry extensionRegistry,
+			final Message.Builder builder) throws IOException;
+
+	
+	/**
+	 * Parse a text-format message from {@code input} and merge the contents
+	 * into {@code builder}.
+	 */
+	public void merge(final InputStream input, Charset cs, 
+			final Message.Builder builder) throws IOException {
+		
+<span class="nc" id="L147">		merge(input, cs, ExtensionRegistry.getEmptyRegistry(), builder);</span>
+<span class="nc" id="L148">	}</span>
+	
+	public void merge(final InputStream input, 
+			final Message.Builder builder) throws IOException {
+		
+<span class="nc" id="L153">		merge(input, defaultCharset, </span>
+<span class="nc" id="L154">				ExtensionRegistry.getEmptyRegistry(), builder);</span>
+<span class="nc" id="L155">	}</span>
+
+  public void merge(final byte [] input, final Message.Builder builder) throws IOException {
+<span class="nc" id="L158">    ByteArrayInputStream bio = new ByteArrayInputStream(input);</span>
+<span class="nc" id="L159">    merge(bio, defaultCharset, ExtensionRegistry.getEmptyRegistry(), builder);</span>
+<span class="nc" id="L160">    bio.close();</span>
+<span class="nc" id="L161">  }</span>
+	
+	public void merge(final InputStream input,
+			ExtensionRegistry extensionRegistry,
+			final Message.Builder builder) throws IOException {
+<span class="nc" id="L166">		merge(input, defaultCharset, extensionRegistry, builder);</span>
+<span class="nc" id="L167">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

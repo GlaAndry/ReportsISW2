@@ -1,0 +1,2312 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DateTimeUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util.datetime</a> &gt; <span class="el_source">DateTimeUtil.java</span></div><h1>DateTimeUtil.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util.datetime;
+
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.Int8Datum;
+import org.apache.tajo.exception.ValueOutOfRangeException;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateToken;
+import org.apache.tajo.util.datetime.DateTimeConstants.TokenField;
+
+import javax.annotation.Nullable;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * This Class is originated from j2date in datetime.c of PostgreSQL.
+ */
+<span class="nc" id="L43">public class DateTimeUtil {</span>
+<span class="fc" id="L44">  private static int MAX_FRACTION_LENGTH = 6;</span>
+
+  /** maximum possible number of fields in a date * string */
+<span class="fc" id="L47">  private static int MAXDATEFIELDS = 25;</span>
+
+<span class="fc" id="L49">  private static final TimeZone defaultTz = TimeZone.getDefault();</span>
+
+  /**
+   * Number of milliseconds in one day.
+   */
+  public static final int ONEDAY = 24 * 3600 * 1000;
+
+  public static boolean isJulianCalendar(int year, int month, int day) {
+<span class="nc bnc" id="L57" title="All 6 branches missed.">    return year &lt;= 1752 &amp;&amp; month &lt;= 9 &amp;&amp; day &lt; 14;</span>
+  }
+
+  public static int getCenturyOfEra(int year) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">    if (year &gt; 0) {</span>
+<span class="nc" id="L62">      return (year - 1) / 100 + 1;</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">    } else if (year &lt; 0) {</span>
+      //600BC to 501BC -&gt; -6
+<span class="nc" id="L65">      int pYear = -year;</span>
+<span class="nc" id="L66">      return -((pYear - 1) / 100 + 1);</span>
+    } else {
+<span class="nc" id="L68">      return 0;</span>
+    }
+  }
+
+  public static boolean isLeapYear(int year) {
+<span class="pc bpc" id="L73" title="3 of 6 branches missed.">    return ((year &amp; 3) == 0) &amp;&amp; ((year % 100) != 0 || (year % 400) == 0);</span>
+  }
+
+  public static int getDaysInYearMonth(int year, int month) {
+<span class="nc bnc" id="L77" title="All 2 branches missed.">    if (isLeapYear(year)) {</span>
+<span class="nc" id="L78">      return DateTimeConstants.DAY_OF_MONTH[1][month - 1];</span>
+    } else {
+<span class="nc" id="L80">      return DateTimeConstants.DAY_OF_MONTH[0][month - 1];</span>
+    }
+  }
+
+  /**
+   * Julian date support.
+   *
+   * isValidJulianDate checks the minimum date exactly, but is a bit sloppy
+   * about the maximum, since it's far enough out to not be especially
+   * interesting.
+   * @param years
+   * @param months
+   * @param days
+   * @return
+   */
+  public static boolean isValidJulianDate(int years, int months, int days) {
+<span class="pc bpc" id="L96" title="5 of 12 branches missed.">    return years &gt; DateTimeConstants.JULIAN_MINYEAR || years == DateTimeConstants.JULIAN_MINYEAR &amp;&amp;</span>
+        months &gt; DateTimeConstants.JULIAN_MINMONTH || months == DateTimeConstants.JULIAN_MINMONTH &amp;&amp;
+        days &gt;= DateTimeConstants.JULIAN_MINDAY &amp;&amp; years &lt; DateTimeConstants.JULIAN_MAXYEAR;
+  }
+
+  /**
+   * Calendar time to Julian date conversions.
+   * Julian date is commonly used in astronomical applications,
+   *	since it is numerically accurate and computationally simple.
+   * The algorithms here will accurately convert between Julian day
+   *	and calendar date for all non-negative Julian days_full
+   *	(i.e. from Nov 24, -4713 on).
+   *
+   * These routines will be used by other date/time packages
+   * - thomas 97/02/25
+   *
+   * Rewritten to eliminate overflow problems. This now allows the
+   * routines to work correctly for all Julian day counts from
+   * 0 to 2147483647	(Nov 24, -4713 to Jun 3, 5874898) assuming
+   * a 32-bit integer. Longer types should also work to the limits
+   * of their precision.
+   * @param year
+   * @param month
+   * @param day
+   * @return
+   */
+  public static int date2j(int year, int month, int day) {
+    int julian;
+    int century;
+
+<span class="fc bfc" id="L126" title="All 2 branches covered.">    if (month &gt; 2) {</span>
+<span class="fc" id="L127">      month += 1;</span>
+<span class="fc" id="L128">      year += 4800;</span>
+    } else {
+<span class="fc" id="L130">      month += 13;</span>
+<span class="fc" id="L131">      year += 4799;</span>
+    }
+
+<span class="fc" id="L134">    century = year / 100;</span>
+<span class="fc" id="L135">    julian = (year * 365) - 32167;</span>
+<span class="fc" id="L136">    julian += (((year / 4) - century) + (century / 4));</span>
+<span class="fc" id="L137">    julian += ((7834 * month) / 256) + day;</span>
+
+<span class="fc" id="L139">    return julian;</span>
+  }
+
+  public static TimeMeta j2date(int julianDate) {
+<span class="nc" id="L143">    TimeMeta tm = new TimeMeta();</span>
+<span class="nc" id="L144">    j2date(julianDate, tm);</span>
+<span class="nc" id="L145">    return tm;</span>
+  }
+
+  /**
+   * Set TimeMeta's date fields.
+   * @param julianDate
+   * @param tm
+   */
+  public static void j2date(int julianDate, TimeMeta tm) {
+    long julian;
+    long quad;
+    long extra;
+    long y;
+
+<span class="fc" id="L159">    julian = julianDate;</span>
+<span class="fc" id="L160">    julian += 32044;</span>
+<span class="fc" id="L161">    quad = julian / 146097;</span>
+<span class="fc" id="L162">    extra = (julian - quad * 146097) * 4 + 3;</span>
+<span class="fc" id="L163">    julian += 60 + quad * 3 + extra / 146097;</span>
+<span class="fc" id="L164">    quad = julian / 1461;</span>
+<span class="fc" id="L165">    julian -= quad * 1461;</span>
+<span class="fc" id="L166">    y = julian * 4 / 1461;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">    julian = ((y != 0) ? ((julian + 305) % 365) : ((julian + 306) % 366))</span>
+        + 123;
+<span class="fc" id="L169">    y += quad * 4;</span>
+
+
+<span class="fc" id="L172">    tm.years = (int)(y - 4800);</span>
+<span class="fc" id="L173">    quad = julian * 2141 / 65536;</span>
+<span class="fc" id="L174">    tm.dayOfMonth = (int)(julian - 7834 * quad / 256);</span>
+<span class="fc" id="L175">    tm.monthOfYear = (int) ((quad + 10) % DateTimeConstants.MONTHS_PER_YEAR + 1);</span>
+<span class="fc" id="L176">  }</span>
+
+  /**
+   * This method is originated from j2date in datetime.c of PostgreSQL.
+   *
+   * julianToDay - convert Julian date to day-of-week (0..6 == Sun..Sat)
+   *
+   * Note: various places use the locution julianToDay(date - 1) to produce a
+   * result according to the convention 0..6 = Mon..Sun.	This is a bit of
+   * a crock, but will work as long as the computation here is just a modulo.
+   * @param julianDate
+   * @return
+   */
+  public static int j2day(int julianDate) {
+    long day;
+
+<span class="nc" id="L192">    day = julianDate;</span>
+
+<span class="nc" id="L194">    day += 1;</span>
+<span class="nc" id="L195">    day %= 7;</span>
+
+<span class="nc" id="L197">    return (int) day;</span>
+  }
+
+  /**
+   * This method is originated from date2isoweek in timestamp.c of PostgreSQL.
+   * Returns ISO week number of year.
+   * @param year
+   * @param mon
+   * @param mday
+   * @return
+   */
+  public static int date2isoweek(int year, int mon, int mday) {
+    double result;
+    int day0;
+    int day4;
+    int dayn;
+
+    /* current day */
+<span class="nc" id="L215">    dayn = date2j(year, mon, mday);</span>
+
+    /* fourth day of current year */
+<span class="nc" id="L218">    day4 = date2j(year, 1, 4);</span>
+
+    /* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L221">    day0 = j2day(day4 - 1);</span>
+
+    /*
+     * We need the first week containing a Thursday, otherwise this day falls
+     * into the previous year for purposes of counting weeks
+     */
+<span class="nc bnc" id="L227" title="All 2 branches missed.">    if (dayn &lt; day4 - day0) {</span>
+<span class="nc" id="L228">      day4 = date2j(year - 1, 1, 4);</span>
+
+      /* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L231">      day0 = j2day(day4 - 1);</span>
+    }
+
+<span class="nc" id="L234">    result = (dayn - (day4 - day0)) / 7 + 1;</span>
+
+      /*
+       * Sometimes the last few days_full in a year will fall into the first week of
+       * the next year, so check for this.
+       */
+<span class="nc bnc" id="L240" title="All 2 branches missed.">    if (result &gt;= 52) {</span>
+<span class="nc" id="L241">      day4 = date2j(year + 1, 1, 4);</span>
+
+      /* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L244">      day0 = j2day(day4 - 1);</span>
+
+<span class="nc bnc" id="L246" title="All 2 branches missed.">      if (dayn &gt;= day4 - day0) {</span>
+<span class="nc" id="L247">        result = (dayn - (day4 - day0)) / 7 + 1;</span>
+      }
+    }
+
+<span class="nc" id="L251">    return (int) result;</span>
+  }
+
+  /**
+   * date2isoyear()
+   *
+   * Returns ISO 8601 year number.
+   * @param year
+   * @param mon
+   * @param mday
+   * @return
+   */
+  public static int date2isoyear(int year, int mon, int mday) {
+    /* current day */
+<span class="nc" id="L265">    int dayn = date2j(year, mon, mday);</span>
+
+	  /* fourth day of current year */
+<span class="nc" id="L268">    int day4 = date2j(year, 1, 4);</span>
+
+	  /* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L271">    int day0 = j2day(day4 - 1);</span>
+
+    /*
+     * We need the first week containing a Thursday, otherwise this day falls
+     * into the previous year for purposes of counting weeks
+     */
+<span class="nc bnc" id="L277" title="All 2 branches missed.">    if (dayn &lt; day4 - day0) {</span>
+<span class="nc" id="L278">      day4 = date2j(year - 1, 1, 4);</span>
+
+		/* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L281">      day0 = j2day(day4 - 1);</span>
+
+<span class="nc" id="L283">      year--;</span>
+    }
+
+<span class="nc" id="L286">    double result = (dayn - (day4 - day0)) / 7 + 1;</span>
+
+    /*
+     * Sometimes the last few days in a year will fall into the first week of
+     * the next year, so check for this.
+     */
+<span class="nc bnc" id="L292" title="All 2 branches missed.">    if (result &gt;= 52) {</span>
+<span class="nc" id="L293">      day4 = date2j(year + 1, 1, 4);</span>
+
+		/* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L296">      day0 = j2day(day4 - 1);</span>
+
+<span class="nc bnc" id="L298" title="All 2 branches missed.">      if (dayn &gt;= day4 - day0) {</span>
+<span class="nc" id="L299">        year++;</span>
+      }
+    }
+
+<span class="nc" id="L303">    return year;</span>
+  }
+
+  /**
+   * Converts julian timestamp to epoch.
+   * @param timestamp
+   * @return
+   */
+  public static int julianTimeToEpoch(long timestamp) {
+<span class="nc" id="L312">    long totalSecs = timestamp / DateTimeConstants.USECS_PER_SEC;</span>
+<span class="nc" id="L313">    return (int)(totalSecs + DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME);</span>
+  }
+
+  /**
+   * Converts julian timestamp to java timestamp.
+   * @param timestamp julian time in millisecond
+   * @return java time in millisecond
+   */
+  public static long julianTimeToJavaTime(long timestamp) {
+<span class="nc" id="L322">    double totalSecs = (double)timestamp / (double)DateTimeConstants.MSECS_PER_SEC;</span>
+<span class="nc" id="L323">    return Math.round(totalSecs + DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME * 1000.0);</span>
+  }
+
+  /**
+   * Converts java timestamp to julian timestamp.
+   * @param javaTimestamp
+   * @return
+   */
+  public static long javaTimeToJulianTime(long javaTimestamp) {
+<span class="nc" id="L332">    double totalSecs = javaTimestamp / 1000.0;</span>
+<span class="nc" id="L333">    return (long)((totalSecs -</span>
+        DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME) * DateTimeConstants.USECS_PER_SEC);
+  }
+
+  /**
+   * Calculate the time value(hour, minute, sec, fsec)
+   * If tm.TomeZone is set, the result value is adjusted.
+   * @param tm
+   * @return
+   */
+  public static long toTime(TimeMeta tm) {
+<span class="pc bpc" id="L344" title="2 of 4 branches missed.">    if (tm.timeZone != 0 &amp;&amp; tm.timeZone != Integer.MAX_VALUE) {</span>
+<span class="nc" id="L345">      int timeZoneSecs = tm.timeZone;</span>
+<span class="nc" id="L346">      tm.timeZone = Integer.MAX_VALUE;</span>
+<span class="nc" id="L347">      tm.plusMillis(0 - timeZoneSecs * 1000);</span>
+    }
+<span class="fc" id="L349">    return toTime(tm.hours, tm.minutes, tm.secs, tm.fsecs);</span>
+  }
+
+  /**
+   * Calculate the time value(hour, minute, sec, fsec)
+   * @param hour
+   * @param min
+   * @param sec
+   * @param fsec
+   * @return
+   */
+  public static long toTime(int hour, int min, int sec, int fsec) {
+<span class="fc" id="L361">    return (((((hour * DateTimeConstants.MINS_PER_HOUR) + min) *</span>
+        DateTimeConstants.SECS_PER_MINUTE) + sec) *
+        DateTimeConstants.USECS_PER_SEC) + fsec;
+  }
+
+  public static long toJavaTime(int hour, int min, int sec, int fsec) {
+<span class="nc" id="L367">    return toTime(hour, min, sec, fsec)/DateTimeConstants.MSECS_PER_SEC;</span>
+  }
+
+  public static Timestamp toJavaTimestamp(TimeMeta tm, @Nullable TimeZone tz) {
+<span class="nc" id="L371">    long javaTime = DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm));</span>
+
+<span class="nc bnc" id="L373" title="All 2 branches missed.">    if (tz != null) {</span>
+<span class="nc" id="L374">      int offset = tz.getOffset(javaTime) - defaultTz.getOffset(javaTime);</span>
+<span class="nc" id="L375">      return new Timestamp(javaTime + offset);</span>
+    } else {
+<span class="nc" id="L377">      return new Timestamp(javaTime);</span>
+    }
+  }
+
+  public static long convertTimeZone(long javaTime, TimeZone from, TimeZone to) {
+<span class="nc" id="L382">    int offset = from.getOffset(javaTime) - to.getOffset(javaTime);</span>
+<span class="nc" id="L383">    return javaTime + offset;</span>
+  }
+
+  public static Time toJavaTime(TimeMeta tm, @Nullable TimeZone tz) {
+<span class="nc bnc" id="L387" title="All 2 branches missed.">    if (tz != null) {</span>
+<span class="nc" id="L388">      DateTimeUtil.toUserTimezone(tm, tz);</span>
+    }
+<span class="nc" id="L390">    return new Time(tm.hours, tm.minutes, tm.secs);</span>
+  }
+
+  public static Date toJavaDate(TimeMeta tm, @Nullable TimeZone tz) {
+<span class="nc bnc" id="L394" title="All 2 branches missed.">    if (tz != null) {</span>
+<span class="nc" id="L395">      DateTimeUtil.toUserTimezone(tm, tz);</span>
+    }
+<span class="nc" id="L397">    return new Date(tm.years - 1900, tm.monthOfYear - 1 , tm.dayOfMonth);</span>
+  }
+
+  /**
+   * Extracts the date part from a timestamp.
+   *
+   * @param timestamp The timestamp from which to extract the date.
+   * @param tz The time zone of the date.
+   * @return The extracted date.
+   */
+  public static Date convertToDate(Timestamp timestamp, TimeZone tz) {
+<span class="nc" id="L408">    return convertToDate(timestamp.getTime(), tz);</span>
+  }
+
+  private static boolean isSimpleTimeZone(String id) {
+<span class="nc bnc" id="L412" title="All 4 branches missed.">    return id.startsWith(&quot;GMT&quot;) || id.startsWith(&quot;UTC&quot;);</span>
+  }
+
+  /**
+   * Extracts the date part from a timestamp.
+   *
+   * @param millis The java time
+   * @param tz The time zone of the date.
+   * @return The extracted date.
+   */
+  public static Date convertToDate(long millis, TimeZone tz) {
+<span class="nc bnc" id="L423" title="All 2 branches missed.">    if (tz == null) {</span>
+<span class="nc" id="L424">      tz = defaultTz;</span>
+    }
+<span class="nc bnc" id="L426" title="All 2 branches missed.">    if (isSimpleTimeZone(tz.getID())) {</span>
+      // Truncate to 00:00 of the day.
+      // Suppose the input date is 7 Jan 15:40 GMT+02:00 (that is 13:40 UTC)
+      // We want it to become 7 Jan 00:00 GMT+02:00
+      // 1) Make sure millis becomes 15:40 in UTC, so add offset
+<span class="nc" id="L431">      int offset = tz.getRawOffset();</span>
+<span class="nc" id="L432">      millis += offset;</span>
+      // 2) Truncate hours, minutes, etc. Day is always 86400 seconds, no matter what leap seconds
+      // are
+<span class="nc" id="L435">      millis = millis / ONEDAY * ONEDAY;</span>
+      // 2) Now millis is 7 Jan 00:00 UTC, however we need that in GMT+02:00, so subtract some
+      // offset
+<span class="nc" id="L438">      millis -= offset;</span>
+      // Now we have brand-new 7 Jan 00:00 GMT+02:00
+<span class="nc" id="L440">      return new Date(millis);</span>
+    }
+<span class="nc" id="L442">    Calendar cal = new GregorianCalendar();</span>
+<span class="nc" id="L443">    cal.setTimeZone(tz);</span>
+<span class="nc" id="L444">    cal.setTimeInMillis(millis);</span>
+<span class="nc" id="L445">    cal.set(Calendar.HOUR_OF_DAY, 0);</span>
+<span class="nc" id="L446">    cal.set(Calendar.MINUTE, 0);</span>
+<span class="nc" id="L447">    cal.set(Calendar.SECOND, 0);</span>
+<span class="nc" id="L448">    cal.set(Calendar.MILLISECOND, 0);</span>
+<span class="nc" id="L449">    return new Date(cal.getTimeInMillis());</span>
+  }
+
+  /**
+   * Extracts the time part from a timestamp.
+   *
+   * @param timestamp The timestamp from which to extract the time.
+   * @param tz The time zone of the time.
+   * @return The extracted time.
+   */
+  public static Time convertToTime(Timestamp timestamp, TimeZone tz) {
+<span class="nc" id="L460">    return convertToTime(timestamp.getTime(), tz);</span>
+  }
+
+  /**
+   * Extracts the time part from a timestamp.
+   *
+   * @param millis The java time
+   * @param tz The time zone of the time.
+   * @return The extracted time.
+   */
+  public static Time convertToTime(long millis, TimeZone tz) {
+<span class="nc bnc" id="L471" title="All 2 branches missed.">    if (tz == null) {</span>
+<span class="nc" id="L472">      tz = defaultTz;</span>
+    }
+<span class="nc bnc" id="L474" title="All 2 branches missed.">    if (isSimpleTimeZone(tz.getID())) {</span>
+      // Leave just time part of the day.
+      // Suppose the input date is 2015 7 Jan 15:40 GMT+02:00 (that is 13:40 UTC)
+      // We want it to become 1970 1 Jan 15:40 GMT+02:00
+      // 1) Make sure millis becomes 15:40 in UTC, so add offset
+<span class="nc" id="L479">      int offset = tz.getRawOffset();</span>
+<span class="nc" id="L480">      millis += offset;</span>
+      // 2) Truncate year, month, day. Day is always 86400 seconds, no matter what leap seconds are
+<span class="nc" id="L482">      millis = millis % ONEDAY;</span>
+      // 2) Now millis is 1970 1 Jan 15:40 UTC, however we need that in GMT+02:00, so subtract some
+      // offset
+<span class="nc" id="L485">      millis -= offset;</span>
+      // Now we have brand-new 1970 1 Jan 15:40 GMT+02:00
+<span class="nc" id="L487">      return new Time(millis);</span>
+    }
+
+<span class="nc" id="L490">    Calendar cal = new GregorianCalendar();</span>
+<span class="nc" id="L491">    cal.setTimeZone(tz);</span>
+<span class="nc" id="L492">    cal.setTimeInMillis(millis);</span>
+<span class="nc" id="L493">    cal.set(Calendar.ERA, GregorianCalendar.AD);</span>
+<span class="nc" id="L494">    cal.set(Calendar.YEAR, 1970);</span>
+<span class="nc" id="L495">    cal.set(Calendar.MONTH, 0);</span>
+<span class="nc" id="L496">    cal.set(Calendar.DAY_OF_MONTH, 1);</span>
+
+<span class="nc" id="L498">    return new Time(cal.getTimeInMillis());</span>
+  }
+
+  /**
+   * Calculate julian timestamp.
+   * @param years
+   * @param months
+   * @param days
+   * @param hours
+   * @param minutes
+   * @param seconds
+   * @param fsec
+   * @return
+   */
+  public static long toJulianTimestamp(
+      int years, int months, int days, int hours, int minutes, int seconds, int fsec) {
+    /* Julian day routines are not correct for negative Julian days_full */
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">    if (!isValidJulianDate(years, months, days)) {</span>
+<span class="nc" id="L516">      throw new ValueOutOfRangeException(&quot;Out of Range Julian days_full&quot;);</span>
+    }
+
+<span class="fc" id="L519">    long numJulianDays = date2j(years, months, days) - DateTimeConstants.POSTGRES_EPOCH_JDATE;</span>
+
+<span class="fc" id="L521">    return toJulianTimestamp(numJulianDays, hours, minutes, seconds, fsec);</span>
+  }
+
+  /**
+   * Calculate julian timestamp.
+   * @param numJulianDays
+   * @param hours
+   * @param minutes
+   * @param seconds
+   * @param fsec
+   * @return
+   */
+  private static long toJulianTimestamp(long numJulianDays, int hours, int minutes, int seconds, int fsec) {
+<span class="fc" id="L534">    long time = toTime(hours, minutes, seconds, fsec);</span>
+
+<span class="fc" id="L536">    long timestamp = numJulianDays * DateTimeConstants.USECS_PER_DAY + time;</span>
+      /* check for major overflow */
+<span class="pc bpc" id="L538" title="1 of 2 branches missed.">    if ((timestamp - time) / DateTimeConstants.USECS_PER_DAY != numJulianDays) {</span>
+<span class="nc" id="L539">      throw new RuntimeException(&quot;Out of Range of Time&quot;);</span>
+    }
+      /* check for just-barely overflow (okay except time-of-day wraps) */
+      /* caution: we want to allow 1999-12-31 24:00:00 */
+<span class="pc bpc" id="L543" title="2 of 8 branches missed.">    if ((timestamp &lt; 0 &amp;&amp; numJulianDays &gt; 0) || (timestamp &gt; 0 &amp;&amp; numJulianDays &lt; -1)) {</span>
+<span class="nc" id="L544">      throw new RuntimeException(&quot;Out of Range of Date&quot;);</span>
+    }
+
+<span class="fc" id="L547">    return timestamp;</span>
+  }
+
+  /**
+   * Calculate julian timestamp.
+   * If tm.TomeZone is set, the result value is adjusted.
+   * @param tm
+   * @return
+   */
+  public static long toJulianTimestamp(TimeMeta tm) {
+<span class="pc bpc" id="L557" title="1 of 4 branches missed.">    if (tm.timeZone != 0 &amp;&amp; tm.timeZone != Integer.MAX_VALUE) {</span>
+<span class="fc" id="L558">      int timeZoneSecs = tm.timeZone;</span>
+<span class="fc" id="L559">      tm.timeZone = Integer.MAX_VALUE;</span>
+<span class="fc" id="L560">      tm.plusMillis(0 - timeZoneSecs * 1000);</span>
+    }
+<span class="pc bpc" id="L562" title="1 of 2 branches missed.">    if (tm.dayOfYear &gt; 0) {</span>
+<span class="nc" id="L563">      return toJulianTimestamp(date2j(tm.years, 1, 1) + tm.dayOfYear - 1, tm.hours, tm.minutes, tm.secs, tm.fsecs);</span>
+    } else {
+<span class="fc" id="L565">      return toJulianTimestamp(tm.years, tm.monthOfYear, tm.dayOfMonth, tm.hours, tm.minutes, tm.secs, tm.fsecs);</span>
+    }
+  }
+
+  /**
+   * Set TimeMeta's field value using given julian timestamp.
+   * Note that year is _not_ 1900-based, but is an explicit full value.
+   * Also, month is one-based, _not_ zero-based.
+   * Returns:
+   *	 0 on success
+   *	-1 on out of range
+   *
+   * If attimezone is NULL, the global timezone (including possibly brute forced
+   * timezone) will be used.
+   */
+  public static void toJulianTimeMeta(long julianTimestamp, TimeMeta tm) {
+    long date;
+    long time;
+
+    // TODO - If timezone is set, timestamp value should be adjusted here.
+<span class="fc" id="L585">    time = julianTimestamp;</span>
+
+    // TMODULO
+<span class="fc" id="L588">    date = time / DateTimeConstants.USECS_PER_DAY;</span>
+<span class="pc bpc" id="L589" title="1 of 2 branches missed.">    if (date != 0) {</span>
+<span class="fc" id="L590">      time -= date * DateTimeConstants.USECS_PER_DAY;</span>
+    }
+<span class="fc bfc" id="L592" title="All 2 branches covered.">    if (time &lt; 0) {</span>
+<span class="fc" id="L593">      time += DateTimeConstants.USECS_PER_DAY;</span>
+<span class="fc" id="L594">      date -= 1;</span>
+    }
+
+    /* add offset to go from J2000 back to standard Julian date */
+<span class="fc" id="L598">    date += DateTimeConstants.POSTGRES_EPOCH_JDATE;</span>
+
+    /* Julian day routine does not work for negative Julian days_full */
+<span class="pc bpc" id="L601" title="2 of 4 branches missed.">    if (date &lt; 0 || date &gt; Integer.MAX_VALUE) {</span>
+<span class="nc" id="L602">      throw new RuntimeException(&quot;Timestamp Out Of Scope&quot;);</span>
+    }
+
+<span class="fc" id="L605">    j2date((int) date, tm);</span>
+<span class="fc" id="L606">    date2j(time, tm);</span>
+<span class="fc" id="L607">  }</span>
+
+  /**
+   * This method is originated from dt2time in timestamp.c of PostgreSQL.
+   *
+   * @param julianDate
+   * @return hour, min, sec, fsec
+   */
+  public static void date2j(long julianDate, TimeMeta tm) {
+<span class="fc" id="L616">    long time = julianDate;</span>
+
+<span class="fc" id="L618">    tm.hours = (int) (time / DateTimeConstants.USECS_PER_HOUR);</span>
+<span class="fc" id="L619">    time -= tm.hours * DateTimeConstants.USECS_PER_HOUR;</span>
+<span class="fc" id="L620">    tm.minutes = (int) (time / DateTimeConstants.USECS_PER_MINUTE);</span>
+<span class="fc" id="L621">    time -= tm.minutes * DateTimeConstants.USECS_PER_MINUTE;</span>
+<span class="fc" id="L622">    tm.secs = (int) (time / DateTimeConstants.USECS_PER_SEC);</span>
+<span class="fc" id="L623">    tm.fsecs = (int) (time - (tm.secs * DateTimeConstants.USECS_PER_SEC));</span>
+<span class="fc" id="L624">  }</span>
+
+  /**
+   * Decode date string which includes delimiters.
+   *
+   * This method is originated from DecodeDate() in datetime.c of PostgreSQL.
+   * @param str The date string like '2013-12-25'.
+   * @param fmask
+   * @param tmaskValue
+   * @param is2digits
+   * @param tm
+   */
+  private static void decodeDate(String str, int fmask, AtomicInteger tmaskValue,  AtomicBoolean is2digits, TimeMeta tm) {
+
+<span class="fc" id="L638">    int idx = 0;</span>
+<span class="fc" id="L639">    int nf = 0;</span>
+<span class="fc" id="L640">    TokenField type = null;</span>
+<span class="fc" id="L641">    int val = 0;</span>
+
+<span class="fc" id="L643">    AtomicInteger dmask = new AtomicInteger(0);</span>
+<span class="fc" id="L644">    int tmask = tmaskValue.get();</span>
+<span class="fc" id="L645">    boolean haveTextMonth = false;</span>
+
+<span class="fc" id="L647">    int length = str.length();</span>
+<span class="fc" id="L648">    char[] dateStr = str.toCharArray();</span>
+<span class="fc" id="L649">    String[] fields = new String[MAXDATEFIELDS];</span>
+
+<span class="pc bpc" id="L651" title="1 of 4 branches missed.">    while(idx &lt; length &amp;&amp; nf &lt; MAXDATEFIELDS) {</span>
+
+      /* skip field separators */
+<span class="pc bpc" id="L654" title="1 of 4 branches missed.">      while (idx &lt; length &amp;&amp; !Character.isLetterOrDigit(dateStr[idx])) {</span>
+<span class="fc" id="L655">        idx++;</span>
+      }
+
+<span class="pc bpc" id="L658" title="1 of 2 branches missed.">      if (idx == length) {</span>
+<span class="nc" id="L659">        throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+      }
+
+<span class="fc" id="L662">      int fieldStartIdx = idx;</span>
+<span class="fc" id="L663">      int fieldLength = idx;</span>
+<span class="pc bpc" id="L664" title="1 of 2 branches missed.">      if (Character.isDigit(dateStr[idx])) {</span>
+<span class="fc bfc" id="L665" title="All 4 branches covered.">        while (idx &lt; length &amp;&amp; Character.isDigit(dateStr[idx])) {</span>
+<span class="fc" id="L666">          idx++;</span>
+        }
+<span class="fc" id="L668">        fieldLength = idx;</span>
+<span class="nc bnc" id="L669" title="All 2 branches missed.">      } else if (Character.isLetterOrDigit(dateStr[idx])) {</span>
+<span class="nc bnc" id="L670" title="All 4 branches missed.">        while (idx &lt; length &amp;&amp; Character.isLetterOrDigit(dateStr[idx])) {</span>
+<span class="nc" id="L671">          idx++;</span>
+        }
+<span class="nc" id="L673">        fieldLength = idx;</span>
+      }
+
+<span class="fc" id="L676">      fields[nf] = str.substring(fieldStartIdx, fieldLength);</span>
+<span class="fc" id="L677">      nf++;</span>
+<span class="fc" id="L678">    }</span>
+
+    /* look first for text fields, since that will be unambiguous month */
+<span class="fc bfc" id="L681" title="All 2 branches covered.">    for (int i = 0; i &lt; nf; i++) {</span>
+<span class="pc bpc" id="L682" title="1 of 2 branches missed.">      if (Character.isLetter(fields[i].charAt(0))) {</span>
+<span class="nc" id="L683">        DateToken dateToken =  DateTimeConstants.dateTokenMap.get(fields[i].toLowerCase());</span>
+<span class="nc" id="L684">        type = dateToken.getType();</span>
+
+<span class="nc bnc" id="L686" title="All 2 branches missed.">        if (type == TokenField.IGNORE_DTF) {</span>
+<span class="nc" id="L687">          continue;</span>
+        }
+
+<span class="nc" id="L690">        dmask.set(DateTimeConstants.DTK_M(type));</span>
+<span class="nc bnc" id="L691" title="All 2 branches missed.">        switch (type) {</span>
+          case MONTH:
+<span class="nc" id="L693">            tm.monthOfYear = type.getValue();</span>
+<span class="nc" id="L694">            haveTextMonth = true;</span>
+<span class="nc" id="L695">            break;</span>
+
+          default:
+<span class="nc" id="L698">            throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+        }
+<span class="nc bnc" id="L700" title="All 2 branches missed.">        if ((fmask &amp; dmask.get()) != 0) {</span>
+<span class="nc" id="L701">          throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+        }
+
+<span class="nc" id="L704">        fmask |= dmask.get();</span>
+<span class="nc" id="L705">        tmask |= dmask.get();</span>
+
+			/* mark this field as being completed */
+<span class="nc" id="L708">        fields[i] = null;</span>
+      }
+    }
+
+    /* now pick up remaining numeric fields */
+<span class="fc bfc" id="L713" title="All 2 branches covered.">    for (int i = 0; i &lt; nf; i++) {</span>
+<span class="pc bpc" id="L714" title="1 of 2 branches missed.">      if (fields[i] == null) {</span>
+<span class="nc" id="L715">        continue;</span>
+      }
+
+<span class="fc" id="L718">      length = fields[i].length();</span>
+<span class="pc bpc" id="L719" title="1 of 2 branches missed.">      if (length  &lt;= 0) {</span>
+<span class="nc" id="L720">        throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+      }
+
+<span class="fc" id="L723">      decodeNumber(length, fields[i], haveTextMonth, fmask, dmask, tm, new AtomicLong(0), is2digits);</span>
+
+<span class="pc bpc" id="L725" title="1 of 2 branches missed.">      if ( (fmask &amp; dmask.get()) != 0 ) {</span>
+<span class="nc" id="L726">        throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+      }
+<span class="fc" id="L728">      fmask |= dmask.get();</span>
+<span class="fc" id="L729">      tmask |= dmask.get();</span>
+    }
+
+<span class="fc" id="L732">    tmaskValue.set(tmask);</span>
+
+<span class="pc bpc" id="L734" title="1 of 2 branches missed.">    if ((fmask &amp; ~(DateTimeConstants.DTK_M(TokenField.DOY) | DateTimeConstants.DTK_M(TokenField.TZ))) != DateTimeConstants.DTK_DATE_M) {</span>
+<span class="nc" id="L735">      throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+    }
+<span class="fc" id="L737">  }</span>
+
+  /**
+   * Decode time string which includes delimiters.
+   * Return 0 if okay, a DTERR code if not.
+   *
+   * Only check the lower limit on hours, since this same code can be
+   * used to represent time spans.
+   * @param str
+   * @param fmask
+   * @param range
+   * @param tmask
+   * @param tm
+   * @param fsec
+   */
+  private static void decodeTime(String str, int fmask, int range,
+             AtomicInteger tmask, TimeMeta tm, AtomicLong fsec) {
+<span class="fc" id="L754">    StringBuilder cp = new StringBuilder();</span>
+
+<span class="fc" id="L756">    tmask.set(DateTimeConstants.DTK_TIME_M);</span>
+
+<span class="fc" id="L758">    tm.hours = strtoi(str, 0, cp);</span>
+<span class="pc bpc" id="L759" title="1 of 2 branches missed.">    if (cp.charAt(0) != ':') {</span>
+<span class="nc" id="L760">      throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+    }
+
+<span class="fc" id="L763">    tm.minutes = strtoi(cp.toString(), 1, cp);</span>
+
+<span class="pc bpc" id="L765" title="1 of 2 branches missed.">    if (cp.length() == 0) {</span>
+<span class="nc" id="L766">      tm.secs = 0;</span>
+<span class="nc" id="L767">      fsec.set(0);</span>
+		  /* If it's a MINUTE TO SECOND interval, take 2 fields as being mm:ss */
+<span class="nc bnc" id="L769" title="All 2 branches missed.">      if (range == (DateTimeConstants.INTERVAL_MASK(TokenField.MINUTE) | DateTimeConstants.INTERVAL_MASK(TokenField.SECOND))) {</span>
+<span class="nc" id="L770">        tm.secs = tm.minutes;</span>
+<span class="nc" id="L771">        tm.minutes = tm.hours;</span>
+<span class="nc" id="L772">        tm.hours = 0;</span>
+      }
+<span class="pc bpc" id="L774" title="1 of 2 branches missed.">    } else if (cp.charAt(0) == '.') {</span>
+		  /* always assume mm:ss.sss is MINUTE TO SECOND */
+<span class="nc" id="L776">      parseFractionalSecond(cp, fsec);</span>
+<span class="nc" id="L777">      tm.secs = tm.minutes;</span>
+<span class="nc" id="L778">      tm.minutes = tm.hours;</span>
+<span class="nc" id="L779">      tm.hours = 0;</span>
+    }
+<span class="pc bpc" id="L781" title="1 of 2 branches missed.">    else if (cp.charAt(0) == ':') {</span>
+<span class="fc" id="L782">      tm.secs = strtoi(cp.toString(), 1, cp);</span>
+<span class="fc bfc" id="L783" title="All 2 branches covered.">      if (cp.length() == 0){</span>
+<span class="fc" id="L784">        fsec.set(0);</span>
+<span class="pc bpc" id="L785" title="1 of 2 branches missed.">      } else if (cp.charAt(0) == '.') {</span>
+<span class="fc" id="L786">        parseFractionalSecond(cp, fsec);</span>
+      } else{
+<span class="nc" id="L788">        throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+      }
+    } else {
+<span class="nc" id="L791">      throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+    }
+
+	/* do a sanity check */
+<span class="pc bpc" id="L795" title="5 of 10 branches missed.">    if (tm.hours &lt; 0 || tm.minutes &lt; 0 || tm.minutes &gt; DateTimeConstants.MINS_PER_HOUR - 1 ||</span>
+        tm.secs &lt; 0 || tm.secs &gt; DateTimeConstants.SECS_PER_MINUTE ||
+<span class="pc bpc" id="L797" title="1 of 2 branches missed.">            fsec.get() &lt; 0 ||</span>
+<span class="pc bpc" id="L798" title="1 of 2 branches missed.">            fsec.get() &gt; DateTimeConstants.USECS_PER_SEC) {</span>
+<span class="nc" id="L799">      throw new IllegalArgumentException(&quot;BAD Format: FIELD_OVERFLOW: &quot; + str);</span>
+    }
+<span class="fc" id="L801">  }</span>
+
+  /**
+   * Parse datetime string to julian time.
+   * The result is the UTC time basis.
+   * @param str
+   * @return
+   */
+  public static long toJulianTimestamp(String str) {
+<span class="fc" id="L810">    TimeMeta tm = decodeDateTime(str, MAXDATEFIELDS);</span>
+<span class="fc" id="L811">    return toJulianTimestamp(tm);</span>
+  }
+
+
+  /**
+   * Parse datetime string to UTC-based julian time.
+   * The result julian time is adjusted by local timezone.
+   *
+   * @param timestampStr
+   * @param tz Local timezone. If it is NULL, UTC will be used by default.
+   * @return UTC-based julian time
+   */
+  public static long toJulianTimestampWithTZ(String timestampStr, @Nullable TimeZone tz) {
+<span class="nc" id="L824">    long timestamp = DateTimeUtil.toJulianTimestamp(timestampStr);</span>
+<span class="nc" id="L825">    TimeMeta tm = new TimeMeta();</span>
+<span class="nc" id="L826">    DateTimeUtil.toJulianTimeMeta(timestamp, tm);</span>
+<span class="nc bnc" id="L827" title="All 2 branches missed.">    if (tz != null) {</span>
+<span class="nc" id="L828">      DateTimeUtil.toUTCTimezone(tm, tz);</span>
+    }
+<span class="nc" id="L830">    return DateTimeUtil.toJulianTimestamp(tm);</span>
+  }
+
+  /**
+   * Parse datetime string to julian date.
+   * @param dateStr
+   * @return
+   */
+  public static int toJulianDate(String dateStr) {
+<span class="fc" id="L839">    TimeMeta tm = DateTimeUtil.decodeDateTime(dateStr);</span>
+<span class="fc" id="L840">    return DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth);</span>
+  }
+
+  /**
+   * Parse datetime string to julian time.
+   * @param timeStr
+   * @return
+   */
+  public static long toJulianTime(String timeStr) {
+<span class="fc" id="L849">    TimeMeta tm = DateTimeUtil.decodeDateTime(timeStr);</span>
+<span class="fc" id="L850">    return DateTimeUtil.toTime(tm);</span>
+  }
+
+  public static TimeMeta decodeDateTime(String str) {
+<span class="fc" id="L854">    return decodeDateTime(str, MAXDATEFIELDS);</span>
+  }
+
+  /**
+   * Break string into tokens based on a date/time context.
+   *
+   * This method is originated form ParseDateTime() in datetime.c of PostgreSQL.
+   *
+   * @param str The input string
+   * @param maxFields
+   */
+  public static TimeMeta decodeDateTime(String str, int maxFields) {
+<span class="fc" id="L866">    int idx = 0;</span>
+<span class="fc" id="L867">    int nf = 0;</span>
+<span class="fc" id="L868">    int length = str.length();</span>
+<span class="fc" id="L869">    char [] timeStr = str.toCharArray();</span>
+<span class="fc" id="L870">    String [] fields = new String[maxFields];</span>
+<span class="fc" id="L871">    TokenField[] fieldTypes = new TokenField[maxFields];</span>
+
+<span class="fc bfc" id="L873" title="All 2 branches covered.">    while (idx &lt; length) {</span>
+
+      /* Ignore spaces between fields */
+<span class="fc bfc" id="L876" title="All 2 branches covered.">      if (Character.isSpaceChar(timeStr[idx])) {</span>
+<span class="fc" id="L877">        idx++;</span>
+<span class="fc" id="L878">        continue;</span>
+      }
+
+      /* Record start of current field */
+<span class="pc bpc" id="L882" title="1 of 2 branches missed.">      if (nf &gt;= maxFields) {</span>
+<span class="nc" id="L883">        throw new IllegalArgumentException(&quot;Too many fields&quot;);</span>
+      }
+
+<span class="fc" id="L886">      int startIdx = idx;</span>
+
+      //January 8, 1999
+      /* leading digit? then date or time */
+<span class="fc bfc" id="L890" title="All 2 branches covered.">      if (Character.isDigit(timeStr[idx])) {</span>
+<span class="fc" id="L891">        idx++;</span>
+<span class="pc bpc" id="L892" title="1 of 4 branches missed.">        while (idx &lt; length &amp;&amp; Character.isDigit(timeStr[idx])) {</span>
+<span class="fc" id="L893">          idx++;</span>
+        }
+
+<span class="pc bpc" id="L896" title="1 of 4 branches missed.">        if (idx &lt; length &amp;&amp; timeStr[idx] == ':') {</span>
+<span class="fc" id="L897">          fieldTypes[nf] = TokenField.DTK_TIME;</span>
+
+<span class="fc bfc" id="L899" title="All 8 branches covered.">          while (idx &lt;length &amp;&amp; (Character.isDigit(timeStr[idx]) || timeStr[idx] == ':' || timeStr[idx] == '.')) {</span>
+<span class="fc" id="L900">            idx++;</span>
+          }
+        }
+
+        /* date field? allow embedded text month */
+<span class="pc bpc" id="L905" title="6 of 8 branches missed.">        else if (idx &lt; length &amp;&amp; (timeStr[idx] == '-' || timeStr[idx] == '/' || timeStr[idx] == '.')) {</span>
+
+          /* save delimiting character to use later */
+<span class="fc" id="L908">          char delim = timeStr[idx];</span>
+<span class="fc" id="L909">          idx++;</span>
+
+          /* second field is all digits? then no embedded text month */
+<span class="pc bpc" id="L912" title="1 of 2 branches missed.">          if (Character.isDigit(timeStr[idx])) {</span>
+<span class="pc bpc" id="L913" title="1 of 2 branches missed.">            fieldTypes[nf] = delim == '.' ? TokenField.DTK_NUMBER : TokenField.DTK_DATE;</span>
+
+<span class="pc bpc" id="L915" title="1 of 4 branches missed.">            while (idx &lt; length &amp;&amp; Character.isDigit(timeStr[idx])) {</span>
+<span class="fc" id="L916">              idx++;</span>
+            }
+
+            /*
+					   * insist that the delimiters match to get a three-field
+					   * date.
+					   */
+<span class="pc bpc" id="L923" title="2 of 4 branches missed.">            if (idx &lt; length &amp;&amp; timeStr[idx] == delim) {</span>
+<span class="fc" id="L924">              fieldTypes[nf] = TokenField.DTK_DATE;</span>
+<span class="fc" id="L925">              idx++;</span>
+<span class="pc bpc" id="L926" title="1 of 6 branches missed.">              while (idx &lt; length &amp;&amp; (Character.isDigit(timeStr[idx]) || timeStr[idx] == delim)) {</span>
+<span class="fc" id="L927">                idx++;</span>
+              }
+            }
+          } else {
+<span class="nc" id="L931">            fieldTypes[nf] = TokenField.DTK_DATE;</span>
+<span class="nc bnc" id="L932" title="All 6 branches missed.">            while (idx &lt; length &amp;&amp; Character.isLetterOrDigit(timeStr[idx]) || timeStr[idx] == delim) {</span>
+<span class="nc" id="L933">              idx++;</span>
+            }
+          }
+<span class="fc" id="L936">        } else {</span>
+          /*
+			     * otherwise, number only and will determine year, month, day, or
+			     * concatenated fields later...
+			    */
+<span class="nc" id="L941">          fieldTypes[nf] = TokenField.DTK_NUMBER;</span>
+        }
+      }
+
+      /* Leading decimal point? Then fractional seconds... */
+<span class="pc bpc" id="L946" title="1 of 2 branches missed.">      else if (timeStr[idx] == '.') {</span>
+<span class="nc" id="L947">        idx++;</span>
+<span class="nc bnc" id="L948" title="All 4 branches missed.">        while (idx &lt; length &amp;&amp; Character.isDigit(timeStr[idx])) {</span>
+<span class="nc" id="L949">          idx++;</span>
+<span class="nc" id="L950">          continue;</span>
+        }
+<span class="nc" id="L952">        fieldTypes[nf] = TokenField.DTK_NUMBER;</span>
+      }
+
+      // text? then date string, month, day of week, special, or timezone
+<span class="pc bpc" id="L956" title="1 of 2 branches missed.">      else if (Character.isLetter(timeStr[idx])) {</span>
+        boolean isDate;
+<span class="nc" id="L958">        idx++;</span>
+<span class="nc bnc" id="L959" title="All 4 branches missed.">        while (idx &lt; length &amp;&amp; Character.isLetter(timeStr[idx])) {</span>
+<span class="nc" id="L960">          idx++;</span>
+        }
+
+        // Dates can have embedded '-', '/', or '.' separators.  It could
+        // also be a timezone name containing embedded '/', '+', '-', '_',
+        // or ':' (but '_' or ':' can't be the first punctuation). If the
+        // next character is a digit or '+', we need to check whether what
+        // we have so far is a recognized non-timezone keyword --- if so,
+        // don't believe that this is the start of a timezone.
+
+<span class="nc" id="L970">        isDate = false;</span>
+<span class="nc bnc" id="L971" title="All 8 branches missed.">        if (idx &lt; length &amp;&amp; (timeStr[idx] == '-' || timeStr[idx] == '/' || timeStr[idx] == '.')) {</span>
+<span class="nc" id="L972">          isDate = true;</span>
+<span class="nc bnc" id="L973" title="All 6 branches missed.">        } else if (idx &lt; length &amp;&amp; (timeStr[idx] == '+' || Character.isDigit(timeStr[idx]))) {</span>
+          // The original ParseDateTime handles this case. But, we currently omit this case.
+<span class="nc" id="L975">          throw new IllegalArgumentException(&quot;Cannot parse this datetime field &quot; + str.substring(startIdx, idx));</span>
+        }
+
+<span class="nc bnc" id="L978" title="All 2 branches missed.">        if (isDate) {</span>
+<span class="nc" id="L979">          fieldTypes[nf] = TokenField.DTK_DATE;</span>
+
+          do {
+<span class="nc" id="L982">            idx++;</span>
+<span class="nc bnc" id="L983" title="All 14 branches missed.">          } while (idx &lt;length &amp;&amp; (timeStr[idx] == '+' || timeStr[idx] == '-' || timeStr[idx] == '/' ||</span>
+              timeStr[idx] == '_' || timeStr[idx] == '.' || timeStr[idx] == ':' ||
+<span class="nc bnc" id="L985" title="All 2 branches missed.">              Character.isLetterOrDigit(timeStr[idx])));</span>
+        } else {
+<span class="nc" id="L987">          fieldTypes[nf] = TokenField.DTK_STRING;</span>
+        }
+<span class="nc" id="L989">      }</span>
+
+      // sign? then special or numeric timezone
+<span class="pc bpc" id="L992" title="3 of 4 branches missed.">      else if (timeStr[idx] == '+' || timeStr[idx] == '-') {</span>
+<span class="fc" id="L993">        idx++;</span>
+
+        // soak up leading whitespace
+<span class="pc bpc" id="L996" title="2 of 4 branches missed.">        while (idx &lt; length &amp;&amp; Character.isSpaceChar(timeStr[idx])) {</span>
+<span class="nc" id="L997">          idx++;</span>
+        }
+
+        // numeric timezone?
+        // note that &quot;DTK_TZ&quot; could also be a signed float or yyyy-mm */
+<span class="pc bpc" id="L1002" title="2 of 4 branches missed.">        if (idx &lt; length &amp;&amp; Character.isDigit(timeStr[idx])) {</span>
+<span class="fc" id="L1003">          fieldTypes[nf] = TokenField.DTK_TZ;</span>
+<span class="fc" id="L1004">          idx++;</span>
+
+<span class="pc bpc" id="L1006" title="9 of 10 branches missed.">          while (idx &lt; length &amp;&amp; (Character.isDigit(timeStr[idx]) || timeStr[idx] == ':' || timeStr[idx] == '.' ||</span>
+              timeStr[idx] == '-')) {
+<span class="nc" id="L1008">            idx++;</span>
+          }
+        }
+        /* special? */
+<span class="nc bnc" id="L1012" title="All 4 branches missed.">        else if (idx &lt; length &amp;&amp; Character.isLetter(timeStr[idx])) {</span>
+<span class="nc" id="L1013">          fieldTypes[nf] = TokenField.DTK_SPECIAL;</span>
+<span class="nc" id="L1014">          idx++;</span>
+
+<span class="nc bnc" id="L1016" title="All 4 branches missed.">          while (idx &lt; length &amp;&amp; Character.isLetter(timeStr[idx])) {</span>
+<span class="nc" id="L1017">            idx++;</span>
+          }
+        } else {
+<span class="nc" id="L1020">          throw new IllegalArgumentException(&quot;BAD Format: &quot; + str.substring(startIdx, idx));</span>
+        }
+      }
+      /* ignore other punctuation but use as delimiter */
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">      else if (isPunctuation(timeStr[idx])) {</span>
+<span class="nc" id="L1025">        idx++;</span>
+<span class="nc" id="L1026">        continue;</span>
+      } else {  // otherwise, something is not right...
+<span class="nc" id="L1028">        throw new IllegalArgumentException(&quot;BAD datetime format: &quot; + str.substring(startIdx, idx));</span>
+      }
+
+<span class="fc" id="L1031">      fields[nf] = str.substring(startIdx, idx);</span>
+<span class="fc" id="L1032">      nf++;</span>
+<span class="fc" id="L1033">    }</span>
+<span class="fc" id="L1034">    return decodeDateTime(fields, fieldTypes, nf);</span>
+  }
+
+  /**
+   * Fetch a fractional-second value with suitable error checking
+   * @param cp
+   * @param fsec
+   */
+  public static void parseFractionalSecond(StringBuilder cp, AtomicLong fsec) {
+	  /* Caller should always pass the start of the fraction part */
+<span class="fc" id="L1044">    double frac = strtod(cp.toString(), 1, cp);</span>
+<span class="fc" id="L1045">    fsec.set(Math.round(frac * 1000000));</span>
+<span class="fc" id="L1046">  }</span>
+
+  /**
+   * Interpret string as a numeric timezone.
+   *
+   * Return 0 if okay (and set *tzp), a DTERR code if not okay.
+   *
+   * NB: this must *not* ereport on failure; see commands/variable.c.
+   * @param str
+   * @param tz
+   */
+  public static void decodeTimezone(String str, AtomicInteger tz) {
+<span class="fc" id="L1058">    int min = 0;</span>
+<span class="fc" id="L1059">    int sec = 0;</span>
+<span class="fc" id="L1060">    StringBuilder sb = new StringBuilder();</span>
+
+<span class="fc" id="L1062">    int strIndex = 0;</span>
+	  /* leading character must be &quot;+&quot; or &quot;-&quot; */
+<span class="pc bpc" id="L1064" title="3 of 4 branches missed.">    if (str.charAt(strIndex) != '+' &amp;&amp; str.charAt(strIndex) != '-') {</span>
+<span class="nc" id="L1065">      throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+    }
+<span class="fc" id="L1067">    int hr = strtoi(str, 1, sb);</span>
+
+	  /* explicit delimiter? */
+<span class="pc bpc" id="L1070" title="3 of 4 branches missed.">    if (sb.length() &gt; 0 &amp;&amp; sb.charAt(0) == ':') {</span>
+<span class="nc" id="L1071">      min = strtoi(sb.toString(), 1, sb);</span>
+<span class="nc bnc" id="L1072" title="All 2 branches missed.">      if (sb.charAt(0) == ':') {</span>
+<span class="nc" id="L1073">        sec = strtoi(sb.toString(), 1, sb);</span>
+      }
+    }
+	  /* otherwise, might have run things together... */
+<span class="pc bpc" id="L1077" title="2 of 4 branches missed.">    else if (sb.length() == 0 &amp;&amp; str.length() &gt; 3) {</span>
+<span class="nc" id="L1078">      min = hr % 100;</span>
+<span class="nc" id="L1079">      hr = hr / 100;</span>
+		/* we could, but don't, support a run-together hhmmss format */
+    } else {
+<span class="fc" id="L1082">      min = 0;</span>
+    }
+	  /* Range-check the values; see notes in datatype/timestamp.h */
+<span class="pc bpc" id="L1085" title="2 of 4 branches missed.">    if (hr &lt; 0 || hr &gt; DateTimeConstants.MAX_TZDISP_HOUR) {</span>
+<span class="nc" id="L1086">      throw new IllegalArgumentException(&quot;BAD Format: TZDISP_OVERFLOW: &quot; + str);</span>
+    }
+<span class="pc bpc" id="L1088" title="2 of 4 branches missed.">    if (min &lt; 0 || min &gt;= DateTimeConstants.MINS_PER_HOUR) {</span>
+<span class="nc" id="L1089">      throw new IllegalArgumentException(&quot;BAD Format: TZDISP_OVERFLOW: &quot; + str);</span>
+    }
+<span class="pc bpc" id="L1091" title="2 of 4 branches missed.">    if (sec &lt; 0 || sec &gt;= DateTimeConstants.SECS_PER_MINUTE) {</span>
+<span class="nc" id="L1092">      throw new IllegalArgumentException(&quot;BAD Format: TZDISP_OVERFLOW: &quot; + str);</span>
+    }
+
+<span class="fc" id="L1095">    int tzValue = (hr * DateTimeConstants.MINS_PER_HOUR + min) * DateTimeConstants.SECS_PER_MINUTE + sec;</span>
+<span class="pc bpc" id="L1096" title="1 of 2 branches missed.">    if (str.charAt(strIndex) == '-') {</span>
+<span class="nc" id="L1097">      tzValue = -tzValue;</span>
+    }
+<span class="fc" id="L1099">    tz.set(tzValue);</span>
+<span class="fc" id="L1100">  }</span>
+
+  /**
+   * Interpret plain numeric field as a date value in context.
+   * @param flen
+   * @param str
+   * @param haveTextMonth
+   * @param fmask
+   * @param tmaskValue
+   * @param tm
+   * @param fsec
+   * @param is2digits
+   */
+  private static void decodeNumber(int flen, String str, boolean haveTextMonth, int fmask,
+               AtomicInteger tmaskValue, TimeMeta tm, AtomicLong fsec, AtomicBoolean is2digits) {
+    int	val;
+<span class="fc" id="L1116">    StringBuilder cp = new StringBuilder();</span>
+
+<span class="fc" id="L1118">    int tmask = 0;</span>
+<span class="fc" id="L1119">    tmaskValue.set(tmask);</span>
+
+<span class="fc" id="L1121">    val = strtoi(str, 0, cp);</span>
+<span class="pc bpc" id="L1122" title="1 of 2 branches missed.">    if (cp.toString().equals(str)) {</span>
+<span class="nc" id="L1123">      throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+    }
+
+<span class="pc bpc" id="L1126" title="3 of 4 branches missed.">    if (cp.length() &gt; 0 &amp;&amp; cp.charAt(0) == '.') {</span>
+		/*
+		 * More than two digits before decimal point? Then could be a date or
+		 * a run-together time: 2001.360 20011225 040506.789
+		 */
+<span class="nc bnc" id="L1131" title="All 2 branches missed.">      if (cp.length() - str.length() &gt; 2) {</span>
+<span class="nc" id="L1132">        decodeNumberField(flen, str,</span>
+            (fmask | DateTimeConstants.DTK_DATE_M),
+            tmaskValue, tm,
+            fsec, is2digits);
+<span class="nc" id="L1136">        return;</span>
+      }
+<span class="nc" id="L1138">      parseFractionalSecond(cp, fsec);</span>
+    }
+
+  	// Special case for day of year
+<span class="pc bpc" id="L1142" title="7 of 8 branches missed.">    if (flen == 3 &amp;&amp; (fmask &amp; DateTimeConstants.DTK_DATE_M) == DateTimeConstants.DTK_M(TokenField.YEAR) &amp;&amp;</span>
+        val &gt;= 1 &amp;&amp; val &lt;= 366) {
+<span class="nc" id="L1144">      tmaskValue.set((DateTimeConstants.DTK_M(TokenField.DOY) |</span>
+<span class="nc" id="L1145">          DateTimeConstants.DTK_M(TokenField.MONTH) |</span>
+<span class="nc" id="L1146">          DateTimeConstants.DTK_M(TokenField.DAY)));</span>
+<span class="nc" id="L1147">      tm.dayOfYear = val;</span>
+		  // tm_mon and tm_mday can't actually be set yet ...
+<span class="nc" id="L1149">      return;</span>
+    }
+
+	  /* Switch based on what we have so far */
+<span class="fc" id="L1153">    int checkValue = fmask &amp; DateTimeConstants.DTK_DATE_M;</span>
+<span class="fc bfc" id="L1154" title="All 2 branches covered.">    if (checkValue == 0) {</span>
+			/*
+			 * Nothing so far; make a decision about what we think the input
+			 * is.	There used to be lots of heuristics here, but the
+			 * consensus now is to be paranoid.  It *must* be either
+			 * YYYY-MM-DD (with a more-than-two-digit year field), or the
+			 * field order defined by DateOrder.
+			 */
+<span class="pc bpc" id="L1162" title="3 of 4 branches missed.">      if (flen &gt;= 3 || TajoConf.getDateOrder() == DateTimeConstants.DATEORDER_YMD) {</span>
+<span class="fc" id="L1163">        tmaskValue.set(DateTimeConstants.DTK_M(TokenField.YEAR));</span>
+<span class="fc" id="L1164">        tm.years = val;</span>
+<span class="nc bnc" id="L1165" title="All 2 branches missed.">      } else if (TajoConf.getDateOrder() == DateTimeConstants.DATEORDER_DMY) {</span>
+<span class="nc" id="L1166">        tmaskValue.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+<span class="nc" id="L1167">        tm.dayOfMonth = val;</span>
+      } else {
+<span class="nc" id="L1169">        tmaskValue.set(DateTimeConstants.DTK_M(TokenField.MONTH));</span>
+<span class="nc" id="L1170">        tm.monthOfYear = val;</span>
+      }
+<span class="fc bfc" id="L1172" title="All 2 branches covered.">    } else if (checkValue == (DateTimeConstants.DTK_M(TokenField.YEAR))) {</span>
+			/* Must be at second field of YY-MM-DD */
+<span class="fc" id="L1174">      tmaskValue.set(DateTimeConstants.DTK_M(TokenField.MONTH));</span>
+<span class="fc" id="L1175">      tm.monthOfYear = val;</span>
+<span class="pc bpc" id="L1176" title="1 of 2 branches missed.">    } else if (checkValue == (DateTimeConstants.DTK_M(TokenField.MONTH))) {</span>
+<span class="nc bnc" id="L1177" title="All 2 branches missed.">      if (haveTextMonth) {</span>
+				/*
+				 * We are at the first numeric field of a date that included a
+				 * textual month name.	We want to support the variants
+				 * MON-DD-YYYY, DD-MON-YYYY, and YYYY-MON-DD as unambiguous
+				 * inputs.	We will also accept MON-DD-YY or DD-MON-YY in
+				 * either DMY or MDY modes, as well as YY-MON-DD in YMD mode.
+				 */
+<span class="nc bnc" id="L1185" title="All 4 branches missed.">        if (flen &gt;= 3 || TajoConf.getDateOrder() == DateTimeConstants.DATEORDER_YMD) {</span>
+<span class="nc" id="L1186">          tmaskValue.set(DateTimeConstants.DTK_M(TokenField.YEAR));</span>
+<span class="nc" id="L1187">          tm.years = val;</span>
+        } else {
+<span class="nc" id="L1189">          tmaskValue.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+<span class="nc" id="L1190">          tm.dayOfMonth = val;</span>
+        }
+      } else {
+				/* Must be at second field of MM-DD-YY */
+<span class="nc" id="L1194">        tmaskValue.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+<span class="nc" id="L1195">        tm.dayOfMonth = val;</span>
+      }
+<span class="pc bpc" id="L1197" title="1 of 2 branches missed.">    } else if (checkValue == (DateTimeConstants.DTK_M(TokenField.YEAR) | DateTimeConstants.DTK_M(TokenField.MONTH))) {</span>
+<span class="pc bpc" id="L1198" title="1 of 2 branches missed.">      if (haveTextMonth) {</span>
+				/* Need to accept DD-MON-YYYY even in YMD mode */
+<span class="nc bnc" id="L1200" title="All 4 branches missed.">        if (flen &gt;= 3 &amp;&amp; is2digits.get()) {</span>
+					/* Guess that first numeric field is day was wrong */
+<span class="nc" id="L1202">          tmaskValue.set(DateTimeConstants.DTK_M(TokenField.DAY));		/* YEAR is already set */</span>
+<span class="nc" id="L1203">          tm.dayOfMonth = tm.years;</span>
+<span class="nc" id="L1204">          tm.years = val;</span>
+<span class="nc" id="L1205">          is2digits.set(false);</span>
+        } else {
+<span class="nc" id="L1207">          tmaskValue.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+<span class="nc" id="L1208">          tm.dayOfMonth = val;</span>
+        }
+      } else {
+				/* Must be at third field of YY-MM-DD */
+<span class="fc" id="L1212">        tmaskValue.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+<span class="fc" id="L1213">        tm.dayOfMonth = val;</span>
+      }
+<span class="nc bnc" id="L1215" title="All 2 branches missed.">    } else if (checkValue == DateTimeConstants.DTK_M(TokenField.DAY)) {</span>
+			/* Must be at second field of DD-MM-YY */
+<span class="nc" id="L1217">      tmaskValue.set(DateTimeConstants.DTK_M(TokenField.MONTH));</span>
+<span class="nc" id="L1218">      tm.monthOfYear = val;</span>
+<span class="nc bnc" id="L1219" title="All 2 branches missed.">    } else if (checkValue == (DateTimeConstants.DTK_M(TokenField.MONTH) | DateTimeConstants.DTK_M(TokenField.DAY))) {</span>
+			/* Must be at third field of DD-MM-YY or MM-DD-YY */
+<span class="nc" id="L1221">      tmaskValue.set(DateTimeConstants.DTK_M(TokenField.YEAR));</span>
+<span class="nc" id="L1222">      tm.years = val;</span>
+<span class="nc bnc" id="L1223" title="All 2 branches missed.">    } else if (checkValue == (DateTimeConstants.DTK_M(TokenField.YEAR) | DateTimeConstants.DTK_M(TokenField.MONTH) | DateTimeConstants.DTK_M(TokenField.DAY))) {</span>
+			/* we have all the date, so it must be a time field */
+<span class="nc" id="L1225">      decodeNumberField(flen, str, fmask,</span>
+          tmaskValue, tm,
+          fsec, is2digits);
+<span class="nc" id="L1228">      return;</span>
+
+    } else {
+<span class="nc" id="L1231">      throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+    }
+
+	/*
+	 * When processing a year field, mark it for adjustment if it's only one
+	 * or two digits.
+	 */
+<span class="fc bfc" id="L1238" title="All 2 branches covered.">    if (tmaskValue.get() == DateTimeConstants.DTK_M(TokenField.YEAR)) {</span>
+<span class="pc bpc" id="L1239" title="1 of 2 branches missed.">      is2digits.set(flen &lt;= 2);</span>
+    }
+<span class="fc" id="L1241">  }</span>
+
+  /**
+   * Interpret numeric string as a concatenated date or time field.
+   *
+   * Use the context of previously decoded fields to help with
+   * the interpretation.
+   * @param len
+   * @param str
+   * @param fmask
+   * @param tmaskValue
+   * @param tm
+   * @param fsec
+   * @param is2digits
+   * @return
+   */
+  static TokenField decodeNumberField(int len, String str, int fmask,
+                    AtomicInteger tmaskValue, TimeMeta tm, AtomicLong fsec, AtomicBoolean is2digits) {
+    /*
+     * Have a decimal point? Then this is a date or something with a seconds
+     * field...
+     */
+<span class="nc" id="L1263">    int index = str.indexOf('.');</span>
+
+<span class="nc bnc" id="L1265" title="All 2 branches missed.">    if (index &gt;= 0) {</span>
+<span class="nc" id="L1266">      String cp = str.substring(index + 1);</span>
+		/*
+		 * Can we use ParseFractionalSecond here?  Not clear whether trailing
+		 * junk should be rejected ...
+		 */
+<span class="nc" id="L1271">      double frac = strtod(cp, 0, null);</span>
+<span class="nc" id="L1272">      fsec.set(Math.round(frac * 1000000));</span>
+		  /* Now truncate off the fraction for further processing */
+<span class="nc" id="L1274">      len = str.length();</span>
+<span class="nc" id="L1275">    }</span>
+	  /* No decimal point and no complete date yet? */
+<span class="nc bnc" id="L1277" title="All 2 branches missed.">    else if ((fmask &amp; DateTimeConstants.DTK_DATE_M) != DateTimeConstants.DTK_DATE_M) {</span>
+		  /* yyyymmdd? */
+<span class="nc bnc" id="L1279" title="All 2 branches missed.">      if (len == 8) {</span>
+<span class="nc" id="L1280">        tmaskValue.set(DateTimeConstants.DTK_DATE_M);</span>
+
+<span class="nc" id="L1282">        tm.dayOfMonth = Integer.parseInt(str.substring(6));</span>
+<span class="nc" id="L1283">        tm.monthOfYear = Integer.parseInt(str.substring(4, 6));</span>
+<span class="nc" id="L1284">        tm.years = Integer.parseInt(str.substring(0, 4));</span>
+
+<span class="nc" id="L1286">        return TokenField.DTK_DATE;</span>
+      }
+		  /* yymmdd? */
+<span class="nc bnc" id="L1289" title="All 2 branches missed.">      else if (len == 6) {</span>
+<span class="nc" id="L1290">        tmaskValue.set(DateTimeConstants.DTK_DATE_M);</span>
+<span class="nc" id="L1291">        tm.dayOfMonth = Integer.parseInt(str.substring(4));</span>
+<span class="nc" id="L1292">        tm.monthOfYear = Integer.parseInt(str.substring(2, 4));</span>
+<span class="nc" id="L1293">        tm.years = Integer.parseInt(str.substring(0, 2));</span>
+<span class="nc" id="L1294">        is2digits.set(true);</span>
+
+<span class="nc" id="L1296">        return TokenField.DTK_DATE;</span>
+      }
+    }
+
+	  /* not all time fields are specified? */
+<span class="nc bnc" id="L1301" title="All 2 branches missed.">    if ((fmask &amp; DateTimeConstants.DTK_TIME_M) != DateTimeConstants.DTK_TIME_M) {</span>
+		  /* hhmmss */
+<span class="nc bnc" id="L1303" title="All 2 branches missed.">      if (len == 6) {</span>
+<span class="nc" id="L1304">        tmaskValue.set(DateTimeConstants.DTK_TIME_M);</span>
+<span class="nc" id="L1305">        tm.secs = Integer.parseInt(str.substring(4));</span>
+<span class="nc" id="L1306">        tm.minutes = Integer.parseInt(str.substring(2, 4));</span>
+<span class="nc" id="L1307">        tm.hours = Integer.parseInt(str.substring(0, 2));</span>
+
+<span class="nc" id="L1309">        return TokenField.DTK_TIME;</span>
+      }
+		  /* hhmm? */
+<span class="nc bnc" id="L1312" title="All 2 branches missed.">      else if (len == 4) {</span>
+<span class="nc" id="L1313">        tmaskValue.set(DateTimeConstants.DTK_TIME_M);</span>
+<span class="nc" id="L1314">        tm.secs = 0;</span>
+<span class="nc" id="L1315">        tm.minutes = Integer.parseInt(str.substring(2, 4));</span>
+<span class="nc" id="L1316">        tm.hours = Integer.parseInt(str.substring(0, 2));</span>
+
+<span class="nc" id="L1318">        return TokenField.DTK_TIME;</span>
+      }
+    }
+
+<span class="nc" id="L1322">    throw new IllegalArgumentException(&quot;BAD Format: &quot; + str);</span>
+  }
+
+  private static TimeMeta decodeDateTime(String[] fields, TokenField[] fieldTypes, int nf) {
+<span class="fc" id="L1326">    int	fmask = 0;</span>
+<span class="fc" id="L1327">    AtomicInteger tmask = new AtomicInteger(0);</span>
+    int type;
+
+    /* &quot;prefix type&quot; for ISO y2001m02d04 format */
+<span class="fc" id="L1331">    TokenField ptype = null;</span>
+
+<span class="fc" id="L1333">    boolean		haveTextMonth = false;</span>
+<span class="fc" id="L1334">    boolean		isjulian = false;</span>
+<span class="fc" id="L1335">    AtomicBoolean is2digits = new AtomicBoolean(false);</span>
+<span class="fc" id="L1336">    boolean		bc = false;</span>
+
+<span class="fc" id="L1338">    int tzp = Integer.MAX_VALUE;</span>
+<span class="fc" id="L1339">    String namedTimeZone = null;</span>
+
+<span class="fc" id="L1341">    StringBuilder sb = new StringBuilder();</span>
+    // We'll insist on at least all of the date fields, but initialize the
+    // remaining fields in case they are not set later...
+<span class="fc" id="L1344">    TokenField dtype = TokenField.DTK_DATE;</span>
+<span class="fc" id="L1345">    TokenField mer = null;</span>
+
+<span class="fc" id="L1347">    TimeMeta tm = new TimeMeta();</span>
+<span class="fc" id="L1348">    TimeMeta cur_tm = new TimeMeta();</span>
+
+<span class="fc" id="L1350">    AtomicLong fsec = new AtomicLong();</span>
+<span class="fc" id="L1351">    AtomicInteger tz = new AtomicInteger(Integer.MAX_VALUE);</span>
+
+    // don't know daylight savings time status apriori */
+<span class="fc" id="L1354">    tm.isDST = false;</span>
+
+<span class="fc bfc" id="L1356" title="All 2 branches covered.">    for (int i = 0; i &lt; nf; i++) {</span>
+<span class="pc bpc" id="L1357" title="1 of 2 branches missed.">      if (fieldTypes[i] == null) {</span>
+<span class="nc" id="L1358">        continue;</span>
+      }
+<span class="pc bpc" id="L1360" title="3 of 6 branches missed.">      switch (fieldTypes[i]) {</span>
+        case DTK_DATE:
+          /***
+           * Integral julian day with attached time zone?
+           * All other forms with JD will be separated into
+           * distinct fields, so we handle just this case here.
+           ***/
+<span class="pc bpc" id="L1367" title="1 of 2 branches missed.">          if (ptype == TokenField.DTK_JULIAN) {</span>
+            int			val;
+
+<span class="nc bnc" id="L1370" title="All 2 branches missed.">            if (tzp == Integer.MAX_VALUE) {</span>
+<span class="nc" id="L1371">              throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+            }
+
+<span class="nc" id="L1374">            val = strtoi(fields[i], 0, sb);</span>
+
+<span class="nc" id="L1376">            date2j(val, tm);</span>
+<span class="nc" id="L1377">            isjulian = true;</span>
+
+					  /* Get the time zone from the end of the string */
+<span class="nc" id="L1380">            decodeTimezone(sb.toString(), tz);</span>
+
+<span class="nc" id="L1382">            tmask.set(DateTimeConstants.DTK_DATE_M | DateTimeConstants.DTK_TIME_M | DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1383">            ptype = null;</span>
+<span class="nc" id="L1384">            break;</span>
+          }
+          /***
+           * Already have a date? Then this might be a time zone name
+           * with embedded punctuation (e.g. &quot;America/New_York&quot;) or a
+           * run-together time with trailing time zone (e.g. hhmmss-zz).
+           * - thomas 2001-12-25
+           *
+           * We consider it a time zone if we already have month &amp; day.
+           * This is to allow the form &quot;mmm dd hhmmss tz year&quot;, which
+           * we've historically accepted.
+           ***/
+<span class="pc bpc" id="L1396" title="1 of 2 branches missed.">          else if (ptype != null ||</span>
+<span class="fc" id="L1397">              ((fmask &amp; (DateTimeConstants.DTK_M(TokenField.MONTH) | DateTimeConstants.DTK_M(TokenField.DAY))) ==</span>
+<span class="pc bpc" id="L1398" title="1 of 2 branches missed.">                  (DateTimeConstants.DTK_M(TokenField.MONTH) | DateTimeConstants.DTK_M(TokenField.DAY))))</span>
+          {
+					/* No time zone accepted? Then quit... */
+<span class="nc bnc" id="L1401" title="All 2 branches missed.">            if (tzp == Integer.MAX_VALUE) {</span>
+<span class="nc" id="L1402">              throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+            }
+
+<span class="nc bnc" id="L1405" title="All 4 branches missed.">            if (Character.isDigit(fields[i].charAt(0)) || ptype != null) {</span>
+<span class="nc bnc" id="L1406" title="All 2 branches missed.">              if (ptype != null) {</span>
+							  /* Sanity check; should not fail this test */
+<span class="nc bnc" id="L1408" title="All 2 branches missed.">                if (ptype != TokenField.DTK_TIME) {</span>
+<span class="nc" id="L1409">                  throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+                }
+<span class="nc" id="L1411">                ptype = null;</span>
+              }
+
+						/*
+						 * Starts with a digit but we already have a time
+						 * field? Then we are in trouble with a date and time
+						 * already...
+						 */
+<span class="nc bnc" id="L1419" title="All 2 branches missed.">              if ((fmask &amp; DateTimeConstants.DTK_TIME_M) == DateTimeConstants.DTK_TIME_M) {</span>
+<span class="nc" id="L1420">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+
+<span class="nc" id="L1423">              int index = fields[i].indexOf(&quot;-&quot;);</span>
+<span class="nc bnc" id="L1424" title="All 2 branches missed.">              if (index &lt; 0) {</span>
+<span class="nc" id="L1425">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+
+						  /* Get the time zone from the end of the string */
+<span class="nc" id="L1429">              decodeTimezone(fields[i].substring(index + 1), tz);</span>
+
+              /*
+               * Then read the rest of the field as a concatenated
+               * time
+               */
+<span class="nc" id="L1435">              decodeNumberField(fields[i].length(), fields[i],</span>
+                  fmask,
+                  tmask, tm,
+                  fsec, is2digits);
+
+              /*
+               * modify tmask after returning from
+               * DecodeNumberField()
+               */
+<span class="nc" id="L1444">              tmask.set(tmask.get() | DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1445">            }</span>
+            else {
+<span class="nc" id="L1447">              namedTimeZone = pg_tzset(fields[i]);</span>
+<span class="nc bnc" id="L1448" title="All 2 branches missed.">              if (namedTimeZone == null) {</span>
+							/*
+							 * We should return an error code instead of
+							 * ereport'ing directly, but then there is no way
+							 * to report the bad time zone name.
+							 */
+<span class="nc" id="L1454">                throw new IllegalArgumentException(&quot;BAD Format: time zone \&quot;%s\&quot; not recognized: &quot; + fields[i]);</span>
+              }
+						  /* we'll apply the zone setting below */
+<span class="nc" id="L1457">              tmask.set(DateTimeConstants.DTK_M(TokenField.TZ));</span>
+            }
+          } else {
+<span class="fc" id="L1460">            decodeDate(fields[i], fmask, tmask, is2digits, tm);</span>
+          }
+<span class="fc" id="L1462">          break;</span>
+
+        case DTK_TIME:
+<span class="fc" id="L1465">          decodeTime(fields[i], (fmask | DateTimeConstants.DTK_DATE_M),</span>
+              DateTimeConstants.INTERVAL_FULL_RANGE,
+              tmask, tm, fsec);
+<span class="fc" id="L1468">          break;</span>
+
+        case DTK_TZ: {
+<span class="fc" id="L1471">          decodeTimezone(fields[i], tz);</span>
+<span class="fc" id="L1472">          tmask.set(DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="fc" id="L1473">          break;</span>
+        }
+
+        case DTK_NUMBER:
+
+          /*
+           * Was this an &quot;ISO date&quot; with embedded field labels? An
+           * example is &quot;y2001m02d04&quot; - thomas 2001-02-04
+           */
+<span class="nc bnc" id="L1482" title="All 2 branches missed.">          if (ptype != null) {</span>
+<span class="nc" id="L1483">            int val = strtoi(fields[i], 0, sb);</span>
+
+            /*
+             * only a few kinds are allowed to have an embedded
+             * decimal
+             */
+<span class="nc bnc" id="L1489" title="All 2 branches missed.">            if (sb.length() == 0) {</span>
+<span class="nc" id="L1490">              continue;</span>
+            }
+<span class="nc bnc" id="L1492" title="All 2 branches missed.">            if (sb.charAt(0) == '.') {</span>
+<span class="nc bnc" id="L1493" title="All 2 branches missed.">              switch (ptype) {</span>
+                case DTK_JULIAN:
+                case DTK_TIME:
+                case DTK_SECOND:
+<span class="nc" id="L1497">                  break;</span>
+                default:
+<span class="nc" id="L1499">                  throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+            } else {
+<span class="nc" id="L1502">              throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+            }
+<span class="nc bnc" id="L1504" title="All 10 branches missed.">            switch (ptype) {</span>
+              case DTK_YEAR:
+<span class="nc" id="L1506">                tm.years = val;</span>
+<span class="nc" id="L1507">                tmask.set(DateTimeConstants.DTK_M(TokenField.YEAR));</span>
+<span class="nc" id="L1508">                break;</span>
+
+              case DTK_MONTH:
+
+                /*
+                 * already have a month and hour? then assume
+                 * minutes
+                 */
+<span class="nc bnc" id="L1516" title="All 2 branches missed.">                if ((fmask &amp; DateTimeConstants.DTK_M(TokenField.MONTH)) != 0 &amp;&amp;</span>
+<span class="nc bnc" id="L1517" title="All 2 branches missed.">                    (fmask &amp; DateTimeConstants.DTK_M(TokenField.HOUR)) != 0) {</span>
+<span class="nc" id="L1518">                  tm.minutes = val;</span>
+<span class="nc" id="L1519">                  tmask.set(DateTimeConstants.DTK_M(TokenField.MINUTE));</span>
+                }
+                else {
+<span class="nc" id="L1522">                  tm.monthOfYear = val;</span>
+<span class="nc" id="L1523">                  tmask.set(DateTimeConstants.DTK_M(TokenField.MONTH));</span>
+                }
+<span class="nc" id="L1525">                break;</span>
+
+              case DTK_DAY:
+<span class="nc" id="L1528">                tm.dayOfMonth = val;</span>
+<span class="nc" id="L1529">                tmask.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+<span class="nc" id="L1530">                break;</span>
+
+              case DTK_HOUR:
+<span class="nc" id="L1533">                tm.hours = val;</span>
+<span class="nc" id="L1534">                tmask.set(DateTimeConstants.DTK_M(TokenField.HOUR));</span>
+<span class="nc" id="L1535">                break;</span>
+
+              case DTK_MINUTE:
+<span class="nc" id="L1538">                tm.minutes = val;</span>
+<span class="nc" id="L1539">                tmask.set(DateTimeConstants.DTK_M(TokenField.MINUTE));</span>
+<span class="nc" id="L1540">                break;</span>
+
+              case DTK_SECOND:
+<span class="nc" id="L1543">                tm.secs = val;</span>
+<span class="nc" id="L1544">                tmask.set(DateTimeConstants.DTK_M(TokenField.SECOND));</span>
+<span class="nc bnc" id="L1545" title="All 2 branches missed.">                if (sb.charAt(0) == '.') {</span>
+<span class="nc" id="L1546">                  parseFractionalSecond(sb, fsec);</span>
+<span class="nc" id="L1547">                  tmask.set(DateTimeConstants.DTK_ALL_SECS_M);</span>
+                }
+                break;
+              case DTK_TZ:
+<span class="nc" id="L1551">                tmask.set(DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1552">                decodeTimezone(fields[i], tz);</span>
+<span class="nc" id="L1553">                break;</span>
+
+              case DTK_JULIAN:
+							  /* previous field was a label for &quot;julian date&quot; */
+<span class="nc bnc" id="L1557" title="All 2 branches missed.">                if (val &lt; 0) {</span>
+<span class="nc" id="L1558">                  throw new IllegalArgumentException(&quot;BAD Format: FIELD_OVERFLOW: &quot; + fields[i]);</span>
+                }
+<span class="nc" id="L1560">                tmask.set(DateTimeConstants.DTK_DATE_M);</span>
+<span class="nc" id="L1561">                date2j(val, tm);</span>
+<span class="nc" id="L1562">                isjulian = true;</span>
+
+							  /* fractional Julian Day? */
+<span class="nc bnc" id="L1565" title="All 2 branches missed.">                if (sb.charAt(0) == '.') {</span>
+<span class="nc" id="L1566">                  double time = strtod(sb.toString(), 0, sb);</span>
+
+<span class="nc" id="L1568">                  time *= DateTimeConstants.USECS_PER_DAY;</span>
+<span class="nc" id="L1569">                  date2j((long)time, tm);</span>
+<span class="nc" id="L1570">                  tmask.set(tmask.get() | DateTimeConstants.DTK_TIME_M);</span>
+<span class="nc" id="L1571">                }</span>
+                break;
+
+              case DTK_TIME:
+							/* previous field was &quot;t&quot; for ISO time */
+<span class="nc" id="L1576">                decodeNumberField(fields[i].length(), fields[i],</span>
+                    (fmask | DateTimeConstants.DTK_DATE_M),
+                    tmask, tm,
+                    fsec, is2digits);
+<span class="nc bnc" id="L1580" title="All 2 branches missed.">                if (tmask.get() != DateTimeConstants.DTK_TIME_M) {</span>
+<span class="nc" id="L1581">                  throw new IllegalArgumentException(&quot;BAD Format: FIELD_OVERFLOW: &quot; + fields[i]);</span>
+                }
+                break;
+
+              default:
+<span class="nc" id="L1586">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+            }
+
+<span class="nc" id="L1589">            ptype = null;</span>
+<span class="nc" id="L1590">            dtype = TokenField.DTK_DATE;</span>
+<span class="nc" id="L1591">          } else {</span>
+<span class="nc" id="L1592">            int flen = fields[i].length();</span>
+<span class="nc" id="L1593">            int index = fields[i].indexOf(&quot;.&quot;);</span>
+<span class="nc" id="L1594">            String cp = null;</span>
+<span class="nc bnc" id="L1595" title="All 2 branches missed.">            if (index &gt; 0) {</span>
+<span class="nc" id="L1596">              cp = fields[i].substring(index + 1);</span>
+            }
+
+					  /* Embedded decimal and no date yet? */
+<span class="nc bnc" id="L1600" title="All 4 branches missed.">            if (cp != null &amp;&amp; ((fmask &amp; DateTimeConstants.DTK_DATE_M) == 0 )) {</span>
+<span class="nc" id="L1601">              decodeDate(fields[i], fmask,</span>
+                  tmask, is2digits, tm);
+            }
+					  /* embedded decimal and several digits before? */
+<span class="nc bnc" id="L1605" title="All 4 branches missed.">            else if (cp != null &amp;&amp; flen - cp.length() &gt; 2) {</span>
+						/*
+						 * Interpret as a concatenated date or time Set the
+						 * type field to allow decoding other fields later.
+						 * Example: 20011223 or 040506
+						 */
+<span class="nc" id="L1611">              decodeNumberField(flen, fields[i], fmask,</span>
+                  tmask, tm,
+                  fsec, is2digits);
+            }
+<span class="nc bnc" id="L1615" title="All 2 branches missed.">            else if (flen &gt; 4) {</span>
+<span class="nc" id="L1616">              decodeNumberField(flen, fields[i], fmask,</span>
+                  tmask, tm,
+                  fsec, is2digits);
+            }
+					  /* otherwise it is a single date/time field... */
+            else {
+<span class="nc" id="L1622">              decodeNumber(flen, fields[i],</span>
+                  haveTextMonth, fmask,
+                  tmask, tm,
+                  fsec, is2digits);
+            }
+          }
+<span class="nc" id="L1628">          break;</span>
+        case DTK_STRING:
+        case DTK_SPECIAL:
+<span class="nc" id="L1631">          DateToken dateToken =  DateTimeConstants.dateTokenMap.get(fields[i].toLowerCase());</span>
+<span class="nc bnc" id="L1632" title="All 2 branches missed.">          if (dateToken == null) {</span>
+<span class="nc" id="L1633">            throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+          }
+<span class="nc" id="L1635">          tmask.set(DateTimeConstants.DTK_M(dateToken.getType()));</span>
+<span class="nc bnc" id="L1636" title="All 13 branches missed.">          switch (dateToken.getType()) {</span>
+            case RESERV:
+<span class="nc bnc" id="L1638" title="All 7 branches missed.">              switch(dateToken.getValueType()) {</span>
+                case DTK_CURRENT:
+<span class="nc" id="L1640">                  throw new IllegalArgumentException(&quot;BAD Format: date/time value \&quot;current\&quot; is no longer supported&quot; + fields[i]);</span>
+
+                case DTK_NOW:
+<span class="nc" id="L1643">                  tmask.set(DateTimeConstants.DTK_DATE_M | DateTimeConstants.DTK_TIME_M | DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1644">                  dtype = TokenField.DTK_DATE;</span>
+<span class="nc" id="L1645">                  date2j(javaTimeToJulianTime(System.currentTimeMillis()), tm);</span>
+<span class="nc" id="L1646">                  break;</span>
+
+                case DTK_YESTERDAY:
+<span class="nc" id="L1649">                  tmask.set(DateTimeConstants.DTK_DATE_M);</span>
+<span class="nc" id="L1650">                  dtype = TokenField.DTK_DATE;</span>
+<span class="nc" id="L1651">                  date2j(javaTimeToJulianTime(System.currentTimeMillis()), tm);</span>
+<span class="nc" id="L1652">                  tm.plusDays(-1);</span>
+<span class="nc" id="L1653">                  break;</span>
+
+                case DTK_TODAY:
+<span class="nc" id="L1656">                  tmask.set(DateTimeConstants.DTK_DATE_M);</span>
+<span class="nc" id="L1657">                  dtype = TokenField.DTK_DATE;</span>
+<span class="nc" id="L1658">                  date2j(javaTimeToJulianTime(System.currentTimeMillis()), cur_tm);</span>
+<span class="nc" id="L1659">                  tm.years = cur_tm.years;</span>
+<span class="nc" id="L1660">                  tm.monthOfYear = cur_tm.monthOfYear;</span>
+<span class="nc" id="L1661">                  tm.dayOfMonth = cur_tm.dayOfMonth;</span>
+<span class="nc" id="L1662">                  break;</span>
+
+                case DTK_TOMORROW:
+<span class="nc" id="L1665">                  tmask.set(DateTimeConstants.DTK_DATE_M);</span>
+<span class="nc" id="L1666">                  dtype = TokenField.DTK_DATE;</span>
+<span class="nc" id="L1667">                  date2j(javaTimeToJulianTime(System.currentTimeMillis()), tm);</span>
+<span class="nc" id="L1668">                  tm.plusDays(1);</span>
+<span class="nc" id="L1669">                  break;</span>
+
+                case DTK_ZULU:
+<span class="nc" id="L1672">                  tmask.set(DateTimeConstants.DTK_TIME_M | DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1673">                  dtype = TokenField.DTK_DATE;</span>
+<span class="nc" id="L1674">                  tm.hours = 0;</span>
+<span class="nc" id="L1675">                  tm.minutes = 0;</span>
+<span class="nc" id="L1676">                  tm.secs = 0;</span>
+<span class="nc" id="L1677">                  break;</span>
+
+                default:
+<span class="nc" id="L1680">                  dtype = dateToken.getValueType();</span>
+              }
+<span class="nc" id="L1682">              break;</span>
+
+            case MONTH:
+              /*
+               * already have a (numeric) month? then see if we can
+               * substitute...
+               */
+<span class="nc bnc" id="L1689" title="All 4 branches missed.">              if ((fmask &amp; DateTimeConstants.DTK_M(TokenField.MONTH)) != 0 &amp;&amp; !haveTextMonth &amp;&amp;</span>
+<span class="nc bnc" id="L1690" title="All 6 branches missed.">                  (fmask &amp; DateTimeConstants.DTK_M(TokenField.DAY)) == 0 &amp;&amp;</span>
+                  tm.monthOfYear &gt;= 1 &amp;&amp; tm.monthOfYear &lt;= 31) {
+<span class="nc" id="L1692">                tm.dayOfMonth = tm.monthOfYear;</span>
+<span class="nc" id="L1693">                tmask.set(DateTimeConstants.DTK_M(TokenField.DAY));</span>
+              }
+<span class="nc" id="L1695">              haveTextMonth = true;</span>
+<span class="nc" id="L1696">              tm.monthOfYear = dateToken.getValue();</span>
+<span class="nc" id="L1697">              break;</span>
+
+            case DTZMOD:
+
+						/*
+						 * daylight savings time modifier (solves &quot;MET DST&quot;
+						 * syntax)
+						 */
+<span class="nc" id="L1705">              tmask.set(tmask.get() | DateTimeConstants.DTK_M(TokenField.DTZ));</span>
+<span class="nc" id="L1706">              tm.isDST = true;</span>
+<span class="nc bnc" id="L1707" title="All 2 branches missed.">              if (tzp == Integer.MAX_VALUE) {</span>
+<span class="nc" id="L1708">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+<span class="nc" id="L1710">              tzp += dateToken.getValue() * DateTimeConstants.MINS_PER_HOUR;</span>
+<span class="nc" id="L1711">              break;</span>
+
+            case DTZ:
+
+						/*
+						 * set mask for TZ here _or_ check for DTZ later when
+						 * getting default timezone
+						 */
+<span class="nc" id="L1719">              tmask.set(tmask.get() | DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1720">              tm.isDST = true;</span>
+<span class="nc bnc" id="L1721" title="All 2 branches missed.">              if (tzp == Integer.MAX_VALUE) {</span>
+<span class="nc" id="L1722">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+<span class="nc" id="L1724">              tzp = dateToken.getValue() * DateTimeConstants.MINS_PER_HOUR;</span>
+<span class="nc" id="L1725">              break;</span>
+
+            case TZ:
+<span class="nc" id="L1728">              tm.isDST = false;</span>
+<span class="nc bnc" id="L1729" title="All 2 branches missed.">              if (tzp == Integer.MAX_VALUE) {</span>
+<span class="nc" id="L1730">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+<span class="nc" id="L1732">              tzp = dateToken.getValue() * DateTimeConstants.MINS_PER_HOUR;</span>
+<span class="nc" id="L1733">              break;</span>
+
+            case IGNORE_DTF:
+<span class="nc" id="L1736">              break;</span>
+
+            case AMPM:
+<span class="nc" id="L1739">              mer = dateToken.getValueType();</span>
+<span class="nc" id="L1740">              break;</span>
+
+            case ADBC:
+<span class="nc bnc" id="L1743" title="All 2 branches missed.">              bc = (dateToken.getValueType() == TokenField.BC);</span>
+<span class="nc" id="L1744">              break;</span>
+
+            case DOW:
+<span class="nc" id="L1747">              tm.dayOfWeek = dateToken.getValue();</span>
+<span class="nc" id="L1748">              break;</span>
+
+            case UNITS:
+<span class="nc" id="L1751">              tmask.set(0);</span>
+<span class="nc" id="L1752">              ptype = dateToken.getValueType();</span>
+<span class="nc" id="L1753">              break;</span>
+
+            case ISOTIME:
+
+						/*
+						 * This is a filler field &quot;t&quot; indicating that the next
+						 * field is time. Try to verify that this is sensible.
+						 */
+<span class="nc" id="L1761">              tmask.set(0);</span>
+
+						/* No preceding date? Then quit... */
+<span class="nc bnc" id="L1764" title="All 2 branches missed.">              if ((fmask &amp; DateTimeConstants.DTK_DATE_M) != DateTimeConstants.DTK_DATE_M) {</span>
+<span class="nc" id="L1765">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+
+              /***
+               * We will need one of the following fields:
+               *	DTK_NUMBER should be hhmmss.fff
+               *	DTK_TIME should be hh:mm:ss.fff
+               *	DTK_DATE should be hhmmss-zz
+               ***/
+<span class="nc bnc" id="L1774" title="All 8 branches missed.">              if (i &gt;= nf - 1 ||</span>
+                  (fieldTypes[i + 1] != TokenField.DTK_NUMBER &amp;&amp;
+                      fieldTypes[i + 1] != TokenField.DTK_TIME &amp;&amp;
+                      fieldTypes[i + 1] != TokenField.DTK_DATE)) {
+<span class="nc" id="L1778">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+
+<span class="nc" id="L1781">              ptype = dateToken.getValueType();</span>
+<span class="nc" id="L1782">              break;</span>
+
+            case UNKNOWN_FIELD:
+
+						/*
+						 * Before giving up and declaring error, check to see
+						 * if it is an all-alpha timezone name.
+						 */
+<span class="nc" id="L1790">              namedTimeZone = pg_tzset(fields[i]);</span>
+<span class="nc bnc" id="L1791" title="All 2 branches missed.">              if (namedTimeZone == null) {</span>
+<span class="nc" id="L1792">                throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+              }
+						/* we'll apply the zone setting below */
+<span class="nc" id="L1795">              tmask.set(DateTimeConstants.DTK_M(TokenField.TZ));</span>
+<span class="nc" id="L1796">              break;</span>
+
+            default:
+<span class="nc" id="L1799">              throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+          }
+          break;
+      }
+<span class="pc bpc" id="L1803" title="1 of 2 branches missed.">      if ((tmask.get() &amp; fmask) != 0) {</span>
+<span class="nc" id="L1804">        throw new IllegalArgumentException(&quot;BAD Format: &quot; + fields[i]);</span>
+      }
+<span class="fc" id="L1806">      fmask |= tmask.get();</span>
+    }   /* end loop over fields */
+
+<span class="fc" id="L1809">    tm.fsecs = fsec.intValue();</span>
+<span class="fc" id="L1810">    tm.timeZone = tz.get();</span>
+    /* do final checking/adjustment of Y/M/D fields */
+<span class="fc" id="L1812">    validateDate(fmask, isjulian, is2digits.get(), bc, tm);</span>
+
+	  /* handle AM/PM */
+<span class="pc bpc" id="L1815" title="5 of 6 branches missed.">    if (mer != null &amp;&amp; mer != TokenField.HR24 &amp;&amp; tm.hours &gt; DateTimeConstants.HOURS_PER_DAY / 2) {</span>
+<span class="nc" id="L1816">      throw new IllegalArgumentException(&quot;BAD Format: overflow hour: &quot; + tm.hours);</span>
+    }
+<span class="pc bpc" id="L1818" title="5 of 6 branches missed.">    if (mer != null &amp;&amp; mer == TokenField.AM &amp;&amp; tm.hours == DateTimeConstants.HOURS_PER_DAY / 2) {</span>
+<span class="nc" id="L1819">      tm.hours = 0;</span>
+<span class="pc bpc" id="L1820" title="5 of 6 branches missed.">    } else if (mer != null &amp;&amp; mer == TokenField.PM &amp;&amp; tm.hours != DateTimeConstants.HOURS_PER_DAY / 2) {</span>
+<span class="nc" id="L1821">      tm.hours += DateTimeConstants.HOURS_PER_DAY / 2;</span>
+    }
+	  /* do additional checking for full date specs... */
+<span class="pc bpc" id="L1824" title="1 of 2 branches missed.">    if (dtype == TokenField.DTK_DATE) {</span>
+<span class="fc bfc" id="L1825" title="All 2 branches covered.">      if ((fmask &amp; DateTimeConstants.DTK_DATE_M) != DateTimeConstants.DTK_DATE_M) {</span>
+<span class="pc bpc" id="L1826" title="1 of 2 branches missed.">        if ((fmask &amp; DateTimeConstants.DTK_TIME_M) == DateTimeConstants.DTK_TIME_M) {</span>
+<span class="fc" id="L1827">          return tm;</span>
+        }
+<span class="nc" id="L1829">        throw new IllegalArgumentException(&quot;BAD Format: &quot; + tm);</span>
+      }
+
+		/*
+		 * If we had a full timezone spec, compute the offset (we could not do
+		 * it before, because we need the date to resolve DST status).
+		 */
+<span class="pc bpc" id="L1836" title="1 of 2 branches missed.">      if (namedTimeZone != null) {</span>
+			/* daylight savings time modifier disallowed with full TZ */
+<span class="nc bnc" id="L1838" title="All 2 branches missed.">        if ( (fmask &amp; DateTimeConstants.DTK_M(TokenField.DTZMOD)) != 0 ) {</span>
+<span class="nc" id="L1839">          throw new IllegalArgumentException(&quot;BAD Format: &quot; + tm);</span>
+        }
+      }
+    }
+
+<span class="fc" id="L1844">    return tm;</span>
+  }
+
+  private static String pg_tzset(String str) {
+    //TODO implements logic
+<span class="nc" id="L1849">    return null;</span>
+  }
+
+  /**
+   * Check valid year/month/day values, handle BC and DOY cases
+   * Return 0 if okay, a DTERR code if not.
+   * @param fmask
+   * @param isjulian
+   * @param is2digits
+   * @param bc
+   * @param tm
+   * @return
+   */
+  private static int validateDate(int fmask, boolean isjulian, boolean is2digits, boolean bc, TimeMeta tm) {
+<span class="fc bfc" id="L1863" title="All 2 branches covered.">    if ( (fmask &amp; DateTimeConstants.DTK_M(TokenField.YEAR)) != 0 ) {</span>
+<span class="pc bpc" id="L1864" title="1 of 2 branches missed.">      if (isjulian) {</span>
+			/* tm_year is correct and should not be touched */
+<span class="pc bpc" id="L1866" title="1 of 2 branches missed.">      } else if (bc) {</span>
+			  /* there is no year zero in AD/BC notation */
+<span class="nc bnc" id="L1868" title="All 2 branches missed.">        if (tm.years &lt;= 0) {</span>
+<span class="nc" id="L1869">          throw new IllegalArgumentException(&quot;BAD Format: year overflow:&quot; + tm.years);</span>
+        }
+			  /* internally, we represent 1 BC as year zero, 2 BC as -1, etc */
+<span class="nc" id="L1872">        tm.years = -(tm.years - 1);</span>
+      }
+<span class="pc bpc" id="L1874" title="1 of 2 branches missed.">      else if (is2digits) {</span>
+			  /* process 1 or 2-digit input as 1970-2069 AD, allow '0' and '00' */
+<span class="nc bnc" id="L1876" title="All 2 branches missed.">        if (tm.years &lt; 0) { /* just paranoia */</span>
+<span class="nc" id="L1877">          throw new IllegalArgumentException(&quot;BAD Format: year overflow:&quot; + tm.years);</span>
+        }
+<span class="nc bnc" id="L1879" title="All 2 branches missed.">        if (tm.years &lt; 70) {</span>
+<span class="nc" id="L1880">          tm.years += 2000;</span>
+<span class="nc bnc" id="L1881" title="All 2 branches missed.">        } else if (tm.years &lt; 100) {</span>
+<span class="nc" id="L1882">          tm.years += 1900;</span>
+        }
+      }
+      else {
+			  /* there is no year zero in AD/BC notation */
+<span class="pc bpc" id="L1887" title="1 of 2 branches missed.">        if (tm.years &lt;= 0) {</span>
+<span class="nc" id="L1888">          throw new IllegalArgumentException(&quot;BAD Format: year overflow:&quot; + tm.years);</span>
+        }
+      }
+    }
+
+	  /* now that we have correct year, decode DOY */
+<span class="pc bpc" id="L1894" title="1 of 2 branches missed.">    if ( (fmask &amp; DateTimeConstants.DTK_M(TokenField.DOY)) != 0 ) {</span>
+<span class="nc" id="L1895">      j2date(date2j(tm.years, 1, 1) + tm.dayOfYear - 1, tm);</span>
+    }
+
+	  /* check for valid month */
+<span class="fc bfc" id="L1899" title="All 2 branches covered.">    if ( (fmask &amp; DateTimeConstants.DTK_M(TokenField.MONTH)) != 0 ) {</span>
+<span class="pc bpc" id="L1900" title="2 of 4 branches missed.">      if (tm.monthOfYear &lt; 1 || tm.monthOfYear &gt; DateTimeConstants.MONTHS_PER_YEAR) {</span>
+<span class="nc" id="L1901">        throw new IllegalArgumentException(&quot;BAD Format: month overflow:&quot; + tm.monthOfYear);</span>
+      }
+    }
+
+	  /* minimal check for valid day */
+<span class="fc bfc" id="L1906" title="All 2 branches covered.">    if ( (fmask &amp; DateTimeConstants.DTK_M(TokenField.DAY)) != 0 ) {</span>
+<span class="pc bpc" id="L1907" title="2 of 4 branches missed.">      if (tm.dayOfMonth &lt; 1 || tm.dayOfMonth &gt; 31) {</span>
+<span class="nc" id="L1908">        throw new IllegalArgumentException(&quot;BAD Format: day overflow:&quot; + tm.dayOfMonth);</span>
+      }
+    }
+
+<span class="fc bfc" id="L1912" title="All 2 branches covered.">    if ((fmask &amp; DateTimeConstants.DTK_DATE_M) == DateTimeConstants.DTK_DATE_M) {</span>
+		/*
+		 * Check for valid day of month, now that we know for sure the month
+		 * and year.  Note we don't use MD_FIELD_OVERFLOW here, since it seems
+		 * unlikely that &quot;Feb 29&quot; is a YMD-order error.
+		 */
+<span class="fc" id="L1918">      boolean leapYear = isLeapYear(tm.years);</span>
+<span class="pc bpc" id="L1919" title="1 of 4 branches missed.">      if (tm.dayOfMonth &gt; DateTimeConstants.DAY_OF_MONTH[leapYear ? 1: 0][tm.monthOfYear - 1])</span>
+<span class="nc" id="L1920">        throw new IllegalArgumentException(&quot;BAD Format: day overflow:&quot; + tm.dayOfMonth);</span>
+    }
+
+<span class="fc" id="L1923">    return 0;</span>
+  }
+
+  public static int strtoi(String str, int startIndex, StringBuilder sb) {
+<span class="fc" id="L1927">    sb.setLength(0);</span>
+<span class="fc" id="L1928">    char[] chars = str.toCharArray();</span>
+
+<span class="fc" id="L1930">    int index = startIndex;</span>
+<span class="fc bfc" id="L1931" title="All 2 branches covered.">    for (; index &lt; chars.length; index++) {</span>
+<span class="fc bfc" id="L1932" title="All 2 branches covered.">      if (!Character.isDigit(chars[index])) {</span>
+<span class="fc" id="L1933">        break;</span>
+      }
+    }
+
+<span class="pc bpc" id="L1937" title="1 of 2 branches missed.">    int val = index == startIndex ? 0 : Integer.parseInt(str.substring(startIndex, index));</span>
+<span class="fc" id="L1938">    sb.append(chars, index, chars.length - index);</span>
+
+<span class="fc" id="L1940">    return val;</span>
+  }
+
+  public static long strtol(String str, int startIndex, StringBuilder sb) {
+<span class="fc" id="L1944">    sb.setLength(0);</span>
+<span class="fc" id="L1945">    char[] chars = str.toCharArray();</span>
+
+<span class="fc" id="L1947">    int index = startIndex;</span>
+<span class="pc bpc" id="L1948" title="1 of 2 branches missed.">    for (; index &lt; chars.length; index++) {</span>
+<span class="pc bpc" id="L1949" title="1 of 2 branches missed.">      if (!Character.isDigit(chars[index])) {</span>
+<span class="fc" id="L1950">        break;</span>
+      }
+    }
+
+<span class="pc bpc" id="L1954" title="1 of 2 branches missed.">    long val = index == startIndex ? 0 : Long.parseLong(str.substring(startIndex, index));</span>
+<span class="fc" id="L1955">    sb.append(chars, index, chars.length - index);</span>
+
+<span class="fc" id="L1957">    return val;</span>
+  }
+
+  public static double strtod(String str, int strIndex, StringBuilder sb) {
+<span class="pc bpc" id="L1961" title="1 of 2 branches missed.">    if (sb != null) {</span>
+<span class="fc" id="L1962">      sb.setLength(0);</span>
+    }
+<span class="fc" id="L1964">    char[] chars = str.toCharArray();</span>
+
+<span class="fc" id="L1966">    int index = strIndex;</span>
+<span class="fc bfc" id="L1967" title="All 2 branches covered.">    for (; index &lt; chars.length; index++) {</span>
+<span class="pc bpc" id="L1968" title="1 of 2 branches missed.">      if (!Character.isDigit(chars[index])) {</span>
+<span class="nc" id="L1969">        break;</span>
+      }
+    }
+
+<span class="fc" id="L1973">    double val = Double.parseDouble(str.substring(0, index));</span>
+<span class="pc bpc" id="L1974" title="1 of 2 branches missed.">    if (sb != null) {</span>
+<span class="fc" id="L1975">      sb.append(chars, index, chars.length - index);</span>
+    }
+<span class="fc" id="L1977">    return val;</span>
+  }
+
+  /**
+   * Check whether it is a punctuation character or not.
+   * @param c The character to be checked
+   * @return True if it is a punctuation character. Otherwise, false.
+   */
+  public static boolean isPunctuation(char c) {
+<span class="nc bnc" id="L1986" title="All 16 branches missed.">    return ((c &gt;= '!' &amp;&amp; c &lt;= '/') ||</span>
+        (c &gt;= ':' &amp;&amp; c &lt;= '@') ||
+        (c &gt;= '[' &amp;&amp; c &lt;= '`') ||
+        (c &gt;= '{' &amp;&amp; c &lt;= '~'));
+  }
+
+  public static String toString(TimeMeta tm) {
+<span class="nc" id="L1993">    return encodeDateTime(tm, DateStyle.ISO_DATES);</span>
+  }
+
+  /**
+   * Encode date and time interpreted as local time.
+   *
+   * tm and fsec are the value to encode, print_tz determines whether to include
+   * a time zone (the difference between timestamp and timestamptz types), tz is
+   * the numeric time zone offset, tzn is the textual time zone, which if
+   * specified will be used instead of tz by some styles, style is the date
+   * style, str is where to write the output.
+   *
+   * Supported date styles:
+   *	Postgres - day mon hh:mm:ss yyyy tz
+   *	SQL - mm/dd/yyyy hh:mm:ss.ss tz
+   *	ISO - yyyy-mm-dd hh:mm:ss+/-tz
+   *	German - dd.mm.yyyy hh:mm:ss tz
+   *	XSD - yyyy-mm-ddThh:mm:ss.ss+/-tz
+   *
+   * This method is originated from EncodeDateTime of datetime.c of PostgreSQL.
+   * @param tm
+   * @param style
+   * @return
+   */
+  public static String encodeDateTime(TimeMeta tm, DateStyle style) {
+
+<span class="nc" id="L2019">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L2020" title="All 2 branches missed.">    switch (style) {</span>
+
+      case ISO_DATES:
+      case XSO_DATES:
+<span class="nc bnc" id="L2024" title="All 2 branches missed.">        if (style == DateTimeConstants.DateStyle.ISO_DATES) {</span>
+<span class="nc bnc" id="L2025" title="All 2 branches missed.">          sb.append(String.format(&quot;%04d-%02d-%02d %02d:%02d:&quot;,</span>
+<span class="nc" id="L2026">              (tm.years &gt; 0) ? tm.years : -(tm.years - 1),</span>
+<span class="nc" id="L2027">              tm.monthOfYear, tm.dayOfMonth, tm.hours, tm.minutes));</span>
+        } else {
+<span class="nc bnc" id="L2029" title="All 2 branches missed.">          sb.append(String.format(&quot;%04d-%02d-%02dT%02d:%02d:&quot;,</span>
+<span class="nc" id="L2030">              (tm.years &gt; 0) ? tm.years : -(tm.years - 1),</span>
+<span class="nc" id="L2031">              tm.monthOfYear, tm.dayOfMonth, tm.hours, tm.minutes));</span>
+        }
+
+<span class="nc" id="L2034">        appendSecondsToEncodeOutput(sb, tm.secs, tm.fsecs, 6, true);</span>
+<span class="nc bnc" id="L2035" title="All 4 branches missed.">        if (tm.timeZone != 0 &amp;&amp; tm.timeZone != Integer.MAX_VALUE) {</span>
+<span class="nc" id="L2036">          sb.append(getDisplayTimeZoneOffset(tm.timeZone));</span>
+        }
+<span class="nc bnc" id="L2038" title="All 2 branches missed.">        if (tm.years &lt;= 0) {</span>
+<span class="nc" id="L2039">          sb.append(&quot; BC&quot;);</span>
+        }
+        break;
+
+      case SQL_DATES:
+        // Compatible with Oracle/Ingres date formats
+
+    }
+
+<span class="nc" id="L2048">    return sb.toString();</span>
+  }
+
+  public static String encodeDate(TimeMeta tm, DateStyle style) {
+<span class="nc" id="L2052">    return encodeDate(tm.years, tm.monthOfYear, tm.dayOfMonth, style);</span>
+  }
+
+  public static String encodeDate(int years, int monthOfYear, int dayOfMonth, DateStyle style) {
+<span class="nc" id="L2056">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L2057">    switch (style) {</span>
+      case ISO_DATES:
+      case XSO_DATES:
+      case SQL_DATES:
+        // Compatible with Oracle/Ingres date formats
+      default:
+<span class="nc bnc" id="L2063" title="All 2 branches missed.">        sb.append(String.format(&quot;%04d-%02d-%02d&quot;,</span>
+<span class="nc" id="L2064">            (years &gt; 0) ? years : -(years - 1),</span>
+<span class="nc" id="L2065">            monthOfYear, dayOfMonth));</span>
+    }
+
+<span class="nc" id="L2068">    return sb.toString();</span>
+  }
+
+  public static String encodeTime(TimeMeta tm, DateStyle style) {
+<span class="fc" id="L2072">    StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L2073">    switch (style) {</span>
+
+      case ISO_DATES:
+      case XSO_DATES:
+      case SQL_DATES:
+        // Compatible with Oracle/Ingres date formats
+      default :
+<span class="fc" id="L2080">        sb.append(String.format(&quot;%02d:%02d:&quot;, tm.hours, tm.minutes));</span>
+<span class="fc" id="L2081">        appendSecondsToEncodeOutput(sb, tm.secs, tm.fsecs, 6, true);</span>
+<span class="pc bpc" id="L2082" title="2 of 4 branches missed.">        if (tm.timeZone != 0 &amp;&amp; tm.timeZone != Integer.MAX_VALUE) {</span>
+<span class="nc" id="L2083">          sb.append(getDisplayTimeZoneOffset(tm.timeZone));</span>
+        }
+        break;
+    }
+
+<span class="fc" id="L2088">    return sb.toString();</span>
+  }
+
+  /**
+   * Append sections and fractional seconds (if any) at *cp.
+   * precision is the max number of fraction digits, fillzeros says to
+   * pad to two integral-seconds digits.
+   * Note that any sign is stripped from the input seconds values.
+   *
+   * This method is originated form AppendSeconds in datetime.c of PostgreSQL.
+   */
+  public static void appendSecondsToEncodeOutput(
+      StringBuilder sb, int sec, int fsec, int precision, boolean fillzeros) {
+<span class="pc bpc" id="L2101" title="1 of 2 branches missed.">    if (fsec == 0) {</span>
+<span class="pc bpc" id="L2102" title="1 of 2 branches missed.">      if (fillzeros)</span>
+<span class="fc" id="L2103">        sb.append(String.format(&quot;%02d&quot;, Math.abs(sec)));</span>
+      else
+<span class="nc" id="L2105">        sb.append(String.format(&quot;%d&quot;, Math.abs(sec)));</span>
+    } else {
+<span class="nc bnc" id="L2107" title="All 2 branches missed.">      if (fillzeros) {</span>
+<span class="nc" id="L2108">        sb.append(String.format(&quot;%02d&quot;, Math.abs(sec)));</span>
+      } else {
+<span class="nc" id="L2110">        sb.append(String.format(&quot;%d&quot;, Math.abs(sec)));</span>
+      }
+
+<span class="nc bnc" id="L2113" title="All 2 branches missed.">      if (precision &gt; MAX_FRACTION_LENGTH) {</span>
+<span class="nc" id="L2114">        precision = MAX_FRACTION_LENGTH;</span>
+      }
+
+<span class="nc bnc" id="L2117" title="All 2 branches missed.">      if (precision &gt; 0) {</span>
+<span class="nc" id="L2118">        char[] fracChars = String.valueOf(fsec).toCharArray();</span>
+<span class="nc" id="L2119">        char[] resultChars = new char[MAX_FRACTION_LENGTH];</span>
+
+<span class="nc" id="L2121">        int numFillZero = MAX_FRACTION_LENGTH - fracChars.length;</span>
+<span class="nc bnc" id="L2122" title="All 2 branches missed.">        for (int i = 0, fracIdx = 0; i &lt; MAX_FRACTION_LENGTH; i++) {</span>
+<span class="nc bnc" id="L2123" title="All 2 branches missed.">          if (i &lt; numFillZero) {</span>
+<span class="nc" id="L2124">            resultChars[i] = '0';</span>
+          } else {
+<span class="nc" id="L2126">            resultChars[i] = fracChars[fracIdx];</span>
+<span class="nc" id="L2127">            fracIdx++;</span>
+          }
+        }
+<span class="nc" id="L2130">        sb.append(&quot;.&quot;).append(resultChars, 0, precision);</span>
+      }
+<span class="nc" id="L2132">      trimTrailingZeros(sb);</span>
+    }
+<span class="fc" id="L2134">  }</span>
+
+  /**
+   * ... resulting from printing numbers with full precision.
+   *
+   * Before Postgres 8.4, this always left at least 2 fractional digits,
+   * but conversations on the lists suggest this isn't desired
+   * since showing '0.10' is misleading with values of precision(1).
+   *
+   * This method is originated form AppendSeconds in datetime.c of PostgreSQL.
+   * @param sb
+   */
+  public static void trimTrailingZeros(StringBuilder sb) {
+<span class="nc" id="L2147">    int len = sb.length();</span>
+<span class="nc bnc" id="L2148" title="All 6 branches missed.">    while (len &gt; 1 &amp;&amp; sb.charAt(len - 1) == '0' &amp;&amp; sb.charAt(len - 2) != '.') {</span>
+<span class="nc" id="L2149">      len--;</span>
+<span class="nc" id="L2150">      sb.setLength(len);</span>
+    }
+<span class="nc" id="L2152">  }</span>
+
+  /**
+   * Return the Julian day which corresponds to the first day (Monday) of the given ISO 8601 year and week.
+   * Julian days_full are used to convert between ISO week dates and Gregorian dates.
+   *
+   * This method is originated form AppendSeconds in timestamp.c of PostgreSQL.
+   * @param year
+   * @param week
+   * @return
+   */
+  public static int isoweek2j(int year, int week) {
+	  /* fourth day of current year */
+<span class="nc" id="L2165">    int day4 = date2j(year, 1, 4);</span>
+
+	  /* day0 == offset to first day of week (Monday) */
+<span class="nc" id="L2168">    int day0 = j2day(day4 - 1);</span>
+
+<span class="nc" id="L2170">    return ((week - 1) * 7) + (day4 - day0);</span>
+  }
+
+  /**
+   * Convert ISO week of year number to date.
+   * The year field must be specified with the ISO year!
+   * karel 2000/08/07
+   *
+   * This method is originated form AppendSeconds in timestamp.c of PostgreSQL.
+   * @param woy
+   * @param tm
+   */
+  public static void isoweek2date(int woy, TimeMeta tm) {
+<span class="nc" id="L2183">    j2date(isoweek2j(tm.years, woy), tm);</span>
+<span class="nc" id="L2184">  }</span>
+
+  /**
+   * Convert an ISO 8601 week date (ISO year, ISO week) into a Gregorian date.
+   * Gregorian day of week sent so weekday strings can be supplied.
+   * Populates year, mon, and mday with the correct Gregorian values.
+   * year must be passed in as the ISO year.
+   *
+   * This method is originated form AppendSeconds in timestamp.c of PostgreSQL.
+   * @param isoweek
+   * @param wday
+   * @param tm
+   */
+  public static void isoweekdate2date(int isoweek, int wday, TimeMeta tm) {
+    int jday;
+<span class="nc" id="L2199">    jday = isoweek2j(tm.years, isoweek);</span>
+	  /* convert Gregorian week start (Sunday=1) to ISO week start (Monday=1) */
+<span class="nc bnc" id="L2201" title="All 2 branches missed.">    if (wday &gt; 1) {</span>
+<span class="nc" id="L2202">      jday += wday - 2;</span>
+    } else {
+<span class="nc" id="L2204">      jday += 6;</span>
+    }
+<span class="nc" id="L2206">    j2date(jday, tm);</span>
+<span class="nc" id="L2207">  }</span>
+
+  /**
+   * Returns the ISO 8601 day-of-year, given a Gregorian year, month and day.
+   * Possible return values are 1 through 371 (364 in non-leap years).
+   * @param year
+   * @param mon
+   * @param mday
+   * @return
+   */
+  public static int date2isoyearday(int year, int mon, int mday) {
+<span class="nc" id="L2218">    return date2j(year, mon, mday) - isoweek2j(date2isoyear(year, mon, mday), 1) + 1;</span>
+  }
+
+  public static void toUserTimezone(TimeMeta tm, TimeZone timeZone) {
+<span class="nc" id="L2222">    tm.convertToLocalTime(timeZone);</span>
+<span class="nc" id="L2223">  }</span>
+
+  public static void toUTCTimezone(TimeMeta tm, TimeZone timeZone) {
+<span class="nc" id="L2226">    tm.convertToUTC(timeZone);</span>
+<span class="nc" id="L2227">  }</span>
+
+  @VisibleForTesting
+  public static String getDisplayTimeZoneOffset(TimeZone timeZone, boolean dst) {
+<span class="nc bnc" id="L2231" title="All 2 branches missed.">    return getDisplayTimeZoneOffset((timeZone.getRawOffset() + (dst ? timeZone.getDSTSavings() : 0)) / 1000);</span>
+  }
+
+  public static String getDisplayTimeZoneOffset(int totalSecs) {
+<span class="nc bnc" id="L2235" title="All 2 branches missed.">    if (totalSecs == 0) {</span>
+<span class="nc" id="L2236">      return &quot;&quot;;</span>
+    }
+<span class="nc" id="L2238">    int minutes = Math.abs(totalSecs) / DateTimeConstants.SECS_PER_MINUTE;</span>
+<span class="nc" id="L2239">    int hours = minutes / DateTimeConstants.MINS_PER_HOUR;</span>
+<span class="nc" id="L2240">    minutes = minutes - hours * DateTimeConstants.MINS_PER_HOUR;</span>
+
+<span class="nc" id="L2242">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L2243" title="All 2 branches missed.">    sb.append(totalSecs &gt; 0 ? &quot;+&quot; : &quot;-&quot;).append(String.format(&quot;%02d&quot;, hours));</span>
+
+<span class="nc bnc" id="L2245" title="All 2 branches missed.">    if (minutes &gt; 0) {</span>
+<span class="nc" id="L2246">      sb.append(&quot;:&quot;).append(String.format(&quot;%02d&quot;, minutes));</span>
+    }
+
+<span class="nc" id="L2249">    return sb.toString();</span>
+  }
+
+  public static long getDay(TimeMeta dateTime) {
+<span class="nc" id="L2253">    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,</span>
+        0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
+  }
+
+  public static long getHour(TimeMeta dateTime) {
+<span class="nc" id="L2258">    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,</span>
+        dateTime.hours, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
+  }
+
+  public static long getMinute(TimeMeta dateTime) {
+<span class="nc" id="L2263">    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,</span>
+        dateTime.hours, dateTime.minutes, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
+  }
+
+  public static long getSecond(TimeMeta dateTime) {
+<span class="nc" id="L2268">    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,</span>
+        dateTime.hours, dateTime.minutes, dateTime.secs, 0)) * DateTimeConstants.USECS_PER_MSEC;
+  }
+
+  public static long getMonth(TimeMeta dateTime) {
+<span class="nc" id="L2273">    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, 1, 0, 0, 0, 0)) *</span>
+        DateTimeConstants.USECS_PER_MSEC;
+  }
+
+  public static long getDayOfWeek(TimeMeta dateTime, int weekday) {    
+<span class="nc bnc" id="L2278" title="All 4 branches missed.">    if (weekday &lt; 1 || weekday &gt; 7) {</span>
+<span class="nc" id="L2279">      throw new RuntimeException(&quot;Weekday is out of range. Actual : &quot; + weekday);</span>
+    }
+    
+<span class="nc" id="L2282">    int week = date2isoweek(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth);</span>
+<span class="nc" id="L2283">    int jday = isoweek2j(dateTime.years, week);</span>
+
+<span class="nc" id="L2285">    jday += (weekday - 1);</span>
+    
+<span class="nc" id="L2287">    jday -=  DateTimeConstants.POSTGRES_EPOCH_JDATE;</span>
+
+<span class="nc" id="L2289">    return julianTimeToJavaTime(toJulianTimestamp(jday, 0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;</span>
+  }
+
+  public static long getYear(TimeMeta dateTime) {
+<span class="nc" id="L2293">    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, 1, 1, 0, 0, 0, 0)) *</span>
+        DateTimeConstants.USECS_PER_MSEC;
+  }
+
+  public static TimeMeta getUTCDateTime(Int8Datum int8Datum){
+<span class="nc" id="L2298">    return getUTCDateTime(int8Datum.asInt8());</span>
+  }
+
+  public static TimeMeta getUTCDateTime(long time) {
+<span class="nc" id="L2302">    long usecs = time % DateTimeConstants.USECS_PER_MSEC;</span>
+<span class="nc" id="L2303">    long julianTimestamp = javaTimeToJulianTime(time / DateTimeConstants.USECS_PER_MSEC);</span>
+<span class="nc" id="L2304">    TimeMeta tm = new TimeMeta();</span>
+
+<span class="nc" id="L2306">    julianTimestamp += usecs;</span>
+<span class="nc" id="L2307">    toJulianTimeMeta(julianTimestamp, tm);</span>
+<span class="nc" id="L2308">    return tm;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

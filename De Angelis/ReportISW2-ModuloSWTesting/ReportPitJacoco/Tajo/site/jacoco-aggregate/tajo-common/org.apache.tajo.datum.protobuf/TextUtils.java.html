@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TextUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum.protobuf</a> &gt; <span class="el_source">TextUtils.java</span></div><h1>TextUtils.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum.protobuf;
+
+import com.google.protobuf.ByteString;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.util.regex.Pattern;
+
+/**
+ * Utilities for coercing types
+ * largely follows google/protobuf/text_format.cc.
+ */
+<span class="nc" id="L35">public class TextUtils {</span>
+<span class="nc" id="L36">    private static final Pattern DOUBLE_INFINITY = </span>
+<span class="nc" id="L37">            Pattern.compile(&quot;-?inf(inity)?&quot;, Pattern.CASE_INSENSITIVE);</span>
+<span class="nc" id="L38">    private static final Pattern FLOAT_INFINITY = </span>
+<span class="nc" id="L39">          Pattern.compile(&quot;-?inf(inity)?f?&quot;, Pattern.CASE_INSENSITIVE);</span>
+<span class="nc" id="L40">    private static final Pattern FLOAT_NAN = </span>
+<span class="nc" id="L41">          Pattern.compile(&quot;nanf?&quot;, Pattern.CASE_INSENSITIVE);</span>
+<span class="nc" id="L42">    private static final Pattern DIGITS = </span>
+<span class="nc" id="L43">            Pattern.compile(&quot;[0-9]&quot;, Pattern.CASE_INSENSITIVE);</span>
+    
+	/**
+     * Convert an unsigned 64-bit integer to a string.
+     */
+	 public static String unsignedToString(final long value) {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (value &gt;= 0) {</span>
+<span class="nc" id="L50">            return Long.toString(value);</span>
+        } else {
+            // Pull off the most-significant bit so that BigInteger doesn't think
+            // the number is negative, then set it again using setBit().
+<span class="nc" id="L54">            return BigInteger.valueOf(value &amp; 0x7FFFFFFFFFFFFFFFL).setBit(63).toString();</span>
+        }
+    }
+	 
+    /**
+     * Convert an unsigned 32-bit integer to a string.
+     */
+    public static String unsignedToString(final int value) {
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (value &gt;= 0) {</span>
+<span class="nc" id="L63">            return Integer.toString(value);</span>
+        } else {
+<span class="nc" id="L65">            return Long.toString((value) &amp; 0x00000000FFFFFFFFL);</span>
+        }
+    }
+    
+    /**
+     * Convert an unsigned 32-bit integer to a string.
+     */
+    public static Integer unsignedInt(int value) {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (value &lt; 0) {</span>
+<span class="nc" id="L74">            return (int) ((value) &amp; 0x00000000FFFFFFFFL);</span>
+        }
+<span class="nc" id="L76">        return value;</span>
+    }
+
+    /**
+     * Convert an unsigned 64-bit integer to a string.
+     */
+    public static Long unsignedLong(long value) {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (value &lt; 0) {</span>
+            // Pull off the most-significant bit so that BigInteger doesn't think
+            // the number is negative, then set it again using setBit().
+<span class="nc" id="L86">            return BigInteger.valueOf(value &amp; 0x7FFFFFFFFFFFFFFFL).setBit(63).longValue();</span>
+        }
+<span class="nc" id="L88">        return value;</span>
+    }
+
+    /** 
+     * Is this a hex digit? 
+     */
+    public static boolean isHex(final char c) {
+<span class="nc bnc" id="L95" title="All 12 branches missed.">      return ('0' &lt;= c &amp;&amp; c &lt;= '9') ||</span>
+             ('a' &lt;= c &amp;&amp; c &lt;= 'f') ||
+             ('A' &lt;= c &amp;&amp; c &lt;= 'F');
+    }
+    
+    /** 
+     * Is this an octal digit? 
+     */
+    public static boolean isOctal(final char c) {
+<span class="nc bnc" id="L104" title="All 4 branches missed.">      return '0' &lt;= c &amp;&amp; c &lt;= '7';</span>
+    }
+
+    /**
+     * Interpret a character as a digit (in any base up to 36) and return the
+     * numeric value.  This is like {@code Character.digit()} but we don't accept
+     * non-ASCII digits.
+     */
+    public static int digitValue(final char c) {
+<span class="nc bnc" id="L113" title="All 4 branches missed.">      if ('0' &lt;= c &amp;&amp; c &lt;= '9') {</span>
+<span class="nc" id="L114">        return c - '0';</span>
+<span class="nc bnc" id="L115" title="All 4 branches missed.">      } else if ('a' &lt;= c &amp;&amp; c &lt;= 'z') {</span>
+<span class="nc" id="L116">        return c - 'a' + 10;</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">      } else if ('A' &lt;= c &amp;&amp; c &lt;= 'Z') {</span>
+<span class="nc" id="L118">        return c - 'A' + 10;</span>
+      } else {
+<span class="nc" id="L120">        throw new IllegalArgumentException(&quot;Expected \&quot;0-9\&quot; or \&quot;a-z, A-Z\&quot;.&quot;);</span>
+      }
+    }
+    
+    public static boolean isDigits(final String text) {
+<span class="nc" id="L125">        return DIGITS.matcher(text).matches();</span>
+    }
+    
+    private static final int BUFFER_SIZE = 4096;
+
+    // TODO(chrisn): See if working around java.io.Reader#read(CharBuffer)
+    // overhead is worthwhile
+    public static StringBuilder toStringBuilder(Readable input) throws IOException {
+<span class="nc" id="L133">        StringBuilder text = new StringBuilder();</span>
+<span class="nc" id="L134">        CharBuffer buffer = CharBuffer.allocate(BUFFER_SIZE);</span>
+        while (true) {
+<span class="nc" id="L136">            int n = input.read(buffer);</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">            if (n == -1) {</span>
+<span class="nc" id="L138">                break;</span>
+            }
+<span class="nc" id="L140">            buffer.flip();</span>
+<span class="nc" id="L141">            text.append(buffer, 0, n);</span>
+<span class="nc" id="L142">        }</span>
+<span class="nc" id="L143">        return text;</span>
+    }
+    
+    public static InputStream toInputStream(String input) {
+<span class="nc" id="L147">    	return toInputStream(input, Charset.defaultCharset());</span>
+    }
+    
+    public static InputStream toInputStream(String input, Charset cs) {
+<span class="nc" id="L151">        return new ByteArrayInputStream(input.getBytes(cs));</span>
+    }
+    
+    
+    
+    /**
+     * If the next token is a double and return its value.
+     * Otherwise, throw a {@link NumberFormatException}.
+     */
+    public static double parseDouble(final String text) throws NumberFormatException {
+      // We need to parse infinity and nan separately because
+      // Double.parseDouble() does not accept &quot;inf&quot;, &quot;infinity&quot;, or &quot;nan&quot;.
+<span class="nc bnc" id="L163" title="All 2 branches missed.">      if (DOUBLE_INFINITY.matcher(text).matches()) {</span>
+<span class="nc" id="L164">        final boolean negative = text.startsWith(&quot;-&quot;);</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        return negative ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;</span>
+      }
+<span class="nc bnc" id="L167" title="All 2 branches missed.">      if (text.equalsIgnoreCase(&quot;nan&quot;)) {</span>
+<span class="nc" id="L168">        return Double.NaN;</span>
+      }
+
+<span class="nc" id="L171">      final double result = Double.parseDouble(text);</span>
+<span class="nc" id="L172">      return result;</span>
+    }
+
+    /**
+     * Parse a float and return its value.
+     * Otherwise, throw a {@link NumberFormatException}.
+     */
+    public static float parseFloat(final String text) throws NumberFormatException {
+      // We need to parse infinity and nan separately because
+      // Float.parseFloat() does not accept &quot;inf&quot;, &quot;infinity&quot;, or &quot;nan&quot;.
+<span class="nc bnc" id="L182" title="All 2 branches missed.">      if (FLOAT_INFINITY.matcher(text).matches()) {</span>
+<span class="nc" id="L183">        final boolean negative = text.startsWith(&quot;-&quot;);</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">        return negative ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;</span>
+      }
+<span class="nc bnc" id="L186" title="All 2 branches missed.">      if (FLOAT_NAN.matcher(text).matches()) {</span>
+<span class="nc" id="L187">        return Float.NaN;</span>
+      }
+
+<span class="nc" id="L190">      final float result = Float.parseFloat(text);</span>
+<span class="nc" id="L191">      return result;</span>
+    }
+    
+    /**
+     * Parse a boolean and return its value.
+     * Otherwise, throw a {@link IllegalArgumentException}.
+     */
+    public static boolean parseBoolean(final String text) throws IllegalArgumentException {
+<span class="nc bnc" id="L199" title="All 4 branches missed.">      if (text.equalsIgnoreCase(&quot;true&quot;) || text.equalsIgnoreCase(&quot;t&quot;) ||</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">              text.equals(&quot;1&quot;)) {</span>
+<span class="nc" id="L201">        return true;</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">      } else if (text.equalsIgnoreCase(&quot;false&quot;) || text.equalsIgnoreCase(&quot;f&quot;) ||</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">              text.equals(&quot;0&quot;)) {</span>
+<span class="nc" id="L204">        return false;</span>
+      } else {
+<span class="nc" id="L206">        throw new IllegalArgumentException(&quot;Expected \&quot;true\&quot; or \&quot;false\&quot;.&quot;);</span>
+      }
+    }
+
+    
+    /**
+     * Parse a 32-bit signed integer from the text.  Unlike the Java standard
+     * {@code Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot;
+     * and &quot;0&quot; to signify hexidecimal and octal numbers, respectively.
+     */
+    public static int parseInt32(final String text) throws NumberFormatException {
+<span class="nc" id="L217">      return (int) parseInteger(text, true, false);</span>
+    }
+
+    /**
+     * Parse a 32-bit unsigned integer from the text.  Unlike the Java standard
+     * {@code Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot;
+     * and &quot;0&quot; to signify hexidecimal and octal numbers, respectively.  The
+     * result is coerced to a (signed) {@code int} when returned since Java has
+     * no unsigned integer type.
+     */
+    public static int parseUInt32(final String text) throws NumberFormatException {
+<span class="nc" id="L228">      return (int) parseInteger(text, false, false);</span>
+    }
+
+    /**
+     * Parse a 64-bit signed integer from the text.  Unlike the Java standard
+     * {@code Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot;
+     * and &quot;0&quot; to signify hexidecimal and octal numbers, respectively.
+     */
+    public static long parseInt64(final String text) throws NumberFormatException {
+<span class="nc" id="L237">      return parseInteger(text, true, true);</span>
+    }
+
+    /**
+     * Parse a 64-bit unsigned integer from the text.  Unlike the Java standard
+     * {@code Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot;
+     * and &quot;0&quot; to signify hexidecimal and octal numbers, respectively.  The
+     * result is coerced to a (signed) {@code long} when returned since Java has
+     * no unsigned long type.
+     */
+    public static long parseUInt64(final String text) throws NumberFormatException {
+<span class="nc" id="L248">      return parseInteger(text, false, true);</span>
+    }
+
+    public static long parseInteger(final String text,
+            final boolean isSigned, final boolean isLong) throws NumberFormatException {
+<span class="nc" id="L253">      int pos = 0;</span>
+
+<span class="nc" id="L255">      boolean negative = false;</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">      if (text.startsWith(&quot;-&quot;, pos)) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (!isSigned) {</span>
+<span class="nc" id="L258">          throw new NumberFormatException(&quot;Number must be positive: &quot; + text);</span>
+        }
+<span class="nc" id="L260">        ++pos;</span>
+<span class="nc" id="L261">        negative = true;</span>
+      }
+
+<span class="nc" id="L264">      int radix = 10;</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">      if (text.startsWith(&quot;0x&quot;, pos)) {</span>
+<span class="nc" id="L266">        pos += 2;</span>
+<span class="nc" id="L267">        radix = 16;</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">      } else if (text.startsWith(&quot;0&quot;, pos)) {</span>
+<span class="nc" id="L269">        radix = 8;</span>
+      }
+
+<span class="nc" id="L272">      final String numberText = text.substring(pos);</span>
+
+<span class="nc" id="L274">      long result = 0;</span>
+<span class="nc bnc" id="L275" title="All 2 branches missed.">      if (numberText.length() &lt; 16) {</span>
+        // Can safely assume no overflow.
+<span class="nc" id="L277">        result = Long.parseLong(numberText, radix);</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (negative) {</span>
+<span class="nc" id="L279">          result = -result;</span>
+        }
+
+        // Check bounds.
+        // No need to check for 64-bit numbers since they'd have to be 16 chars
+        // or longer to overflow.
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (!isLong) {</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">          if (isSigned) {</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">            if (result &gt; Integer.MAX_VALUE || result &lt; Integer.MIN_VALUE) {</span>
+<span class="nc" id="L288">              throw new NumberFormatException(</span>
+                &quot;Number out of range for 32-bit signed integer: &quot; + text);
+            }
+          } else {
+<span class="nc bnc" id="L292" title="All 4 branches missed.">            if (result &gt;= (1L &lt;&lt; 32) || result &lt; 0) {</span>
+<span class="nc" id="L293">              throw new NumberFormatException(</span>
+                &quot;Number out of range for 32-bit unsigned integer: &quot; + text);
+            }
+          }
+        }
+      } else {
+<span class="nc" id="L299">        BigInteger bigValue = new BigInteger(numberText, radix);</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">        if (negative) {</span>
+<span class="nc" id="L301">          bigValue = bigValue.negate();</span>
+        }
+
+        // Check bounds.
+<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (!isLong) {</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">          if (isSigned) {</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">            if (bigValue.bitLength() &gt; 31) {</span>
+<span class="nc" id="L308">              throw new NumberFormatException(</span>
+                &quot;Number out of range for 32-bit signed integer: &quot; + text);
+            }
+          } else {
+<span class="nc bnc" id="L312" title="All 2 branches missed.">            if (bigValue.bitLength() &gt; 32) {</span>
+<span class="nc" id="L313">              throw new NumberFormatException(</span>
+                &quot;Number out of range for 32-bit unsigned integer: &quot; + text);
+            }
+          }
+        } else {
+<span class="nc bnc" id="L318" title="All 2 branches missed.">          if (isSigned) {</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">            if (bigValue.bitLength() &gt; 63) {</span>
+<span class="nc" id="L320">              throw new NumberFormatException(</span>
+                &quot;Number out of range for 64-bit signed integer: &quot; + text);
+            }
+          } else {
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (bigValue.bitLength() &gt; 64) {</span>
+<span class="nc" id="L325">              throw new NumberFormatException(</span>
+                &quot;Number out of range for 64-bit unsigned integer: &quot; + text);
+            }
+          }
+        }
+
+<span class="nc" id="L331">        result = bigValue.longValue();</span>
+      }
+
+<span class="nc" id="L334">      return result;</span>
+    }
+    
+    /**
+     * Escapes bytes in the format used in protocol buffer text format, which is the same as the
+     * format used for C string literals. All bytes that are not printable 7-bit ASCII characters
+     * are escaped, as well as backslash, single-quote, and double-quote characters. Characters for
+     * which no defined short-hand escape sequence is defined will be escaped using 3-digit octal
+     * sequences.
+     */
+    public static String escapeBytes(final ByteString input) {
+<span class="nc" id="L345">        final StringBuilder builder = new StringBuilder(input.size());</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        for (int i = 0; i &lt; input.size(); i++) {</span>
+<span class="nc" id="L347">          final byte b = input.byteAt(i);</span>
+<span class="nc bnc" id="L348" title="All 11 branches missed.">          switch (b) {</span>
+            // Java does not recognize \a or \v, apparently.
+<span class="nc" id="L350">            case 0x07: builder.append(&quot;\\a&quot; ); break;</span>
+<span class="nc" id="L351">            case '\b': builder.append(&quot;\\b&quot; ); break;</span>
+<span class="nc" id="L352">            case '\f': builder.append(&quot;\\f&quot; ); break;</span>
+<span class="nc" id="L353">            case '\n': builder.append(&quot;\\n&quot; ); break;</span>
+<span class="nc" id="L354">            case '\r': builder.append(&quot;\\r&quot; ); break;</span>
+<span class="nc" id="L355">            case '\t': builder.append(&quot;\\t&quot; ); break;</span>
+<span class="nc" id="L356">            case 0x0b: builder.append(&quot;\\v&quot; ); break;</span>
+<span class="nc" id="L357">            case '\\': builder.append(&quot;\\\\&quot;); break;</span>
+<span class="nc" id="L358">            case '\'': builder.append(&quot;\\\'&quot;); break;</span>
+<span class="nc" id="L359">            case '&quot;' : builder.append(&quot;\\\&quot;&quot;); break;</span>
+            default:
+              // Note:  Bytes with the high-order bit set should be escaped.  Since
+              //   bytes are signed, such bytes will compare less than 0x20, hence
+              //   the following line is correct.
+<span class="nc bnc" id="L364" title="All 2 branches missed.">              if (b &gt;= 0x20) {</span>
+<span class="nc" id="L365">                builder.append((char) b);</span>
+              } else {
+<span class="nc" id="L367">                builder.append('\\');</span>
+<span class="nc" id="L368">                builder.append((char) ('0' + ((b &gt;&gt;&gt; 6) &amp; 3)));</span>
+<span class="nc" id="L369">                builder.append((char) ('0' + ((b &gt;&gt;&gt; 3) &amp; 7)));</span>
+<span class="nc" id="L370">                builder.append((char) ('0' + (b &amp; 7)));</span>
+              }
+              break;
+          }
+        }
+<span class="nc" id="L375">        return builder.toString();</span>
+    }
+    
+    /**
+     * Un-escape a byte sequence as escaped using
+     * {@link #escapeBytes(com.google.protobuf.ByteString)}.  Two-digit hex escapes (starting with
+     * &quot;\x&quot;) are also recognized.
+     */
+    public static ByteString unescapeBytes(final CharSequence charString) {
+      // First convert the Java characater sequence to UTF-8 bytes.
+<span class="nc" id="L385">      ByteString input = ByteString.copyFromUtf8(charString.toString());</span>
+      // Then unescape certain byte sequences introduced by ASCII '\\'.  The valid
+      // escapes can all be expressed with ASCII characters, so it is safe to
+      // operate on bytes here.
+      //
+      // Unescaping the input byte array will result in a byte sequence that's no
+      // longer than the input.  That's because each escape sequence is between
+      // two and four bytes long and stands for a single byte.
+<span class="nc" id="L393">      final byte[] result = new byte[input.size()];</span>
+<span class="nc" id="L394">      int pos = 0;</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">      for (int i = 0; i &lt; input.size(); i++) {</span>
+<span class="nc" id="L396">        byte c = input.byteAt(i);</span>
+<span class="nc bnc" id="L397" title="All 2 branches missed.">        if (c == '\\') {</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">          if (i + 1 &lt; input.size()) {</span>
+<span class="nc" id="L399">            ++i;</span>
+<span class="nc" id="L400">            c = input.byteAt(i);</span>
+<span class="nc bnc" id="L401" title="All 2 branches missed.">            if (isOctal((char)c)) {</span>
+              // Octal escape.
+<span class="nc" id="L403">              int code = digitValue((char) c);</span>
+<span class="nc bnc" id="L404" title="All 4 branches missed.">              if (i + 1 &lt; input.size() &amp;&amp; isOctal((char) input.byteAt(i + 1))) {</span>
+<span class="nc" id="L405">                ++i;</span>
+<span class="nc" id="L406">                code = code * 8 + digitValue((char) input.byteAt(i));</span>
+              }
+<span class="nc bnc" id="L408" title="All 4 branches missed.">              if (i + 1 &lt; input.size() &amp;&amp; isOctal((char) input.byteAt(i + 1))) {</span>
+<span class="nc" id="L409">                ++i;</span>
+<span class="nc" id="L410">                code = code * 8 + digitValue((char) input.byteAt(i));</span>
+              }
+              // TODO: Check that 0 &lt;= code &amp;&amp; code &lt;= 0xFF.
+<span class="nc" id="L413">              result[pos++] = (byte)code;</span>
+<span class="nc" id="L414">            } else {</span>
+<span class="nc bnc" id="L415" title="All 12 branches missed.">              switch (c) {</span>
+<span class="nc" id="L416">                case 'a' : result[pos++] = 0x07; break;</span>
+<span class="nc" id="L417">                case 'b' : result[pos++] = '\b'; break;</span>
+<span class="nc" id="L418">                case 'f' : result[pos++] = '\f'; break;</span>
+<span class="nc" id="L419">                case 'n' : result[pos++] = '\n'; break;</span>
+<span class="nc" id="L420">                case 'r' : result[pos++] = '\r'; break;</span>
+<span class="nc" id="L421">                case 't' : result[pos++] = '\t'; break;</span>
+<span class="nc" id="L422">                case 'v' : result[pos++] = 0x0b; break;</span>
+<span class="nc" id="L423">                case '\\': result[pos++] = '\\'; break;</span>
+<span class="nc" id="L424">                case '\'': result[pos++] = '\''; break;</span>
+<span class="nc" id="L425">                case '&quot;' : result[pos++] = '\&quot;'; break;</span>
+
+                case 'x':
+                  // hex escape
+<span class="nc" id="L429">                  int code = 0;</span>
+<span class="nc bnc" id="L430" title="All 4 branches missed.">                  if (i + 1 &lt; input.size() &amp;&amp; isHex((char) input.byteAt(i + 1))) {</span>
+<span class="nc" id="L431">                    ++i;</span>
+<span class="nc" id="L432">                    code = digitValue((char) input.byteAt(i));</span>
+                  } else {
+<span class="nc" id="L434">                    throw new IllegalArgumentException(</span>
+                        &quot;Invalid escape sequence: '\\x' with no digits&quot;);
+                  }
+<span class="nc bnc" id="L437" title="All 4 branches missed.">                  if (i + 1 &lt; input.size() &amp;&amp; isHex((char) input.byteAt(i + 1))) {</span>
+<span class="nc" id="L438">                    ++i;</span>
+<span class="nc" id="L439">                    code = code * 16 + digitValue((char) input.byteAt(i));</span>
+                  }
+<span class="nc" id="L441">                  result[pos++] = (byte)code;</span>
+<span class="nc" id="L442">                  break;</span>
+
+                default:
+<span class="nc" id="L445">                  throw new IllegalArgumentException(</span>
+                      &quot;Invalid escape sequence: '\\&quot; + (char)c + '\'');
+              }
+            }
+          } else {
+<span class="nc" id="L450">            throw new IllegalArgumentException(</span>
+                &quot;Invalid escape sequence: '\\' at end of string.&quot;);
+          }
+        } else {
+<span class="nc" id="L454">          result[pos++] = c;</span>
+        }
+      }
+
+<span class="nc" id="L458">      return ByteString.copyFrom(result, 0, pos);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

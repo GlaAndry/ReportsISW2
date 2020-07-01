@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DatumFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">DatumFactory.java</span></div><h1>DatumFactory.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.InvalidValueForCastException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
+import org.apache.tajo.util.NumberUtil;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.TimeZone;
+
+<span class="nc" id="L37">public class DatumFactory {</span>
+
+  public static Class&lt;? extends Datum&gt; getDatumClass(Type type) {
+<span class="nc bnc" id="L40" title="All 17 branches missed.">    switch (type) {</span>
+      case BOOLEAN:
+<span class="nc" id="L42">        return BooleanDatum.class;</span>
+      case INT2:
+<span class="nc" id="L44">        return Int2Datum.class;</span>
+      case INT4:
+<span class="nc" id="L46">        return Int4Datum.class;</span>
+      case INT8:
+<span class="nc" id="L48">        return Int8Datum.class;</span>
+      case FLOAT4:
+<span class="nc" id="L50">        return Float4Datum.class;</span>
+      case FLOAT8:
+<span class="nc" id="L52">        return Float8Datum.class;</span>
+      case CHAR:
+<span class="nc" id="L54">        return CharDatum.class;</span>
+      case TEXT:
+<span class="nc" id="L56">        return TextDatum.class;</span>
+      case TIMESTAMP:
+<span class="nc" id="L58">        return TimestampDatum.class;</span>
+      case INTERVAL:
+<span class="nc" id="L60">        return IntervalDatum.class;</span>
+      case DATE:
+<span class="nc" id="L62">        return DateDatum.class;</span>
+      case TIME:
+<span class="nc" id="L64">        return TimeDatum.class;</span>
+      case BIT:
+<span class="nc" id="L66">        return BitDatum.class;</span>
+      case BLOB:
+<span class="nc" id="L68">        return BlobDatum.class;</span>
+      case ANY:
+<span class="nc" id="L70">        return AnyDatum.class;</span>
+      case NULL_TYPE:
+<span class="nc" id="L72">        return NullDatum.class;</span>
+      default:
+<span class="nc" id="L74">        throw new TajoRuntimeException(new UnsupportedDataTypeException(type.name()));</span>
+    }
+  }
+
+  public static Datum createFromString(DataType dataType, String value) {
+<span class="nc bnc" id="L79" title="All 14 branches missed.">    switch (dataType.getType()) {</span>
+
+    case BOOLEAN:
+<span class="nc" id="L82">      return createBool(value.equals(BooleanDatum.TRUE_STRING));</span>
+    case INT2:
+<span class="nc" id="L84">      return createInt2(value);</span>
+    case INT4:
+<span class="nc" id="L86">      return createInt4(value);</span>
+    case INT8:
+<span class="nc" id="L88">      return createInt8(value);</span>
+    case FLOAT4:
+<span class="nc" id="L90">      return createFloat4(value);</span>
+    case FLOAT8:
+<span class="nc" id="L92">      return createFloat8(value);</span>
+    case CHAR:
+<span class="nc" id="L94">      return createChar(value);</span>
+    case TEXT:
+<span class="nc" id="L96">      return createText(value);</span>
+    case DATE:
+<span class="nc" id="L98">      return createDate(value);</span>
+    case TIME:
+<span class="nc" id="L100">      return createTime(value);</span>
+    case TIMESTAMP:
+<span class="nc" id="L102">      return createTimestamp(value);</span>
+    case INTERVAL:
+<span class="nc" id="L104">      return createInterval(value);</span>
+    case BLOB:
+<span class="nc" id="L106">      return createBlob(value);</span>
+    default:
+<span class="nc" id="L108">      throw new TajoRuntimeException(new UnsupportedDataTypeException(dataType.toString()));</span>
+    }
+  }
+
+  public static Datum createFromBytes(DataType dataType, byte[] bytes) {
+<span class="nc bnc" id="L113" title="All 15 branches missed.">    switch (dataType.getType()) {</span>
+
+    case BOOLEAN:
+<span class="nc" id="L116">      return createBool(bytes[0]);</span>
+    case INT2:
+<span class="nc" id="L118">      return createInt2(NumberUtil.toShort(bytes));</span>
+    case INT4:
+<span class="nc" id="L120">      return createInt4(NumberUtil.toInt(bytes));</span>
+    case INT8:
+<span class="nc" id="L122">      return createInt8(NumberUtil.toLong(bytes));</span>
+    case FLOAT4:
+<span class="nc" id="L124">      return createFloat4(NumberUtil.toFloat(bytes));</span>
+    case FLOAT8:
+<span class="nc" id="L126">      return createFloat8(NumberUtil.toDouble(bytes));</span>
+    case CHAR:
+<span class="nc" id="L128">      return createChar(bytes);</span>
+    case TEXT:
+<span class="nc" id="L130">      return createText(bytes);</span>
+    case DATE:
+<span class="nc" id="L132">      return new DateDatum(NumberUtil.toInt(bytes));</span>
+    case TIME:
+<span class="nc" id="L134">      return new TimeDatum(NumberUtil.toLong(bytes));</span>
+    case TIMESTAMP:
+<span class="nc" id="L136">      return new TimestampDatum(NumberUtil.toLong(bytes));</span>
+    case BIT:
+<span class="nc" id="L138">      return createBit(bytes[0]);</span>
+    case BLOB:
+<span class="nc" id="L140">      return createBlob(bytes);</span>
+    case PROTOBUF:
+      try {
+<span class="nc" id="L143">        return ProtobufDatumFactory.createDatum(dataType, bytes);</span>
+<span class="nc" id="L144">      } catch (IOException e) {</span>
+<span class="nc" id="L145">        throw new TajoInternalError(e);</span>
+      }
+    default:
+<span class="nc" id="L148">      throw new TajoRuntimeException(new UnsupportedDataTypeException(dataType.toString()));</span>
+    }
+  }
+
+  public static Datum createFromInt4(DataType type, int val) {
+<span class="nc bnc" id="L153" title="All 3 branches missed.">    switch (type.getType()) {</span>
+    case INT4:
+<span class="nc" id="L155">      return new Int4Datum(val);</span>
+    case DATE:
+<span class="nc" id="L157">      return new DateDatum(val);</span>
+    default:
+<span class="nc" id="L159">      throw new TajoRuntimeException(new UnsupportedDataTypeException(type.getType().name()));</span>
+    }
+  }
+
+  public static Datum createFromInt8(DataType type, long val) {
+<span class="nc bnc" id="L164" title="All 4 branches missed.">    switch (type.getType()) {</span>
+    case INT8:
+<span class="nc" id="L166">      return new Int8Datum(val);</span>
+    case TIMESTAMP:
+<span class="nc" id="L168">      return new TimestampDatum(val);</span>
+    case TIME:
+<span class="nc" id="L170">      return createTime(val); </span>
+    default:
+<span class="nc" id="L172">      throw new TajoRuntimeException(new UnsupportedDataTypeException(type.getType().name()));</span>
+    }
+  }
+
+  public static NullDatum createNullDatum() {
+<span class="fc" id="L177">    return NullDatum.get();</span>
+  }
+
+  public static Datum createBool(byte val) {
+<span class="nc" id="L181">    return BooleanDatum.THREE_VALUES[(int)val];</span>
+  }
+
+  public static Datum createBool(int val) {
+<span class="nc" id="L185">    return BooleanDatum.THREE_VALUES[val];</span>
+  }
+
+  public static BooleanDatum createBool(boolean val) {
+<span class="fc bfc" id="L189" title="All 2 branches covered.">    return val ? BooleanDatum.TRUE : BooleanDatum.FALSE;</span>
+  }
+
+  public static BitDatum createBit(byte val) {
+<span class="nc" id="L193">    return new BitDatum(val);</span>
+  }
+
+  public static CharDatum createChar(char val) {
+<span class="nc" id="L197">    return new CharDatum(val);</span>
+  }
+
+  public static CharDatum createChar(byte val) {
+<span class="nc" id="L201">    return new CharDatum(val);</span>
+  }
+
+  public static CharDatum createChar(byte[] bytes) {
+<span class="fc" id="L205">    return new CharDatum(bytes);</span>
+  }
+
+  public static CharDatum createChar(String val) {
+<span class="nc" id="L209">    return new CharDatum(val);</span>
+  }
+
+  public static Int2Datum createInt2(short val) {
+<span class="fc" id="L213">    return new Int2Datum(val);</span>
+  }
+
+  public static Int2Datum createInt2(String val) {
+<span class="nc" id="L217">    return new Int2Datum(Short.valueOf(val));</span>
+  }
+
+  public static Int4Datum createInt4(int val) {
+<span class="fc" id="L221">    return new Int4Datum(val);</span>
+  }
+
+  public static Int4Datum createInt4(String val) {
+<span class="nc" id="L225">    return new Int4Datum(Integer.parseInt(val));</span>
+  }
+
+  public static Int8Datum createInt8(long val) {
+<span class="fc" id="L229">    return new Int8Datum(val);</span>
+  }
+
+  public static Int8Datum createInt8(String val) {
+<span class="nc" id="L233">    return new Int8Datum(Long.parseLong(val));</span>
+  }
+
+  public static Float4Datum createFloat4(float val) {
+<span class="fc" id="L237">    return new Float4Datum(val);</span>
+  }
+
+  public static Float4Datum createFloat4(String val) {
+<span class="nc" id="L241">    return new Float4Datum(Float.valueOf(val));</span>
+  }
+
+  public static Float8Datum createFloat8(double val) {
+<span class="fc" id="L245">    return new Float8Datum(val);</span>
+  }
+
+  public static Float8Datum createFloat8(String val) {
+<span class="nc" id="L249">    return new Float8Datum(Double.valueOf(val));</span>
+  }
+
+  public static TextDatum createText(String val) {
+<span class="fc" id="L253">    return new TextDatum(val);</span>
+  }
+
+  public static TextDatum createText(byte[] val) {
+<span class="fc" id="L257">    return new TextDatum(val);</span>
+  }
+
+  public static DateDatum createDate(int instance) {
+<span class="nc" id="L261">    return new DateDatum(instance);</span>
+  }
+
+  public static DateDatum createDate(int year, int month, int day) {
+<span class="nc" id="L265">    return new DateDatum(DateTimeUtil.date2j(year, month, day));</span>
+  }
+
+  public static DateDatum createDate(String dateStr) {
+<span class="fc" id="L269">    return new DateDatum(DateTimeUtil.toJulianDate(dateStr));</span>
+  }
+
+  public static TimeDatum createTime(long instance) {
+<span class="fc" id="L273">    return new TimeDatum(instance);</span>
+  }
+
+  public static TimeDatum createTime(String timeStr) {
+<span class="fc" id="L277">    return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));</span>
+  }
+
+  public static TimestampDatum createTimestampDatumWithJavaMillis(long millis) {
+<span class="nc" id="L281">    return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));</span>
+  }
+
+  public static TimestampDatum createTimestampDatumWithUnixTime(int unixTime) {
+<span class="nc" id="L285">    return createTimestampDatumWithJavaMillis(unixTime * 1000L);</span>
+  }
+
+  public static TimestampDatum createTimestamp(String datetimeStr) {
+<span class="fc" id="L289">    return new TimestampDatum(DateTimeUtil.toJulianTimestamp(datetimeStr));</span>
+  }
+
+  public static TimestampDatum createTimestamp(String datetimeStr, TimeZone tz) {
+<span class="nc" id="L293">    TimeMeta tm = DateTimeUtil.decodeDateTime(datetimeStr);</span>
+<span class="nc" id="L294">    DateTimeUtil.toUTCTimezone(tm, tz);</span>
+<span class="nc" id="L295">    return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));</span>
+  }
+
+  public static IntervalDatum createInterval(String intervalStr) {
+<span class="fc" id="L299">    return new IntervalDatum(intervalStr);</span>
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  public static IntervalDatum createInterval(long interval) {
+<span class="nc" id="L304">    return new IntervalDatum(interval);</span>
+  }
+
+  public static IntervalDatum createInterval(int month, long interval) {
+<span class="nc" id="L308">    return new IntervalDatum(month, interval);</span>
+  }
+
+  public static DateDatum createDate(Datum datum) {
+<span class="pc bpc" id="L312" title="4 of 5 branches missed.">    switch (datum.kind()) {</span>
+    case INT4:
+<span class="fc" id="L314">      return new DateDatum(datum.asInt4());</span>
+    case INT8:
+<span class="nc" id="L316">      return new DateDatum(datum.asInt4());</span>
+    case TEXT:
+<span class="nc" id="L318">      return createDate(datum.asChars());</span>
+    case DATE:
+<span class="nc" id="L320">      return (DateDatum) datum;</span>
+    default:
+<span class="nc" id="L322">      throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.DATE));</span>
+    }
+  }
+
+  public static TimeDatum createTime(Datum datum) {
+<span class="nc bnc" id="L327" title="All 4 branches missed.">    switch (datum.kind()) {</span>
+    case INT8:
+<span class="nc" id="L329">      return new TimeDatum(datum.asInt8());</span>
+    case CHAR:
+    case VARCHAR:
+    case TEXT:
+<span class="nc" id="L333">      TimeMeta tm = DateTimeFormat.parseDateTime(datum.asChars(), &quot;HH24:MI:SS.MS&quot;);</span>
+<span class="nc" id="L334">      return new TimeDatum(DateTimeUtil.toTime(tm));</span>
+    case TIME:
+<span class="nc" id="L336">      return (TimeDatum) datum;</span>
+    default:
+<span class="nc" id="L338">      throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIME));</span>
+    }
+  }
+
+  public static TimestampDatum createTimestamp(Datum datum, @Nullable TimeZone tz) {
+<span class="nc bnc" id="L343" title="All 4 branches missed.">    switch (datum.kind()) {</span>
+      case CHAR:
+      case VARCHAR:
+      case TEXT:
+<span class="nc" id="L347">        return parseTimestamp(datum.asChars(), tz);</span>
+      case TIMESTAMP:
+<span class="nc" id="L349">        return (TimestampDatum) datum;</span>
+      case DATE: {
+<span class="nc" id="L351">        TimeMeta tm = datum.asTimeMeta();</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">        if (tz != null) {</span>
+<span class="nc" id="L353">          DateTimeUtil.toUTCTimezone(tm, tz);</span>
+        }
+<span class="nc" id="L355">        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));</span>
+      }
+      default:
+<span class="nc" id="L358">        throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIMESTAMP));</span>
+    }
+  }
+
+  @SuppressWarnings(&quot;unused&quot;)
+  public static TimestampDatum createTimestamp(long julianTimestamp) {
+<span class="nc" id="L364">    return new TimestampDatum(julianTimestamp);</span>
+  }
+
+  public static TimestampDatum parseTimestamp(String str, @Nullable TimeZone tz) {
+<span class="nc" id="L368">    return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str, tz));</span>
+  }
+
+  public static BlobDatum createBlob(byte[] encoded) {
+<span class="fc" id="L372">    return new BlobDatum(encoded);</span>
+  }
+
+  public static BlobDatum createBlob(byte[] encoded, int offset, int length) {
+<span class="nc" id="L376">    return new BlobDatum(encoded, offset, length);</span>
+  }
+
+  public static BlobDatum createBlob(String plainString) {
+<span class="nc" id="L380">    return new BlobDatum(Base64.encodeBase64(plainString.getBytes()));</span>
+  }
+
+  public static AnyDatum createAny(Datum val) {
+<span class="nc" id="L384">    return new AnyDatum(val);</span>
+  }
+
+  public static Datum cast(Datum operandDatum, org.apache.tajo.type.Type target, @Nullable TimeZone tz) {
+<span class="nc bnc" id="L388" title="All 14 branches missed.">    switch (target.kind()) {</span>
+    case BOOLEAN:
+<span class="nc" id="L390">      return DatumFactory.createBool(operandDatum.asBool());</span>
+    case CHAR:
+<span class="nc" id="L392">      return DatumFactory.createChar(operandDatum.asChar());</span>
+    case INT1:
+    case INT2:
+<span class="nc" id="L395">      return DatumFactory.createInt2(operandDatum.asInt2());</span>
+    case INT4:
+<span class="nc" id="L397">      return DatumFactory.createInt4(operandDatum.asInt4());</span>
+    case INT8:
+<span class="nc" id="L399">      return DatumFactory.createInt8(operandDatum.asInt8());</span>
+    case FLOAT4:
+<span class="nc" id="L401">      return DatumFactory.createFloat4(operandDatum.asFloat4());</span>
+    case FLOAT8:
+<span class="nc" id="L403">      return DatumFactory.createFloat8(operandDatum.asFloat8());</span>
+    case VARCHAR:
+    case TEXT:
+<span class="nc bnc" id="L406" title="All 2 branches missed.">      switch (operandDatum.kind()) {</span>
+        case TIMESTAMP: {
+<span class="nc" id="L408">          TimestampDatum timestampDatum = (TimestampDatum)operandDatum;</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">          if (tz != null) {</span>
+<span class="nc" id="L410">            return DatumFactory.createText(TimestampDatum.asChars(operandDatum.asTimeMeta(), tz, false));</span>
+          } else {
+<span class="nc" id="L412">            return DatumFactory.createText(timestampDatum.asChars());</span>
+          }
+        }
+        default:
+<span class="nc" id="L416">          return DatumFactory.createText(operandDatum.asTextBytes());</span>
+      }
+    case DATE:
+<span class="nc" id="L419">      return DatumFactory.createDate(operandDatum);</span>
+    case TIME:
+<span class="nc" id="L421">      return DatumFactory.createTime(operandDatum);</span>
+    case TIMESTAMP:
+<span class="nc" id="L423">      return DatumFactory.createTimestamp(operandDatum, tz);</span>
+    case BLOB:
+<span class="nc" id="L425">      return DatumFactory.createBlob(operandDatum.asByteArray());</span>
+    case ANY:
+<span class="nc" id="L427">      return DatumFactory.createAny(operandDatum);</span>
+    default:
+<span class="nc" id="L429">      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.kind()));</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

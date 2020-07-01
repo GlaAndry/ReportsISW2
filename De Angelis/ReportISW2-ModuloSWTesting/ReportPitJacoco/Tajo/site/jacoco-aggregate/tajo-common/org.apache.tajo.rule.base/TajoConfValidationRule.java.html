@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TajoConfValidationRule.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.rule.base</a> &gt; <span class="el_source">TajoConfValidationRule.java</span></div><h1>TajoConfValidationRule.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.rule.base;
+
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.rule.EvaluationContext;
+import org.apache.tajo.rule.EvaluationResult;
+import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
+import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
+import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
+import org.apache.tajo.rule.SelfDiagnosisRule;
+import org.apache.tajo.validation.ConstraintViolation;
+import org.apache.tajo.validation.ConstraintViolationException;
+import org.apache.tajo.validation.Validator;
+
+@SelfDiagnosisRuleDefinition(category=&quot;base&quot;, name=&quot;TajoConfValidationRule&quot;, priority=0)
+@SelfDiagnosisRuleVisibility.Public
+<span class="nc" id="L38">public class TajoConfValidationRule implements SelfDiagnosisRule {</span>
+  
+  private Collection&lt;ConstraintViolation&gt; isValidationTestPassed(TajoConf.ConfVars confVar, String varValue) {
+<span class="nc" id="L41">    Set&lt;ConstraintViolation&gt; violationSet = new HashSet&lt;&gt;();</span>
+    
+<span class="nc bnc" id="L43" title="All 6 branches missed.">    if (varValue != null &amp;&amp; confVar.valueClass() != null &amp;&amp; confVar.validator() != null) {</span>
+<span class="nc" id="L44">      Class&lt;?&gt; valueClazz = confVar.valueClass();</span>
+<span class="nc" id="L45">      Validator validator = confVar.validator();</span>
+      
+<span class="nc bnc" id="L47" title="All 2 branches missed.">      if (Integer.class.getName().equals(valueClazz.getName())) {</span>
+<span class="nc" id="L48">        int intValue = Integer.parseInt(varValue);</span>
+<span class="nc" id="L49">        violationSet.addAll(validator.validate(intValue));</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">      } else if (Long.class.getName().equals(valueClazz.getName())) {</span>
+<span class="nc" id="L51">        long longValue = Long.parseLong(varValue);</span>
+<span class="nc" id="L52">        violationSet.addAll(validator.validate(longValue));</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">      } else if (Float.class.getName().equals(valueClazz.getName())) {</span>
+<span class="nc" id="L54">        float floatValue = Float.parseFloat(varValue);</span>
+<span class="nc" id="L55">        violationSet.addAll(validator.validate(floatValue));</span>
+<span class="nc" id="L56">      } else {</span>
+<span class="nc" id="L57">        violationSet.addAll(validator.validate(varValue));</span>
+      }
+    }
+    
+<span class="nc" id="L61">    return violationSet;</span>
+  }
+
+  @Override
+  public EvaluationResult evaluate(EvaluationContext context) {
+<span class="nc" id="L66">    EvaluationResult result = new EvaluationResult();</span>
+<span class="nc" id="L67">    Object tajoConfObj = context.getParameter(TajoConf.class.getName());</span>
+<span class="nc" id="L68">    result.setReturnCode(EvaluationResultCode.OK);</span>
+    
+<span class="nc bnc" id="L70" title="All 4 branches missed.">    if (tajoConfObj != null &amp;&amp; tajoConfObj instanceof TajoConf) {</span>
+<span class="nc" id="L71">      TajoConf tajoConf = (TajoConf) tajoConfObj;</span>
+      
+<span class="nc bnc" id="L73" title="All 2 branches missed.">      for (TajoConf.ConfVars confVar: TajoConf.ConfVars.values()) {</span>
+<span class="nc" id="L74">        String varValue = tajoConf.get(confVar.keyname());</span>
+<span class="nc" id="L75">        Collection&lt;ConstraintViolation&gt; violationSet = isValidationTestPassed(confVar, varValue);</span>
+        
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        if (violationSet.size() &gt; 0) {</span>
+<span class="nc" id="L78">          result.setReturnCode(EvaluationResultCode.ERROR);</span>
+<span class="nc" id="L79">          result.setMessage(&quot;Validation Test has been failed on &quot; + confVar.keyname() + </span>
+              &quot;. Actual value is &quot; + varValue);
+<span class="nc" id="L81">          result.setThrowable(new ConstraintViolationException(violationSet));</span>
+<span class="nc" id="L82">          break;</span>
+        }
+      }
+    }
+    
+<span class="nc" id="L87">    return result;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

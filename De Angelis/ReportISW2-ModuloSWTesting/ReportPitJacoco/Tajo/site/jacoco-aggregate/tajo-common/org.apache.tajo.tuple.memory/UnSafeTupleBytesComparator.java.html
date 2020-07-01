@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UnSafeTupleBytesComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">UnSafeTupleBytesComparator.java</span></div><h1>UnSafeTupleBytesComparator.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
+import com.google.common.primitives.UnsignedLongs;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
+import sun.misc.Unsafe;
+
+import java.nio.ByteOrder;
+
+/**
+ * It directly access UTF bytes in UnSafeTuple without any copy. It is used by compiled TupleComparator.
+ */
+<span class="nc" id="L33">public class UnSafeTupleBytesComparator {</span>
+<span class="nc" id="L34">  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;</span>
+  private static final int UNSIGNED_MASK = 0xFF;
+<span class="nc" id="L36">  private static final boolean littleEndian = ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);</span>
+
+  // This code is borrowed from Guava's UnsignedBytes:::compare()
+  public static int compare(long ptr1, long ptr2) {
+<span class="nc" id="L40">    int lstrLen = UNSAFE.getInt(ptr1);</span>
+<span class="nc" id="L41">    int rstrLen = UNSAFE.getInt(ptr2);</span>
+
+<span class="nc" id="L43">    ptr1 += SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L44">    ptr2 += SizeOf.SIZE_OF_INT;</span>
+
+<span class="nc" id="L46">    int minLength = Math.min(lstrLen, rstrLen);</span>
+<span class="nc" id="L47">    int minWords = minLength / Longs.BYTES;</span>
+
+    /*
+     * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
+     * time is no slower than comparing 4 bytes at a time even on 32-bit.
+     * On the other hand, it is substantially faster on 64-bit.
+    */
+<span class="nc bnc" id="L54" title="All 2 branches missed.">    for (int i = 0; i &lt; minWords * Longs.BYTES; i += Longs.BYTES) {</span>
+<span class="nc" id="L55">      long lw = UNSAFE.getLong(ptr1);</span>
+<span class="nc" id="L56">      long rw = UNSAFE.getLong(ptr2);</span>
+
+<span class="nc bnc" id="L58" title="All 2 branches missed.">      if (lw != rw) {</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        if (!littleEndian) {</span>
+<span class="nc" id="L60">          return UnsignedLongs.compare(lw, rw);</span>
+        }
+
+        /*
+         * We want to compare only the first index where left[index] != right[index].
+         * This corresponds to the least significant nonzero byte in lw ^ rw, since lw
+         * and rw are little-endian.  Long.numberOfTrailingZeros(diff) tells us the least
+         * significant nonzero bit, and zeroing out the first three bits of L.nTZ gives us the
+         * shift to get that least significant nonzero byte.
+        */
+<span class="nc" id="L70">        int n = Long.numberOfTrailingZeros(lw ^ rw) &amp; ~0x7;</span>
+<span class="nc" id="L71">        return (int) (((lw &gt;&gt;&gt; n) &amp; UNSIGNED_MASK) - ((rw &gt;&gt;&gt; n) &amp; UNSIGNED_MASK));</span>
+      }
+
+<span class="nc" id="L74">      ptr1 += SizeOf.SIZE_OF_LONG;</span>
+<span class="nc" id="L75">      ptr2 += SizeOf.SIZE_OF_LONG;</span>
+    }
+
+    // The epilogue to cover the last (minLength % 8) elements.
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    for (int i = minWords * Longs.BYTES; i &lt; minLength; i++) {</span>
+<span class="nc" id="L80">      int result = UnsignedBytes.compare(UNSAFE.getByte(ptr1++), UNSAFE.getByte(ptr2++));</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">      if (result != 0) {</span>
+<span class="nc" id="L82">        return result;</span>
+      }
+    }
+<span class="nc" id="L85">    return lstrLen - rstrLen;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

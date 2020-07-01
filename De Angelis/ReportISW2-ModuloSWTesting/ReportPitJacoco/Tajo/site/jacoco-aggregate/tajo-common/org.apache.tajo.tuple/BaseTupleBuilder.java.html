@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BaseTupleBuilder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple</a> &gt; <span class="el_source">BaseTupleBuilder.java</span></div><h1>BaseTupleBuilder.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple;
+
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.ValueOutOfRangeException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.*;
+import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.Deallocatable;
+import org.apache.tajo.util.TUtil;
+
+public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, Deallocatable {
+
+  private MemoryBlock memoryBlock;
+
+  public BaseTupleBuilder(DataType[] schema) {
+<span class="nc" id="L34">    super(schema);</span>
+<span class="nc" id="L35">    this.memoryBlock = new ResizableMemoryBlock(new ResizableLimitSpec(64 * StorageUnit.KB), true);</span>
+<span class="nc" id="L36">  }</span>
+
+  @Override
+  public long address() {
+<span class="nc" id="L40">    return memoryBlock.address();</span>
+  }
+
+  public void ensureSize(int size) {
+<span class="nc" id="L44">    memoryBlock.ensureSize(size);</span>
+<span class="nc" id="L45">  }</span>
+
+  @Override
+  public int position() {
+<span class="nc" id="L49">    return memoryBlock.writerPosition();</span>
+  }
+
+  @Override
+  public void forward(int length) {
+<span class="nc" id="L54">    memoryBlock.writerPosition(memoryBlock.writerPosition() + length);</span>
+<span class="nc" id="L55">  }</span>
+
+  @Override
+  public void backward(int length) {
+<span class="nc" id="L59">    memoryBlock.writerPosition(memoryBlock.writerPosition() - length);</span>
+<span class="nc" id="L60">  }</span>
+
+  @Override
+  public boolean startRow() {
+<span class="nc" id="L64">    memoryBlock.writerPosition(0);</span>
+<span class="nc" id="L65">    return super.startRow();</span>
+  }
+
+  @Override
+  public void endRow() {
+<span class="nc" id="L70">    super.endRow();</span>
+<span class="nc" id="L71">  }</span>
+
+  @Override
+  public boolean addTuple(Tuple tuple) {
+    try {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">      if (tuple instanceof UnSafeTuple) {</span>
+<span class="nc" id="L77">        UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);</span>
+<span class="nc" id="L78">        addTuple(unSafeTuple);</span>
+<span class="nc" id="L79">      } else {</span>
+<span class="nc" id="L80">        OffHeapRowBlockUtils.convert(tuple, this);</span>
+      }
+<span class="nc" id="L82">    } catch (ValueOutOfRangeException e) {</span>
+<span class="nc" id="L83">      return false;</span>
+<span class="nc" id="L84">    }</span>
+<span class="nc" id="L85">    return true;</span>
+  }
+
+  @Override
+  public Tuple build() {
+<span class="nc" id="L90">    return buildToHeapTuple();</span>
+  }
+
+  public HeapTuple buildToHeapTuple() {
+<span class="nc" id="L94">    return buildToZeroCopyTuple().toHeapTuple();</span>
+  }
+
+  public UnSafeTuple buildToZeroCopyTuple() {
+<span class="nc" id="L98">    UnSafeTuple zcTuple = new UnSafeTuple();</span>
+<span class="nc" id="L99">    zcTuple.set(memoryBlock, memoryBlock.readerPosition(), dataTypes());</span>
+<span class="nc" id="L100">    return zcTuple;</span>
+  }
+
+  public void release() {
+<span class="nc" id="L104">    memoryBlock.release();</span>
+<span class="nc" id="L105">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

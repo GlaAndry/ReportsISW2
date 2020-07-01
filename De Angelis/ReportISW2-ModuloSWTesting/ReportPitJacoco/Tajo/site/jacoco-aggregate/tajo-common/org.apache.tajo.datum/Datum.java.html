@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Datum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">Datum.java</span></div><h1>Datum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.type.TajoTypeUtil;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
+
+public abstract class Datum implements Comparable&lt;Datum&gt;, GsonObject {
+  static boolean abortWhenDivideByZero;
+
+  static {
+    try {
+      //TODO separate hadoop configuration from TajoConf
+<span class="fc" id="L42">      initAbortWhenDivideByZero(new TajoConf());</span>
+<span class="nc" id="L43">    } catch (NoClassDefFoundError error) {</span>
+<span class="nc" id="L44">      abortWhenDivideByZero = Boolean.valueOf(System.getProperty(SessionVars.ARITHABORT.getConfVars().keyname()</span>
+<span class="nc" id="L45">          , SessionVars.ARITHABORT.getConfVars().defaultVal));</span>
+<span class="fc" id="L46">    }</span>
+<span class="fc" id="L47">  }</span>
+
+  @Expose	protected final org.apache.tajo.type.Type type;
+
+<span class="fc" id="L51">  public Datum(org.apache.tajo.type.Type type) {</span>
+<span class="fc" id="L52">    this.type = type;</span>
+<span class="fc" id="L53">  }</span>
+
+  public org.apache.tajo.type.Type type() {
+<span class="fc" id="L56">    return this.type;</span>
+  }
+
+  public TajoDataTypes.Type kind() {
+<span class="fc" id="L60">    return this.type.kind();</span>
+  }
+
+  public boolean isTrue() {
+<span class="nc bnc" id="L64" title="All 4 branches missed.">    return type.kind() == BOOLEAN &amp;&amp; asBool();</span>
+  }
+
+  public boolean isNull() {
+<span class="fc" id="L68">    return false;</span>
+  }
+
+  public boolean isNotNull() {
+<span class="nc" id="L72">    return true;</span>
+  }
+
+  public boolean asBool() {
+<span class="nc" id="L76">    throw new TajoRuntimeException(new InvalidValueForCastException(type.kind(), BOOLEAN));</span>
+  }
+
+  public byte asByte() {
+<span class="nc" id="L80">    throw new TajoRuntimeException(new InvalidValueForCastException(type, BIT));</span>
+  }
+
+  public char asChar() {
+<span class="fc" id="L84">    throw new TajoRuntimeException(new InvalidValueForCastException(type, CHAR));</span>
+  }
+
+  public short asInt2() {
+<span class="nc" id="L88">    throw new TajoRuntimeException(new InvalidValueForCastException(type, INT2));</span>
+  }
+
+  public int asInt4() {
+<span class="nc" id="L92">    throw new TajoRuntimeException(new InvalidValueForCastException(type, INT4));</span>
+  }
+
+  public long asInt8() {
+<span class="nc" id="L96">    throw new TajoRuntimeException(new InvalidValueForCastException(type, INT8));</span>
+  }
+
+  public byte [] asByteArray() {
+<span class="nc" id="L100">    throw new TajoRuntimeException(new InvalidValueForCastException(type, BLOB));</span>
+  }
+
+  public float asFloat4() {
+<span class="nc" id="L104">    throw new TajoRuntimeException(new InvalidValueForCastException(type, FLOAT4));</span>
+  }
+
+  public double asFloat8() {
+<span class="nc" id="L108">    throw new TajoRuntimeException(new InvalidValueForCastException(type, FLOAT8));</span>
+  }
+
+  public String asChars() {
+<span class="nc" id="L112">    throw new TajoRuntimeException(new InvalidValueForCastException(type, TEXT));</span>
+  }
+
+  // todo remove this
+  public char [] asUnicodeChars() {
+<span class="nc" id="L117">    throw new TajoRuntimeException(new InvalidValueForCastException(type, TEXT));</span>
+  }
+
+  public byte[] asTextBytes() {
+<span class="nc" id="L121">    return asChars().getBytes(TextDatum.DEFAULT_CHARSET);</span>
+  }
+
+  public TimeMeta asTimeMeta() {
+<span class="nc" id="L125">    throw new TajoRuntimeException(new InvalidValueForCastException(type, TajoDataTypes.Type.INT8));</span>
+  }
+
+  public boolean isNumeric() {
+<span class="nc" id="L129">    return TajoTypeUtil.isNumeric(type);</span>
+  }
+
+  public boolean isNumber() {
+<span class="nc" id="L133">    return TajoTypeUtil.isNumber(type);</span>
+  }
+
+  public boolean isReal() {
+<span class="nc" id="L137">    return TajoTypeUtil.isReal(type.kind());</span>
+  }
+
+  protected static void initAbortWhenDivideByZero(TajoConf tajoConf) {
+<span class="fc" id="L141">    abortWhenDivideByZero = tajoConf.getBoolVar(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT);</span>
+<span class="fc" id="L142">  }</span>
+
+  public abstract int size();
+
+  // belows should be extracted out of datum
+  public Datum and(Datum datum) {
+<span class="nc" id="L148">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum or(Datum datum) {
+<span class="nc" id="L152">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum plus(Datum datum) {
+<span class="nc" id="L156">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum minus(Datum datum) {
+<span class="nc" id="L160">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum multiply(Datum datum) {
+<span class="nc" id="L164">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum divide(Datum datum) {
+<span class="nc" id="L168">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum modular(Datum datum) {
+<span class="nc" id="L172">    throw new InvalidOperationException(type);</span>
+  }
+
+  public Datum equalsTo(Datum datum) {
+<span class="nc bnc" id="L176" title="All 4 branches missed.">    if (this instanceof NullDatum || datum instanceof NullDatum) {</span>
+<span class="nc" id="L177">      return NullDatum.get();</span>
+    } else {
+<span class="nc bnc" id="L179" title="All 2 branches missed.">      return DatumFactory.createBool(compareTo(datum) == 0);</span>
+    }
+  }
+
+  public Datum notEqualsTo(Datum datum) {
+<span class="nc bnc" id="L184" title="All 4 branches missed.">    if (this instanceof NullDatum || datum instanceof NullDatum) {</span>
+<span class="nc" id="L185">      return NullDatum.get();</span>
+    } else {
+<span class="nc bnc" id="L187" title="All 2 branches missed.">      return DatumFactory.createBool(compareTo(datum) != 0);</span>
+    }
+  }
+
+  public Datum lessThan(Datum datum) {
+<span class="nc bnc" id="L192" title="All 4 branches missed.">    if (type.isNull() || datum.type().isNull()) {</span>
+<span class="nc" id="L193">      return NullDatum.get();</span>
+    }
+<span class="nc bnc" id="L195" title="All 2 branches missed.">    return DatumFactory.createBool(compareTo(datum) &lt; 0);</span>
+  }
+
+  public Datum lessThanEqual(Datum datum) {
+<span class="nc bnc" id="L199" title="All 4 branches missed.">    if (type.isNull() || datum.type().isNull()) {</span>
+<span class="nc" id="L200">      return NullDatum.get();</span>
+    }
+<span class="nc bnc" id="L202" title="All 2 branches missed.">    return DatumFactory.createBool(compareTo(datum) &lt;= 0);</span>
+  }
+
+  public Datum greaterThan(Datum datum) {
+<span class="nc bnc" id="L206" title="All 4 branches missed.">    if (type.isNull() || datum.type().isNull()) {</span>
+<span class="nc" id="L207">      return NullDatum.get();</span>
+    }
+<span class="nc bnc" id="L209" title="All 2 branches missed.">    return DatumFactory.createBool(compareTo(datum) &gt; 0);</span>
+  }
+
+  public Datum greaterThanEqual(Datum datum) {
+<span class="nc bnc" id="L213" title="All 4 branches missed.">    if (type.isNull() || datum.type().isNull()) {</span>
+<span class="nc" id="L214">      return NullDatum.get();</span>
+    }
+<span class="nc bnc" id="L216" title="All 2 branches missed.">    return DatumFactory.createBool(compareTo(datum) &gt;= 0);</span>
+  }
+
+  public abstract int compareTo(Datum datum);
+
+  @Override
+  public String toJson() {
+<span class="fc" id="L223">    return CommonGsonHelper.toJson(this, Datum.class);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L228">    return asChars();</span>
+  }
+
+  protected boolean validateDivideZero(short value) {
+<span class="fc bfc" id="L232" title="All 2 branches covered.">    if (value == (short)0) {</span>
+<span class="pc bpc" id="L233" title="1 of 2 branches missed.">      if (abortWhenDivideByZero) {</span>
+<span class="nc" id="L234">        throw new ArithmeticException(&quot;/ by zero&quot;);</span>
+      } else {
+<span class="fc" id="L236">        return false;</span>
+      }
+    } else {
+<span class="fc" id="L239">      return true;</span>
+    }
+  }
+
+  protected boolean validateDivideZero(int value) {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">    if (value == 0) {</span>
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">      if (abortWhenDivideByZero) {</span>
+<span class="nc" id="L246">        throw new ArithmeticException(&quot;/ by zero&quot;);</span>
+      } else {
+<span class="fc" id="L248">        return false;</span>
+      }
+    } else {
+<span class="fc" id="L251">      return true;</span>
+    }
+  }
+
+  protected boolean validateDivideZero(long value) {
+<span class="fc bfc" id="L256" title="All 2 branches covered.">    if (value == 0L) {</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">      if (abortWhenDivideByZero) {</span>
+<span class="nc" id="L258">        throw new ArithmeticException(&quot;/ by zero&quot;);</span>
+      } else {
+<span class="fc" id="L260">        return false;</span>
+      }
+    } else {
+<span class="fc" id="L263">      return true;</span>
+    }
+  }
+
+  protected boolean validateDivideZero(float value) {
+<span class="fc bfc" id="L268" title="All 2 branches covered.">    if (value == 0.0f) {</span>
+<span class="pc bpc" id="L269" title="1 of 2 branches missed.">      if (abortWhenDivideByZero) {</span>
+<span class="nc" id="L270">        throw new ArithmeticException(&quot;/ by zero&quot;);</span>
+      } else {
+<span class="fc" id="L272">        return false;</span>
+      }
+    } else {
+<span class="fc" id="L275">      return true;</span>
+    }
+  }
+
+  protected boolean validateDivideZero(double value) {
+<span class="fc bfc" id="L280" title="All 2 branches covered.">    if (value == 0.0) {</span>
+<span class="pc bpc" id="L281" title="1 of 2 branches missed.">      if (abortWhenDivideByZero) {</span>
+<span class="nc" id="L282">        throw new ArithmeticException(&quot;/ by zero&quot;);</span>
+      } else {
+<span class="fc" id="L284">        return false;</span>
+      }
+    } else {
+<span class="fc" id="L287">      return true;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>OffHeapRowBlockWriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">OffHeapRowBlockWriter.java</span></div><h1>OffHeapRowBlockWriter.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.ValueOutOfRangeException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.TUtil;
+
+public class OffHeapRowBlockWriter extends OffHeapRowWriter {
+  private RowBlock rowBlock;
+
+  OffHeapRowBlockWriter(RowBlock rowBlock) {
+<span class="nc" id="L31">    super(rowBlock.getDataTypes());</span>
+<span class="nc" id="L32">    this.rowBlock = rowBlock;</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">    if (!rowBlock.getMemory().hasAddress()) {</span>
+<span class="nc" id="L34">      throw new TajoInternalError(rowBlock.getMemory().getClass().getSimpleName()</span>
+          + &quot; does not support to direct memory access&quot;);
+    }
+<span class="nc" id="L37">  }</span>
+
+  public long address() {
+<span class="nc" id="L40">    return rowBlock.getMemory().address();</span>
+  }
+
+  public int position() {
+<span class="nc" id="L44">    return rowBlock.getMemory().writerPosition();</span>
+  }
+
+  @Override
+  public void forward(int length) {
+<span class="nc" id="L49">    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() + length);</span>
+<span class="nc" id="L50">  }</span>
+
+  @Override
+  public void backward(int length) {
+<span class="nc" id="L54">    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() - length);</span>
+<span class="nc" id="L55">  }</span>
+
+  public void ensureSize(int size) {
+<span class="nc" id="L58">    rowBlock.getMemory().ensureSize(size);</span>
+<span class="nc" id="L59">  }</span>
+
+  @Override
+  public void endRow() {
+<span class="nc" id="L63">    super.endRow();</span>
+<span class="nc" id="L64">    rowBlock.setRows(rowBlock.rows() + 1);</span>
+<span class="nc" id="L65">  }</span>
+
+  @Override
+  public TajoDataTypes.DataType[] dataTypes() {
+<span class="nc" id="L69">    return rowBlock.getDataTypes();</span>
+  }
+
+
+  @Override
+  public boolean addTuple(Tuple tuple) {
+    try {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">      if (tuple instanceof UnSafeTuple) {</span>
+<span class="nc" id="L77">        UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);</span>
+<span class="nc" id="L78">        addTuple(unSafeTuple);</span>
+<span class="nc" id="L79">        rowBlock.setRows(rowBlock.rows() + 1);</span>
+<span class="nc" id="L80">      } else {</span>
+<span class="nc" id="L81">        OffHeapRowBlockUtils.convert(tuple, this);</span>
+      }
+<span class="nc" id="L83">    } catch (ValueOutOfRangeException e) {</span>
+<span class="nc" id="L84">      return false;</span>
+<span class="nc" id="L85">    }</span>
+<span class="nc" id="L86">    return true;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

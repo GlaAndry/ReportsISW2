@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SessionVars.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo</a> &gt; <span class="el_source">SessionVars.java</span></div><h1>SessionVars.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo;
+
+import com.google.common.collect.Maps;
+import org.apache.tajo.validation.Validator;
+import org.apache.tajo.validation.Validators;
+
+import java.util.Map;
+
+import static org.apache.tajo.SessionVars.VariableMode.*;
+import static org.apache.tajo.conf.TajoConf.ConfVars;
+
+<span class="nc" id="L30">public enum SessionVars implements ConfigKey {</span>
+
+  // Common Suffix Naming Rules:
+  //
+  // * LIMIT   - We use the suffix 'LIMIT' if the variable is threshold. So, if some value is greater or less than
+  //             the variable with suffix 'LIMIT', some action will be different from before.
+  // * SIZE    - The suffix 'SIZE' means a data volume like bytes or mega bytes.
+  //             It should be used for user's desired volume.
+  // * ENABLED - The suffix 'ENABLED' means a true or false value. If it is true, it will enable some feature.
+  //             Otherwise, the feature will be turned off.
+
+
+  //-------------------------------------------------------------------------------
+  // Server Side Only Variables
+  //-------------------------------------------------------------------------------
+<span class="nc" id="L45">  SESSION_ID(ConfVars.$EMPTY, &quot;session variable&quot;, SERVER_SIDE_VAR, String.class, Validators.notNull()),</span>
+<span class="nc" id="L46">  SESSION_LAST_ACCESS_TIME(ConfVars.$EMPTY, &quot;last access time&quot;, SERVER_SIDE_VAR, Long.class, Validators.min(&quot;0&quot;)),</span>
+
+<span class="nc" id="L48">  USERNAME(ConfVars.USERNAME, &quot;username&quot;, SERVER_SIDE_VAR),</span>
+<span class="nc" id="L49">  CLIENT_HOST(ConfVars.$EMPTY, &quot;client hostname&quot;, SERVER_SIDE_VAR),</span>
+
+<span class="nc" id="L51">  CURRENT_DATABASE(ConfVars.$EMPTY, &quot;current database&quot;, SERVER_SIDE_VAR),</span>
+
+  //-------------------------------------------------------------------------------
+  // Client Side Variables
+  //-------------------------------------------------------------------------------
+
+  // Client --------------------------------------------------------
+<span class="nc" id="L58">  SESSION_EXPIRY_TIME(ConfVars.$CLIENT_SESSION_EXPIRY_TIME, &quot;session expiry time (secs)&quot;, DEFAULT,</span>
+<span class="nc" id="L59">      Integer.class, Validators.min(&quot;0&quot;)),</span>
+
+  // Command line interface and its behavior --------------------------------
+<span class="nc" id="L62">  CLI_COLUMNS(ConfVars.$CLI_MAX_COLUMN, &quot;Sets the width for the wrapped format&quot;, CLI_SIDE_VAR),</span>
+<span class="nc" id="L63">  CLI_FORMATTER_CLASS(ConfVars.$CLI_OUTPUT_FORMATTER_CLASS, &quot;Sets the output format class to display results&quot;,</span>
+      CLI_SIDE_VAR),
+<span class="nc" id="L65">  CLI_NULL_CHAR(ConfVars.$CLI_NULL_CHAR, &quot;Sets the string to be printed in place of a null value.&quot;, CLI_SIDE_VAR),</span>
+
+<span class="nc" id="L67">  CLI_PAGE_ROWS(ConfVars.$CLI_PRINT_PAUSE_NUM_RECORDS, &quot;Sets the number of rows for paging&quot;, CLI_SIDE_VAR),</span>
+<span class="nc" id="L68">  CLI_PAGING_ENABLED(ConfVars.$CLI_PRINT_PAUSE, &quot;Enable paging of result display&quot;, CLI_SIDE_VAR),</span>
+<span class="nc" id="L69">  CLI_DISPLAY_ERROR_TRACE(ConfVars.$CLI_PRINT_ERROR_TRACE, &quot;Enable display of error trace&quot;, CLI_SIDE_VAR),</span>
+
+<span class="nc" id="L71">  ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, &quot;tsql will exit if an error occurs.&quot;, CLI_SIDE_VAR),</span>
+
+  // Timezone &amp; Date ----------------------------------------------------------
+<span class="nc" id="L74">  TIMEZONE(ConfVars.$TIMEZONE, &quot;Sets timezone&quot;, DEFAULT),</span>
+<span class="nc" id="L75">  DATE_ORDER(ConfVars.$DATE_ORDER, &quot;date order (default is YMD)&quot;, CLI_SIDE_VAR),</span>
+
+  // Locales and Character set ------------------------------------------------
+  // TODO - they are reserved variables, and we should support them.
+<span class="nc" id="L79">  LANG(ConfVars.$EMPTY, &quot;Language&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L80">  LC_ALL(ConfVars.$EMPTY, &quot;String sort order&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L81">  LC_COLLATE(ConfVars.$EMPTY, &quot;String sort order&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L82">  LC_CTYPE(ConfVars.$EMPTY, &quot;Character classification (What is a letter? Its upper-case equivalent?)&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L83">  LC_MESSAGES(ConfVars.$EMPTY, &quot;Language of messages&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L84">  LC_MONETARY(ConfVars.$EMPTY, &quot;Formatting of currency amounts&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L85">  LC_NUMERIC(ConfVars.$EMPTY, &quot;Formatting of numbers&quot;, FROM_SHELL_ENV),</span>
+<span class="nc" id="L86">  LC_TIME(ConfVars.$EMPTY, &quot;Formatting of dates and times&quot;, FROM_SHELL_ENV),</span>
+
+
+  // Query and Optimization ---------------------------------------------------
+
+  // Optimizer
+<span class="nc" id="L92">  USE_TABLE_VOLUME(ConfVars.$USE_TABLE_VOLUME,</span>
+      &quot;Enable optimizer to get and use the table volume via storage handlers&quot;, DEFAULT, Boolean.class,
+<span class="nc" id="L94">      Validators.bool()),</span>
+
+  // for distributed query strategies
+<span class="nc" id="L97">  BROADCAST_NON_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD,</span>
+      &quot;restriction for the total size of broadcasted table for non-cross join (kb)&quot;, DEFAULT, Long.class,
+<span class="nc" id="L99">      Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L100">  BROADCAST_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD,</span>
+      &quot;restriction for the total size of broadcasted table for cross join (kb)&quot;, DEFAULT, Long.class,
+<span class="nc" id="L102">      Validators.min(&quot;0&quot;)),</span>
+
+<span class="nc" id="L104">  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, &quot;join task input size (mb)&quot;, DEFAULT,</span>
+<span class="nc" id="L105">      Integer.class, Validators.min(&quot;1&quot;)),</span>
+<span class="nc" id="L106">  SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, &quot;sort task input size (mb)&quot;, DEFAULT,</span>
+<span class="nc" id="L107">      Integer.class, Validators.min(&quot;1&quot;)),</span>
+<span class="nc" id="L108">  GROUPBY_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_GROUPBY_TASK_VOLUME, &quot;group by task input size (mb)&quot;, DEFAULT),</span>
+
+<span class="nc" id="L110">  JOIN_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME, &quot;shuffle output size for join (mb)&quot;, DEFAULT,</span>
+<span class="nc" id="L111">      Integer.class, Validators.min(&quot;1&quot;)),</span>
+<span class="nc" id="L112">  GROUPBY_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME, &quot;shuffle output size for sort (mb)&quot;, DEFAULT,</span>
+<span class="nc" id="L113">      Integer.class, Validators.min(&quot;1&quot;)),</span>
+<span class="nc" id="L114">  TABLE_PARTITION_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME,</span>
+<span class="nc" id="L115">      &quot;shuffle output size for partition table write (mb)&quot;, DEFAULT, Integer.class, Validators.min(&quot;1&quot;)),</span>
+
+<span class="nc" id="L117">  GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, &quot;Multiple level groupby enabled&quot;, DEFAULT,</span>
+<span class="nc" id="L118">      Boolean.class, Validators.bool()),</span>
+
+<span class="nc" id="L120">  QUERY_EXECUTE_PARALLEL(ConfVars.$QUERY_EXECUTE_PARALLEL_MAX, &quot;Maximum parallel running of execution blocks for a query&quot;,</span>
+<span class="nc" id="L121">      DEFAULT, Integer.class, Validators.min(&quot;1&quot;)),</span>
+
+  // for physical Executors
+<span class="nc" id="L124">  EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, &quot;sort buffer size for external sort (mb)&quot;, DEFAULT,</span>
+<span class="nc" id="L125">      Integer.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L126">  HASH_SHUFFLE_BUFFER_SIZE(ConfVars.$EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE, &quot;hash-shuffle buffer size for local disk I/O (mb)&quot;</span>
+<span class="nc" id="L127">      , DEFAULT, Integer.class, Validators.min(&quot;1&quot;)),</span>
+<span class="nc" id="L128">  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, &quot;limited size for hash join (mb)&quot;, DEFAULT,</span>
+<span class="nc" id="L129">      Long.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L130">  INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD,</span>
+<span class="nc" id="L131">      &quot;limited size for hash inner join (mb)&quot;, DEFAULT, Long.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L132">  OUTER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD, &quot;limited size for hash outer join (mb)&quot;,</span>
+<span class="nc" id="L133">      DEFAULT, Long.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L134">  HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD, &quot;limited size for hash groupby (mb)&quot;,</span>
+<span class="nc" id="L135">      DEFAULT, Long.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L136">  MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, &quot;Maximum per-output file size (mb). 0 means infinite.&quot;, DEFAULT,</span>
+<span class="nc" id="L137">      Long.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L138">  NULL_CHAR(ConfVars.$TEXT_NULL, &quot;Null char of text file output. &quot; +</span>
+      &quot;This value is used when the table property 'text.null' is not specified.&quot;, DEFAULT),
+<span class="nc" id="L140">  CODEGEN(ConfVars.$CODEGEN, &quot;Runtime code generation enabled (experiment)&quot;, DEFAULT),</span>
+<span class="nc" id="L141">  AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, &quot;The initial size of list for in-memory aggregation&quot;, DEFAULT),</span>
+<span class="nc" id="L142">  SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, &quot;The initial size of list for in-memory sort&quot;, DEFAULT),</span>
+<span class="nc" id="L143">  JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, &quot;The initial size of hash table for in-memory hash join&quot;,</span>
+      DEFAULT),
+
+  // for index
+<span class="nc" id="L147">  INDEX_ENABLED(ConfVars.$INDEX_ENABLED, &quot;index scan enabled&quot;, DEFAULT),</span>
+<span class="nc" id="L148">  INDEX_SELECTIVITY_THRESHOLD(ConfVars.$INDEX_SELECTIVITY_THRESHOLD, &quot;the selectivity threshold for index scan&quot;,</span>
+      DEFAULT),
+
+  // for partition overwrite
+<span class="nc" id="L152">  PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,</span>
+    &quot;If true, a partitioned table is overwritten even if a sub query leads to no result. &quot;
+    + &quot;Otherwise, the table data will be kept if there is no result&quot;, DEFAULT),
+
+  // Behavior Control ---------------------------------------------------------
+<span class="nc" id="L157">  ARITHABORT(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT,</span>
+      &quot;If true, a running query will be terminated when an overflow or divide-by-zero occurs.&quot;, DEFAULT),
+
+  // ResultSet ----------------------------------------------------------------
+<span class="nc" id="L161">  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, &quot;The number of rows to be fetched from Master at a time&quot;, DEFAULT,</span>
+<span class="nc" id="L162">      Integer.class, Validators.min(&quot;0&quot;)),</span>
+<span class="nc" id="L163">  BLOCK_ON_RESULT(ConfVars.$RESULT_SET_BLOCK_WAIT, &quot;Whether to block result set on query execution&quot;, DEFAULT,</span>
+<span class="nc" id="L164">      Boolean.class, Validators.bool()),</span>
+<span class="nc" id="L165">  COMPRESSED_RESULT_TRANSFER(ConfVars.$COMPRESSED_RESULT_TRANSFER, &quot;Use compression to optimize result transmission.&quot;,</span>
+<span class="nc" id="L166">      CLI_SIDE_VAR, Boolean.class, Validators.bool()),</span>
+
+<span class="nc" id="L168">  SORT_ALGORITHM(ConfVars.$SORT_ALGORITHM, &quot;sort algorithm&quot;, DEFAULT),</span>
+
+  //-------------------------------------------------------------------------------
+  // Only for Unit Testing
+  //-------------------------------------------------------------------------------
+<span class="nc" id="L173">  DEBUG_ENABLED(ConfVars.$DEBUG_ENABLED, &quot;(debug only) debug mode enabled&quot;, DEFAULT),</span>
+<span class="nc" id="L174">  TEST_BROADCAST_JOIN_ENABLED(ConfVars.$TEST_BROADCAST_JOIN_ENABLED, &quot;(test only) broadcast enabled&quot;, TEST_VAR),</span>
+<span class="nc" id="L175">  TEST_JOIN_OPT_ENABLED(ConfVars.$TEST_JOIN_OPT_ENABLED, &quot;(test only) join optimization enabled&quot;, TEST_VAR),</span>
+<span class="nc" id="L176">  TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, &quot;filter push down enabled&quot;, TEST_VAR),</span>
+<span class="nc" id="L177">  TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, &quot;(test only) min task num&quot;, TEST_VAR),</span>
+<span class="nc" id="L178">  TEST_PLAN_SHAPE_FIX_ENABLED(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED, &quot;(test only) plan shape fix enabled&quot;, TEST_VAR),</span>
+<span class="nc" id="L179">  TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT(ConfVars.$TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, &quot;(test only) Tim sort threshold for radix sort&quot;, TEST_VAR)</span>
+  ;
+
+<span class="nc" id="L182">  public static final Map&lt;String, SessionVars&gt; SESSION_VARS = Maps.newHashMap();</span>
+<span class="nc" id="L183">  public static final Map&lt;String, SessionVars&gt; DEPRECATED_SESSION_VARS = Maps.newHashMap();</span>
+
+  static {
+<span class="nc bnc" id="L186" title="All 2 branches missed.">    for (SessionVars var : SessionVars.values()) {</span>
+<span class="nc" id="L187">      SESSION_VARS.put(var.keyname(), var);</span>
+<span class="nc" id="L188">      DEPRECATED_SESSION_VARS.put(var.getConfVars().keyname(), var);</span>
+    }
+<span class="nc" id="L190">  }</span>
+
+  private final ConfVars key;
+  private final String description;
+  private final VariableMode mode;
+  
+  private Class&lt;?&gt; valClass;
+  private Validator validator;
+
+<span class="nc" id="L199">  public static enum VariableMode {</span>
+<span class="nc" id="L200">    DEFAULT,         // Client can set or change variables of this mode..</span>
+<span class="nc" id="L201">    FROM_SHELL_ENV,  // This is similar to DEFAULT mode. In addition, it tries to get values from shell env. variables.</span>
+<span class="nc" id="L202">    SERVER_SIDE_VAR, // only TajoMaster is able to set and change variables of this mode.</span>
+<span class="nc" id="L203">    CLI_SIDE_VAR,    // This type variable is used in CLI.</span>
+<span class="nc" id="L204">    TEST_VAR         // Only used for unit tests</span>
+  }
+
+<span class="nc" id="L207">  SessionVars(ConfVars key, String description, VariableMode mode) {</span>
+<span class="nc" id="L208">    this.key = key;</span>
+<span class="nc" id="L209">    this.description = description;</span>
+<span class="nc" id="L210">    this.mode = mode;</span>
+<span class="nc" id="L211">  }</span>
+  
+  SessionVars(ConfVars key, String description, VariableMode mode, Class&lt;?&gt; valueClass, Validator validator) {
+<span class="nc" id="L214">    this(key, description, mode);</span>
+<span class="nc" id="L215">    this.valClass = valueClass;</span>
+<span class="nc" id="L216">    this.validator = validator;</span>
+<span class="nc" id="L217">  }</span>
+
+  public String keyname() {
+<span class="nc" id="L220">    return name();</span>
+  }
+
+  public ConfigType type() {
+<span class="nc" id="L224">    return ConfigType.SESSION;</span>
+  }
+
+  public ConfVars getConfVars() {
+<span class="nc" id="L228">    return key;</span>
+  }
+
+  public Class&lt;?&gt; getVarType() {
+<span class="nc" id="L232">    return key.valClass;</span>
+  }
+
+  public String getDescription() {
+<span class="nc" id="L236">    return description;</span>
+  }
+
+  public VariableMode getMode() {
+<span class="nc" id="L240">    return mode;</span>
+  }
+
+  public static boolean exists(String keyname) {
+<span class="nc bnc" id="L244" title="All 4 branches missed.">    return SESSION_VARS.containsKey(keyname) || DEPRECATED_SESSION_VARS.containsKey(keyname);</span>
+  }
+
+  public static boolean isDeprecated(String keyname) {
+<span class="nc" id="L248">    return DEPRECATED_SESSION_VARS.containsKey(keyname);</span>
+  }
+
+  public static boolean isPublic(SessionVars var) {
+<span class="nc bnc" id="L252" title="All 2 branches missed.">    return var.getMode() != SERVER_SIDE_VAR;</span>
+  }
+
+  public static SessionVars get(String keyname) {
+<span class="nc bnc" id="L256" title="All 2 branches missed.">    if (SESSION_VARS.containsKey(keyname)) {</span>
+<span class="nc" id="L257">      return SESSION_VARS.get(keyname);</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">    } else if (DEPRECATED_SESSION_VARS.containsKey(keyname)) {</span>
+<span class="nc" id="L259">      return DEPRECATED_SESSION_VARS.get(keyname);</span>
+    } else {
+<span class="nc" id="L261">      return null;</span>
+    }
+  }
+
+  /**
+   * rename deprecated name to current name if the name is deprecated.
+   *
+   * @param keyname session variable name
+   * @return The current session variable name
+   */
+  public static String handleDeprecatedName(String keyname) {
+<span class="nc bnc" id="L272" title="All 2 branches missed.">    return SessionVars.exists(keyname) ? SessionVars.get(keyname).keyname() : keyname;</span>
+  }
+
+  @Override
+  public Class&lt;?&gt; valueClass() {
+<span class="nc" id="L277">    return valClass;</span>
+  }
+
+  @Override
+  public Validator validator() {
+<span class="nc" id="L282">    return validator;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

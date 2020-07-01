@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>KeyValueSet.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">KeyValueSet.java</span></div><h1>KeyValueSet.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.ConfigKey;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.json.GsonObject;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
+
+public class KeyValueSet implements ProtoObject&lt;KeyValueSetProto&gt;, Cloneable, GsonObject {
+  public static final String TRUE_STR = &quot;true&quot;;
+  public static final String FALSE_STR = &quot;false&quot;;
+
+  @Expose private Map&lt;String,String&gt; keyVals;
+
+<span class="nc" id="L44">	public KeyValueSet() {</span>
+<span class="nc" id="L45">    keyVals = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L46">	}</span>
+
+  public KeyValueSet(Map&lt;String, String&gt; keyVals) {
+<span class="nc" id="L49">    this();</span>
+<span class="nc" id="L50">    putAll(keyVals);</span>
+<span class="nc" id="L51">  }</span>
+
+<span class="nc" id="L53">	public KeyValueSet(KeyValueSetProto proto) {</span>
+<span class="nc" id="L54">    this.keyVals = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">    for(KeyValueProto keyval : proto.getKeyvalList()) {</span>
+<span class="nc" id="L56">      this.keyVals.put(keyval.getKey(), keyval.getValue());</span>
+<span class="nc" id="L57">    }</span>
+<span class="nc" id="L58">	}</span>
+
+	public KeyValueSet(KeyValueSet keyValueSet) {
+<span class="nc" id="L61">	  this();</span>
+<span class="nc" id="L62">	  this.keyVals.putAll(keyValueSet.keyVals);</span>
+<span class="nc" id="L63">	}</span>
+
+	public static KeyValueSet create() {
+<span class="nc" id="L66">	  return new KeyValueSet();</span>
+	}
+
+	public static KeyValueSet create(KeyValueSet keyValueSet) {
+<span class="nc" id="L70">    return new KeyValueSet(keyValueSet);</span>
+  }
+
+  public int size() {
+<span class="nc" id="L74">    return keyVals.size();</span>
+  }
+
+  public void putAll(Map&lt;String, String&gt; keyValues) {
+<span class="nc bnc" id="L78" title="All 2 branches missed.">    if (keyValues != null) {</span>
+<span class="nc" id="L79">      this.keyVals.putAll(keyValues);</span>
+    }
+<span class="nc" id="L81">  }</span>
+
+  public void putAll(KeyValueSet keyValueSet) {
+<span class="nc bnc" id="L84" title="All 2 branches missed.">    if (keyValueSet != null) {</span>
+<span class="nc" id="L85">      this.keyVals.putAll(keyValueSet.keyVals);</span>
+    }
+<span class="nc" id="L87">  }</span>
+
+  public Map&lt;String,String&gt; getAllKeyValus() {
+<span class="nc" id="L90">    return keyVals;</span>
+  }
+
+  public boolean containsKey(String key) {
+<span class="nc" id="L94">    return this.keyVals.containsKey(key);</span>
+  }
+
+  public void set(String key, String val) {
+<span class="nc" id="L98">    Preconditions.checkNotNull(key);</span>
+<span class="nc" id="L99">    Preconditions.checkNotNull(val);</span>
+
+<span class="nc" id="L101">    this.keyVals.put(key, val);</span>
+<span class="nc" id="L102">  }</span>
+
+  public String get(String key, String defaultVal) {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    if(keyVals.containsKey(key)) {</span>
+<span class="nc" id="L106">      return keyVals.get(key);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    } else if (defaultVal != null) {</span>
+<span class="nc" id="L108">      return defaultVal;</span>
+    } else {
+<span class="nc" id="L110">      throw new IllegalArgumentException(&quot;No such config key: &quot;  + key);</span>
+    }
+  }
+
+  public String get(String key) {
+<span class="nc" id="L115">    return get(key, null);</span>
+  }
+
+  public boolean isTrue(String key) {
+<span class="nc" id="L119">    return getBool(key, false);</span>
+  }
+
+  public void setBool(String key, boolean val) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">    set(key, val ? TRUE_STR : FALSE_STR);</span>
+<span class="nc" id="L124">  }</span>
+
+  public boolean getBool(String key, Boolean defaultVal) {
+<span class="nc bnc" id="L127" title="All 2 branches missed.">    if (containsKey(key)) {</span>
+<span class="nc" id="L128">      String strVal = get(key, null);</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">      return strVal != null &amp;&amp; strVal.equalsIgnoreCase(TRUE_STR);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">    } else if (defaultVal != null) {</span>
+<span class="nc" id="L131">      return defaultVal;</span>
+    } else {
+<span class="nc" id="L133">      return false;</span>
+    }
+  }
+
+  public boolean getBool(String key) {
+<span class="nc" id="L138">    return getBool(key, null);</span>
+  }
+
+  public boolean getBool(ConfigKey key) {
+<span class="nc" id="L142">    String keyName = key.keyname();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">    if (key instanceof SessionVars) {</span>
+<span class="nc" id="L144">      return getBool(keyName, ((SessionVars) key).getConfVars().defaultBoolVal);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">    } else if (key instanceof TajoConf.ConfVars) {</span>
+<span class="nc" id="L146">      return getBool(keyName, ((TajoConf.ConfVars) key).defaultBoolVal);</span>
+    }
+<span class="nc" id="L148">    return getBool(keyName);</span>
+  }
+
+  public void setInt(String key, int val) {
+<span class="nc" id="L152">    set(key, String.valueOf(val));</span>
+<span class="nc" id="L153">  }</span>
+
+  public int getInt(String key, Integer defaultVal) {
+<span class="nc bnc" id="L156" title="All 2 branches missed.">    if (containsKey(key)) {</span>
+<span class="nc" id="L157">      String strVal = get(key, null);</span>
+<span class="nc" id="L158">      return Integer.parseInt(strVal);</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    } else if (defaultVal != null) {</span>
+<span class="nc" id="L160">      return defaultVal;</span>
+    } else {
+<span class="nc" id="L162">      throw new IllegalArgumentException(&quot;No such a config key: &quot;  + key);</span>
+    }
+  }
+
+  public int getInt(String key) {
+<span class="nc" id="L167">    return getInt(key, null);</span>
+  }
+
+  public int getInt(ConfigKey key) {
+<span class="nc" id="L171">    String keyName = key.keyname();</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">    if (key instanceof SessionVars) {</span>
+<span class="nc" id="L173">      return getInt(keyName, ((SessionVars) key).getConfVars().defaultIntVal);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">    } else if (key instanceof TajoConf.ConfVars) {</span>
+<span class="nc" id="L175">      return getInt(keyName, ((TajoConf.ConfVars) key).defaultIntVal);</span>
+    }
+<span class="nc" id="L177">    return getInt(keyName);</span>
+  }
+
+  public void setLong(String key, long val) {
+<span class="nc" id="L181">    set(key, String.valueOf(val));</span>
+<span class="nc" id="L182">  }</span>
+
+  public long getLong(String key, Long defaultVal) {
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    if (containsKey(key)) {</span>
+<span class="nc" id="L186">      String strVal = get(key, null);</span>
+<span class="nc" id="L187">      return Long.parseLong(strVal);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">    } else if (defaultVal != null) {</span>
+<span class="nc" id="L189">      return defaultVal;</span>
+    } else {
+<span class="nc" id="L191">      throw new IllegalArgumentException(&quot;No such a config key: &quot;  + key);</span>
+    }
+  }
+
+  public long getLong(String key) {
+<span class="nc" id="L196">    return getLong(key, null);</span>
+  }
+
+  public long getLong(ConfigKey key) {
+<span class="nc" id="L200">    String keyName = key.keyname();</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">    if (key instanceof SessionVars) {</span>
+<span class="nc" id="L202">      return getLong(keyName, ((SessionVars) key).getConfVars().defaultLongVal);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">    } else if (key instanceof TajoConf.ConfVars) {</span>
+<span class="nc" id="L204">      return getLong(keyName, ((TajoConf.ConfVars) key).defaultLongVal);</span>
+    }
+<span class="nc" id="L206">    return getLong(keyName);</span>
+  }
+
+  public void setFloat(String key, float val) {
+<span class="nc" id="L210">    set(key, String.valueOf(val));</span>
+<span class="nc" id="L211">  }</span>
+
+  public float getFloat(String key, Float defaultVal) {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">    if (containsKey(key)) {</span>
+<span class="nc" id="L215">      String strVal = get(key, null);</span>
+      try {
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (Float.MAX_VALUE &lt; Double.parseDouble(strVal)) {</span>
+<span class="nc" id="L218">          throw new IllegalStateException(&quot;Parsed value is overflow in float type&quot;);</span>
+        }
+<span class="nc" id="L220">        return Float.parseFloat(strVal);</span>
+<span class="nc" id="L221">      } catch (NumberFormatException nfe) {</span>
+<span class="nc" id="L222">        throw new IllegalArgumentException(&quot;No such a config key: &quot;  + key);</span>
+      }
+<span class="nc bnc" id="L224" title="All 2 branches missed.">    } else if (defaultVal != null) {</span>
+<span class="nc" id="L225">      return defaultVal;</span>
+    } else {
+<span class="nc" id="L227">      throw new IllegalArgumentException(&quot;No such a config key: &quot;  + key);</span>
+    }
+  }
+
+  public float getFloat(String key) {
+<span class="nc" id="L232">    return getFloat(key, null);</span>
+  }
+
+  public float getFloat(ConfigKey key) {
+<span class="nc" id="L236">    String keyName = key.keyname();</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">    if (key instanceof SessionVars) {</span>
+<span class="nc" id="L238">      return getFloat(keyName, ((SessionVars) key).getConfVars().defaultFloatVal);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">    } else if (key instanceof TajoConf.ConfVars) {</span>
+<span class="nc" id="L240">      return getFloat(keyName, ((TajoConf.ConfVars) key).defaultFloatVal);</span>
+    }
+<span class="nc" id="L242">    return getFloat(keyName);</span>
+  }
+
+	public String remove(String key) {
+<span class="nc" id="L246">		return keyVals.remove(key);</span>
+	}
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L251">    return Objects.hashCode(keyVals);</span>
+
+  }
+
+  @Override
+	public boolean equals(Object object) {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">		if(object instanceof KeyValueSet) {</span>
+<span class="nc" id="L258">			KeyValueSet other = (KeyValueSet)object;</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">			for(Entry&lt;String, String&gt; entry : other.keyVals.entrySet()) {</span>
+<span class="nc bnc" id="L260" title="All 4 branches missed.">				if(!keyVals.containsKey(entry.getKey()) || !keyVals.get(entry.getKey()).equals(entry.getValue()))</span>
+<span class="nc" id="L261">					return false;</span>
+<span class="nc" id="L262">			}</span>
+<span class="nc" id="L263">			return true;</span>
+		}
+		
+<span class="nc" id="L266">		return false;</span>
+	}
+	
+	@Override
+  public Object clone() throws CloneNotSupportedException {    
+<span class="nc" id="L271">    KeyValueSet keyValueSet = (KeyValueSet) super.clone();</span>
+<span class="nc bnc" id="L272" title="All 2 branches missed.">    keyValueSet.keyVals = keyVals != null ? new HashMap&lt;&gt;(keyVals) : null;</span>
+<span class="nc" id="L273">    return keyValueSet;</span>
+	}
+	
+	@Override
+	public KeyValueSetProto getProto() {
+<span class="nc" id="L278">    KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();</span>
+
+<span class="nc" id="L280">    KeyValueProto.Builder kvBuilder = KeyValueProto.newBuilder();</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">    if(this.keyVals != null) {</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">      for(Entry&lt;String,String&gt; kv : keyVals.entrySet()) {</span>
+<span class="nc" id="L283">        kvBuilder.setKey(kv.getKey());</span>
+<span class="nc" id="L284">        kvBuilder.setValue(kv.getValue());</span>
+<span class="nc" id="L285">        builder.addKeyval(kvBuilder.build());</span>
+
+<span class="nc" id="L287">        kvBuilder.clear();</span>
+<span class="nc" id="L288">      }</span>
+    }
+<span class="nc" id="L290">    return builder.build();</span>
+	}
+  
+  public String toJson() {
+<span class="nc" id="L294">    return CommonGsonHelper.toJson(this, KeyValueSet.class);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

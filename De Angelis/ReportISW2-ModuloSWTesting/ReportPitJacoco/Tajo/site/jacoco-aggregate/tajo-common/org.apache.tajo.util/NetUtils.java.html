@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NetUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">NetUtils.java</span></div><h1>NetUtils.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import java.net.*;
+
+<span class="nc" id="L23">public class NetUtils {</span>
+
+  /**
+   * Compose a &quot;host:port&quot; string from the address.
+   */
+  public static String getHostPortString(InetSocketAddress addr) {
+<span class="nc" id="L29">    return getHostPortString(addr.getHostName(), addr.getPort());</span>
+  }
+
+  public static String getHostPortString(String host, int port) {
+<span class="nc" id="L33">    return host + &quot;:&quot; + port;</span>
+  }
+
+  public static String normalizeInetSocketAddress(InetSocketAddress addr) {
+<span class="nc" id="L37">    return getHostPortString(addr.getAddress().getHostAddress(), addr.getPort());</span>
+  }
+
+  public static InetSocketAddress createSocketAddr(String addr) {
+<span class="nc" id="L41">    String [] splitted = addr.split(&quot;:&quot;);</span>
+<span class="nc" id="L42">    return new InetSocketAddress(splitted[0], Integer.parseInt(splitted[1]));</span>
+  }
+
+  /**
+   * Util method to build socket addr from either:
+   *   &lt;host&gt;
+   *   &lt;host&gt;:&lt;port&gt;
+   *   &lt;fs&gt;://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;
+   */
+  public static InetSocketAddress createSocketAddr(String host, int port) {
+<span class="nc" id="L52">    return new InetSocketAddress(host, port);</span>
+  }
+
+  public static InetSocketAddress createUnresolved(String addr) {
+<span class="nc" id="L56">    String [] splitted = addr.split(&quot;:&quot;);</span>
+<span class="nc" id="L57">    return InetSocketAddress.createUnresolved(splitted[0], Integer.parseInt(splitted[1]));</span>
+  }
+
+  /**
+   * Returns InetSocketAddress that a client can use to
+   * connect to the server. NettyServerBase.getListenerAddress() is not correct when
+   * the server binds to &quot;0.0.0.0&quot;. This returns &quot;hostname:port&quot; of the server,
+   * or &quot;127.0.0.1:port&quot; when the getListenerAddress() returns &quot;0.0.0.0:port&quot;.
+   *
+   * @param addr of a listener
+   * @return socket address that a client can use to connect to the server.
+   */
+  public static InetSocketAddress getConnectAddress(InetSocketAddress addr) {
+<span class="nc bnc" id="L70" title="All 4 branches missed.">    if (!addr.isUnresolved() &amp;&amp; addr.getAddress().isAnyLocalAddress()) {</span>
+      try {
+<span class="nc" id="L72">        addr = new InetSocketAddress(InetAddress.getLocalHost(), addr.getPort());</span>
+<span class="nc" id="L73">      } catch (UnknownHostException uhe) {</span>
+        // shouldn't get here unless the host doesn't have a loopback iface
+<span class="nc" id="L75">        addr = new InetSocketAddress(&quot;127.0.0.1&quot;, addr.getPort());</span>
+<span class="nc" id="L76">      }</span>
+    }
+<span class="nc" id="L78">    InetSocketAddress canonicalAddress =</span>
+<span class="nc" id="L79">        new InetSocketAddress(addr.getAddress().getCanonicalHostName(), addr.getPort());</span>
+<span class="nc" id="L80">    return canonicalAddress;</span>
+  }
+
+  /**
+   * Given an InetAddress, checks to see if the address is a local address, by
+   * comparing the address with all the interfaces on the node.
+   * @param addr address to check if it is local node's address
+   * @return true if the address corresponds to the local node
+   */
+  public static boolean isLocalAddress(InetAddress addr) {
+    // Check if the address is any local or loop back
+<span class="nc bnc" id="L91" title="All 4 branches missed.">    boolean local = addr.isAnyLocalAddress() || addr.isLoopbackAddress();</span>
+
+    // Check if the address is defined on any interface
+<span class="nc bnc" id="L94" title="All 2 branches missed.">    if (!local) {</span>
+      try {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        local = NetworkInterface.getByInetAddress(addr) != null;</span>
+<span class="nc" id="L97">      } catch (SocketException e) {</span>
+<span class="nc" id="L98">        local = false;</span>
+<span class="nc" id="L99">      }</span>
+    }
+<span class="nc" id="L101">    return local;</span>
+  }
+
+  public static String normalizeHost(String host) {
+    try {
+<span class="nc" id="L106">      InetAddress address = InetAddress.getByName(host);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">      if (isLocalAddress(address)) {</span>
+<span class="nc" id="L108">        return InetAddress.getLocalHost().getHostAddress();</span>
+      } else {
+<span class="nc" id="L110">        return address.getHostAddress();</span>
+      }
+<span class="nc" id="L112">    } catch (UnknownHostException e) {</span>
+    }
+<span class="nc" id="L114">    return host;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

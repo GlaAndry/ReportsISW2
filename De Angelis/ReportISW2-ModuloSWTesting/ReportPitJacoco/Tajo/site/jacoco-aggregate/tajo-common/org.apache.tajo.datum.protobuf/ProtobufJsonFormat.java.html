@@ -1,0 +1,1464 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProtobufJsonFormat.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum.protobuf</a> &gt; <span class="el_source">ProtobufJsonFormat.java</span></div><h1>ProtobufJsonFormat.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum.protobuf;
+
+import com.google.protobuf.*;
+import com.google.protobuf.Descriptors.Descriptor;
+import com.google.protobuf.Descriptors.EnumDescriptor;
+import com.google.protobuf.Descriptors.EnumValueDescriptor;
+import com.google.protobuf.Descriptors.FieldDescriptor;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class ProtobufJsonFormat extends AbstractCharBasedFormatter {
+  private final static ProtobufJsonFormat instance;
+
+  static {
+<span class="nc" id="L42">    instance = new ProtobufJsonFormat();</span>
+<span class="nc" id="L43">  }</span>
+
+  public static ProtobufJsonFormat getInstance() {
+<span class="nc" id="L46">    return instance;</span>
+  }
+
+  private ProtobufJsonFormat() {
+    super();
+  }
+
+  /**
+   * Outputs a textual representation of the Protocol Message supplied into the parameter output.
+   * (This representation is the new version of the classic &quot;ProtocolPrinter&quot; output from the
+   * original Protocol Buffer system)
+   */
+  public void print(final Message message, Appendable output) throws IOException {
+<span class="nc" id="L59">    JsonGenerator generator = new JsonGenerator(output);</span>
+<span class="nc" id="L60">    generator.print(&quot;{&quot;);</span>
+<span class="nc" id="L61">    print(message, generator);</span>
+<span class="nc" id="L62">    generator.print(&quot;}&quot;);</span>
+<span class="nc" id="L63">  }</span>
+
+  /**
+   * Outputs a textual representation of {@code fields} to {@code output}.
+   */
+  public void print(final UnknownFieldSet fields, Appendable output) throws IOException {
+<span class="nc" id="L69">    JsonGenerator generator = new JsonGenerator(output);</span>
+<span class="nc" id="L70">    generator.print(&quot;{&quot;);</span>
+<span class="nc" id="L71">    printUnknownFields(fields, generator);</span>
+<span class="nc" id="L72">    generator.print(&quot;}&quot;);</span>
+<span class="nc" id="L73">  }</span>
+
+
+  protected void print(Message message, JsonGenerator generator) throws IOException {
+
+<span class="nc bnc" id="L78" title="All 2 branches missed.">    for (Iterator&lt;Map.Entry&lt;FieldDescriptor, Object&gt;&gt; iter = message.getAllFields().entrySet().iterator(); iter.hasNext();) {</span>
+<span class="nc" id="L79">      Map.Entry&lt;FieldDescriptor, Object&gt; field = iter.next();</span>
+<span class="nc" id="L80">      printField(field.getKey(), field.getValue(), generator);</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">      if (iter.hasNext()) {</span>
+<span class="nc" id="L82">        generator.print(&quot;,&quot;);</span>
+      }
+<span class="nc" id="L84">    }</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">    if (message.getUnknownFields().asMap().size() &gt; 0)</span>
+<span class="nc" id="L86">      generator.print(&quot;, &quot;);</span>
+<span class="nc" id="L87">    printUnknownFields(message.getUnknownFields(), generator);</span>
+<span class="nc" id="L88">  }</span>
+
+  public void printField(FieldDescriptor field, Object value, JsonGenerator generator) throws IOException {
+
+<span class="nc" id="L92">    printSingleField(field, value, generator);</span>
+<span class="nc" id="L93">  }</span>
+
+  private void printSingleField(FieldDescriptor field,
+                                Object value,
+                                JsonGenerator generator) throws IOException {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">    if (field.isExtension()) {</span>
+<span class="nc" id="L99">      generator.print(&quot;\&quot;&quot;);</span>
+      // We special-case MessageSet elements for compatibility with proto1.
+<span class="nc bnc" id="L101" title="All 2 branches missed.">      if (field.getContainingType().getOptions().getMessageSetWireFormat()</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">          &amp;&amp; (field.getType() == FieldDescriptor.Type.MESSAGE) &amp;&amp; (field.isOptional())</span>
+          // object equality
+<span class="nc bnc" id="L104" title="All 2 branches missed.">          &amp;&amp; (field.getExtensionScope() == field.getMessageType())) {</span>
+<span class="nc" id="L105">        generator.print(field.getMessageType().getFullName());</span>
+      } else {
+<span class="nc" id="L107">        generator.print(field.getFullName());</span>
+      }
+<span class="nc" id="L109">      generator.print(&quot;\&quot;&quot;);</span>
+    } else {
+<span class="nc" id="L111">      generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">      if (field.getType() == FieldDescriptor.Type.GROUP) {</span>
+        // Groups must be serialized with their original capitalization.
+<span class="nc" id="L114">        generator.print(field.getMessageType().getName());</span>
+      } else {
+<span class="nc" id="L116">        generator.print(field.getName());</span>
+      }
+<span class="nc" id="L118">      generator.print(&quot;\&quot;&quot;);</span>
+    }
+
+    // Done with the name, on to the value
+
+<span class="nc bnc" id="L123" title="All 2 branches missed.">    if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {</span>
+<span class="nc" id="L124">      generator.print(&quot;: &quot;);</span>
+<span class="nc" id="L125">      generator.indent();</span>
+    } else {
+<span class="nc" id="L127">      generator.print(&quot;: &quot;);</span>
+    }
+
+
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    if (field.isRepeated()) {</span>
+      // Repeated field. Print each element.
+<span class="nc" id="L133">      generator.print(&quot;[&quot;);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">      for (Iterator&lt;?&gt; iter = ((List&lt;?&gt;) value).iterator(); iter.hasNext();) {</span>
+<span class="nc" id="L135">        printFieldValue(field, iter.next(), generator);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (iter.hasNext()) {</span>
+<span class="nc" id="L137">          generator.print(&quot;,&quot;);</span>
+        }
+      }
+<span class="nc" id="L140">      generator.print(&quot;]&quot;);</span>
+    } else {
+<span class="nc" id="L142">      printFieldValue(field, value, generator);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">      if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {</span>
+<span class="nc" id="L144">        generator.outdent();</span>
+      }
+    }
+<span class="nc" id="L147">  }</span>
+
+  private void printFieldValue(FieldDescriptor field, Object value, JsonGenerator generator) throws IOException {
+<span class="nc bnc" id="L150" title="All 8 branches missed.">    switch (field.getType()) {</span>
+      case INT32:
+      case INT64:
+      case SINT32:
+      case SINT64:
+      case SFIXED32:
+      case SFIXED64:
+      case FLOAT:
+      case DOUBLE:
+      case BOOL:
+        // Good old toString() does what we want for these types.
+<span class="nc" id="L161">        generator.print(value.toString());</span>
+<span class="nc" id="L162">        break;</span>
+
+      case UINT32:
+      case FIXED32:
+<span class="nc" id="L166">        generator.print(TextUtils.unsignedToString((Integer) value));</span>
+<span class="nc" id="L167">        break;</span>
+
+      case UINT64:
+      case FIXED64:
+<span class="nc" id="L171">        generator.print(TextUtils.unsignedToString((Long) value));</span>
+<span class="nc" id="L172">        break;</span>
+
+      case STRING:
+<span class="nc" id="L175">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L176">        generator.print(escapeText((String) value));</span>
+<span class="nc" id="L177">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L178">        break;</span>
+
+      case BYTES: {
+<span class="nc" id="L181">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L182">        generator.print(escapeBytes((ByteString) value));</span>
+<span class="nc" id="L183">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L184">        break;</span>
+      }
+
+      case ENUM: {
+<span class="nc" id="L188">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L189">        generator.print(((EnumValueDescriptor) value).getName());</span>
+<span class="nc" id="L190">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L191">        break;</span>
+      }
+
+      case MESSAGE:
+      case GROUP:
+<span class="nc" id="L196">        generator.print(&quot;{&quot;);</span>
+<span class="nc" id="L197">        print((Message) value, generator);</span>
+<span class="nc" id="L198">        generator.print(&quot;}&quot;);</span>
+        break;
+    }
+<span class="nc" id="L201">  }</span>
+
+  protected void printUnknownFields(UnknownFieldSet unknownFields, JsonGenerator generator) throws IOException {
+<span class="nc" id="L204">    boolean firstField = true;</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">    for (Map.Entry&lt;Integer, UnknownFieldSet.Field&gt; entry : unknownFields.asMap().entrySet()) {</span>
+<span class="nc" id="L206">      UnknownFieldSet.Field field = entry.getValue();</span>
+
+<span class="nc bnc" id="L208" title="All 2 branches missed.">      if (firstField) {firstField = false;}</span>
+<span class="nc" id="L209">      else {generator.print(&quot;, &quot;);}</span>
+
+<span class="nc" id="L211">      generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L212">      generator.print(entry.getKey().toString());</span>
+<span class="nc" id="L213">      generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L214">      generator.print(&quot;: [&quot;);</span>
+
+<span class="nc" id="L216">      boolean firstValue = true;</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">      for (long value : field.getVarintList()) {</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (firstValue) {firstValue = false;}</span>
+<span class="nc" id="L219">        else {generator.print(&quot;, &quot;);}</span>
+<span class="nc" id="L220">        generator.print(TextUtils.unsignedToString(value));</span>
+<span class="nc" id="L221">      }</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">      for (int value : field.getFixed32List()) {</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (firstValue) {firstValue = false;}</span>
+<span class="nc" id="L224">        else {generator.print(&quot;, &quot;);}</span>
+<span class="nc" id="L225">        generator.print(String.format((Locale) null, &quot;0x%08x&quot;, value));</span>
+<span class="nc" id="L226">      }</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">      for (long value : field.getFixed64List()) {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (firstValue) {firstValue = false;}</span>
+<span class="nc" id="L229">        else {generator.print(&quot;, &quot;);}</span>
+<span class="nc" id="L230">        generator.print(String.format((Locale) null, &quot;0x%016x&quot;, value));</span>
+<span class="nc" id="L231">      }</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">      for (ByteString value : field.getLengthDelimitedList()) {</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (firstValue) {firstValue = false;}</span>
+<span class="nc" id="L234">        else {generator.print(&quot;, &quot;);}</span>
+<span class="nc" id="L235">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L236">        generator.print(escapeBytes(value));</span>
+<span class="nc" id="L237">        generator.print(&quot;\&quot;&quot;);</span>
+<span class="nc" id="L238">      }</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">      for (UnknownFieldSet value : field.getGroupList()) {</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">        if (firstValue) {firstValue = false;}</span>
+<span class="nc" id="L241">        else {generator.print(&quot;, &quot;);}</span>
+<span class="nc" id="L242">        generator.print(&quot;{&quot;);</span>
+<span class="nc" id="L243">        printUnknownFields(value, generator);</span>
+<span class="nc" id="L244">        generator.print(&quot;}&quot;);</span>
+<span class="nc" id="L245">      }</span>
+<span class="nc" id="L246">      generator.print(&quot;]&quot;);</span>
+<span class="nc" id="L247">    }</span>
+<span class="nc" id="L248">  }</span>
+
+
+
+
+  /**
+   * An inner class for writing text to the output stream.
+   */
+  protected static class JsonGenerator {
+
+    Appendable output;
+<span class="nc" id="L259">    boolean atStartOfLine = true;</span>
+<span class="nc" id="L260">    StringBuilder indent = new StringBuilder();</span>
+
+<span class="nc" id="L262">    public JsonGenerator(Appendable output) {</span>
+<span class="nc" id="L263">      this.output = output;</span>
+<span class="nc" id="L264">    }</span>
+
+    /**
+     * Indent text by two spaces. After calling Indent(), two spaces will be inserted at the
+     * beginning of each line of text. Indent() may be called multiple times to produce deeper
+     * indents.
+     */
+    public void indent() {
+<span class="nc" id="L272">      indent.append(&quot;  &quot;);</span>
+<span class="nc" id="L273">    }</span>
+
+    /**
+     * Reduces the current indent level by two spaces, or crashes if the indent level is zero.
+     */
+    public void outdent() {
+<span class="nc" id="L279">      int length = indent.length();</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">      if (length == 0) {</span>
+<span class="nc" id="L281">        throw new IllegalArgumentException(&quot; Outdent() without matching Indent().&quot;);</span>
+      }
+<span class="nc" id="L283">      indent.delete(length - 2, length);</span>
+<span class="nc" id="L284">    }</span>
+
+    /**
+     * Print text to the output stream.
+     */
+    public void print(CharSequence text) throws IOException {
+<span class="nc" id="L290">      int size = text.length();</span>
+<span class="nc" id="L291">      int pos = 0;</span>
+
+<span class="nc bnc" id="L293" title="All 2 branches missed.">      for (int i = 0; i &lt; size; i++) {</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">        if (text.charAt(i) == '\n') {</span>
+<span class="nc" id="L295">          write(text.subSequence(pos, size), i - pos + 1);</span>
+<span class="nc" id="L296">          pos = i + 1;</span>
+<span class="nc" id="L297">          atStartOfLine = true;</span>
+        }
+      }
+<span class="nc" id="L300">      write(text.subSequence(pos, size), size - pos);</span>
+<span class="nc" id="L301">    }</span>
+
+    private void write(CharSequence data, int size) throws IOException {
+<span class="nc bnc" id="L304" title="All 2 branches missed.">      if (size == 0) {</span>
+<span class="nc" id="L305">        return;</span>
+      }
+<span class="nc bnc" id="L307" title="All 2 branches missed.">      if (atStartOfLine) {</span>
+<span class="nc" id="L308">        atStartOfLine = false;</span>
+<span class="nc" id="L309">        output.append(indent);</span>
+      }
+<span class="nc" id="L311">      output.append(data);</span>
+<span class="nc" id="L312">    }</span>
+  }
+
+  // =================================================================
+  // Parsing
+
+  /**
+   * Represents a stream of tokens parsed from a {@code String}.
+   * &lt;p/&gt;
+   * &lt;p&gt;
+   * The Java standard library provides many classes that you might think would be useful for
+   * implementing this, but aren't. For example:
+   * &lt;p/&gt;
+   * &lt;ul&gt;
+   * &lt;li&gt;{@code java.io.StreamTokenizer}: This almost does what we want -- or, at least, something
+   * that would get us close to what we want -- except for one fatal flaw: It automatically
+   * un-escapes strings using Java escape sequences, which do not include all the escape sequences
+   * we need to support (e.g. '\x').
+   * &lt;li&gt;{@code java.util.Scanner}: This seems like a great way at least to parse regular
+   * expressions out of a stream (so we wouldn't have to load the entire input into a single
+   * string before parsing). Sadly, {@code Scanner} requires that tokens be delimited with some
+   * delimiter. Thus, although the text &quot;foo:&quot; should parse to two tokens (&quot;foo&quot; and &quot;:&quot;), {@code
+   * Scanner} would recognize it only as a single token. Furthermore, {@code Scanner} provides no
+   * way to inspect the contents of delimiters, making it impossible to keep track of line and
+   * column numbers.
+   * &lt;/ul&gt;
+   * &lt;p/&gt;
+   * &lt;p&gt;
+   * Luckily, Java's regular expression support does manage to be useful to us. (Barely: We need
+   * {@code Matcher.usePattern()}, which is new in Java 1.5.) So, we can use that, at least.
+   * Unfortunately, this implies that we need to have the entire input in one contiguous string.
+   */
+  protected static class Tokenizer {
+
+    private final CharSequence text;
+    private final Matcher matcher;
+    private String currentToken;
+
+    // The character index within this.text at which the current token begins.
+<span class="nc" id="L351">    private int pos = 0;</span>
+
+    // The line and column numbers of the current token.
+<span class="nc" id="L354">    private int line = 0;</span>
+<span class="nc" id="L355">    private int column = 0;</span>
+
+    // The line and column numbers of the previous token (allows throwing
+    // errors *after* consuming).
+<span class="nc" id="L359">    private int previousLine = 0;</span>
+<span class="nc" id="L360">    private int previousColumn = 0;</span>
+
+    // We use possesive quantifiers (*+ and ++) because otherwise the Java
+    // regex matcher has stack overflows on large inputs.
+<span class="nc" id="L364">    private static final Pattern WHITESPACE =</span>
+<span class="nc" id="L365">        Pattern.compile(&quot;(\\s|(#.*$))++&quot;, Pattern.MULTILINE);</span>
+<span class="nc" id="L366">    private static final Pattern TOKEN = Pattern.compile(</span>
+        &quot;[a-zA-Z_][0-9a-zA-Z_+-]*+|&quot; +                // an identifier
+            &quot;[.]?[0-9+-][0-9a-zA-Z_.+-]*+|&quot; +             // a number
+            &quot;\&quot;([^\&quot;\n\\\\]|\\\\.)*+(\&quot;|\\\\?$)|&quot; +       // a double-quoted string
+            &quot;\'([^\'\n\\\\]|\\\\.)*+(\'|\\\\?$)&quot;,         // a single-quoted string
+        Pattern.MULTILINE);
+
+<span class="nc" id="L373">    private static final Pattern DOUBLE_INFINITY = Pattern.compile(</span>
+        &quot;-?inf(inity)?&quot;,
+        Pattern.CASE_INSENSITIVE);
+<span class="nc" id="L376">    private static final Pattern FLOAT_INFINITY = Pattern.compile(</span>
+        &quot;-?inf(inity)?f?&quot;,
+        Pattern.CASE_INSENSITIVE);
+<span class="nc" id="L379">    private static final Pattern FLOAT_NAN = Pattern.compile(</span>
+        &quot;nanf?&quot;,
+        Pattern.CASE_INSENSITIVE);
+
+    /**
+     * Construct a tokenizer that parses tokens from the given text.
+     */
+<span class="nc" id="L386">    public Tokenizer(CharSequence text) {</span>
+<span class="nc" id="L387">      this.text = text;</span>
+<span class="nc" id="L388">      matcher = WHITESPACE.matcher(text);</span>
+<span class="nc" id="L389">      skipWhitespace();</span>
+<span class="nc" id="L390">      nextToken();</span>
+<span class="nc" id="L391">    }</span>
+
+    /**
+     * Are we at the end of the input?
+     */
+    public boolean atEnd() {
+<span class="nc bnc" id="L397" title="All 2 branches missed.">      return currentToken.length() == 0;</span>
+    }
+
+    /**
+     * Advance to the next token.
+     */
+    public void nextToken() {
+<span class="nc" id="L404">      previousLine = line;</span>
+<span class="nc" id="L405">      previousColumn = column;</span>
+
+      // Advance the line counter to the current position.
+<span class="nc bnc" id="L408" title="All 2 branches missed.">      while (pos &lt; matcher.regionStart()) {</span>
+<span class="nc bnc" id="L409" title="All 2 branches missed.">        if (text.charAt(pos) == '\n') {</span>
+<span class="nc" id="L410">          ++line;</span>
+<span class="nc" id="L411">          column = 0;</span>
+        } else {
+<span class="nc" id="L413">          ++column;</span>
+        }
+<span class="nc" id="L415">        ++pos;</span>
+      }
+
+      // Match the next token.
+<span class="nc bnc" id="L419" title="All 2 branches missed.">      if (matcher.regionStart() == matcher.regionEnd()) {</span>
+        // EOF
+<span class="nc" id="L421">        currentToken = &quot;&quot;;</span>
+      } else {
+<span class="nc" id="L423">        matcher.usePattern(TOKEN);</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">        if (matcher.lookingAt()) {</span>
+<span class="nc" id="L425">          currentToken = matcher.group();</span>
+<span class="nc" id="L426">          matcher.region(matcher.end(), matcher.regionEnd());</span>
+        } else {
+          // Take one character.
+<span class="nc" id="L429">          currentToken = String.valueOf(text.charAt(pos));</span>
+<span class="nc" id="L430">          matcher.region(pos + 1, matcher.regionEnd());</span>
+        }
+
+<span class="nc" id="L433">        skipWhitespace();</span>
+      }
+<span class="nc" id="L435">    }</span>
+
+    /**
+     * Skip over any whitespace so that the matcher region starts at the next token.
+     */
+    private void skipWhitespace() {
+<span class="nc" id="L441">      matcher.usePattern(WHITESPACE);</span>
+<span class="nc bnc" id="L442" title="All 2 branches missed.">      if (matcher.lookingAt()) {</span>
+<span class="nc" id="L443">        matcher.region(matcher.end(), matcher.regionEnd());</span>
+      }
+<span class="nc" id="L445">    }</span>
+
+    /**
+     * If the next token exactly matches {@code token}, consume it and return {@code true}.
+     * Otherwise, return {@code false} without doing anything.
+     */
+    public boolean tryConsume(String token) {
+<span class="nc bnc" id="L452" title="All 2 branches missed.">      if (currentToken.equals(token)) {</span>
+<span class="nc" id="L453">        nextToken();</span>
+<span class="nc" id="L454">        return true;</span>
+      } else {
+<span class="nc" id="L456">        return false;</span>
+      }
+    }
+
+    /**
+     * If the next token exactly matches {@code token}, consume it. Otherwise, throw a
+     * {@link ParseException}.
+     */
+    public void consume(String token) throws ParseException {
+<span class="nc bnc" id="L465" title="All 2 branches missed.">      if (!tryConsume(token)) {</span>
+<span class="nc" id="L466">        throw parseException(&quot;Expected \&quot;&quot; + token + &quot;\&quot;.&quot;);</span>
+      }
+<span class="nc" id="L468">    }</span>
+
+    /**
+     * Returns {@code true} if the next token is an integer, but does not consume it.
+     */
+    public boolean lookingAtInteger() {
+<span class="nc bnc" id="L474" title="All 2 branches missed.">      if (currentToken.length() == 0) {</span>
+<span class="nc" id="L475">        return false;</span>
+      }
+
+<span class="nc" id="L478">      char c = currentToken.charAt(0);</span>
+<span class="nc bnc" id="L479" title="All 8 branches missed.">      return (('0' &lt;= c) &amp;&amp; (c &lt;= '9')) || (c == '-') || (c == '+');</span>
+    }
+
+    /**
+     * Returns {@code true} if the next token is a boolean (true/false), but does not consume it.
+     */
+    public boolean lookingAtBoolean() {
+<span class="nc bnc" id="L486" title="All 2 branches missed.">      if (currentToken.length() == 0) {</span>
+<span class="nc" id="L487">        return false;</span>
+      }
+
+<span class="nc bnc" id="L490" title="All 4 branches missed.">      return (&quot;true&quot;.equals(currentToken) || &quot;false&quot;.equals(currentToken));</span>
+    }
+
+    /**
+     * @return currentToken to which the Tokenizer is pointing.
+     */
+    public String currentToken() {
+<span class="nc" id="L497">      return currentToken;</span>
+    }
+
+    /**
+     * If the next token is an identifier, consume it and return its value. Otherwise, throw a
+     * {@link ParseException}.
+     */
+    public String consumeIdentifier() throws ParseException {
+<span class="nc bnc" id="L505" title="All 2 branches missed.">      for (int i = 0; i &lt; currentToken.length(); i++) {</span>
+<span class="nc" id="L506">        char c = currentToken.charAt(i);</span>
+<span class="nc bnc" id="L507" title="All 18 branches missed.">        if ((('a' &lt;= c) &amp;&amp; (c &lt;= 'z')) || (('A' &lt;= c) &amp;&amp; (c &lt;= 'Z'))</span>
+            || (('0' &lt;= c) &amp;&amp; (c &lt;= '9')) || (c == '_') || (c == '.') || (c == '&quot;')) {
+          // OK
+        } else {
+<span class="nc" id="L511">          throw parseException(&quot;Expected identifier. -&quot; + c);</span>
+        }
+      }
+
+<span class="nc" id="L515">      String result = currentToken;</span>
+      // Need to clean-up result to remove quotes of any kind
+<span class="nc" id="L517">      result = result.replaceAll(&quot;\&quot;|'&quot;, &quot;&quot;);</span>
+<span class="nc" id="L518">      nextToken();</span>
+<span class="nc" id="L519">      return result;</span>
+    }
+
+    /**
+     * If the next token is a 32-bit signed integer, consume it and return its value. Otherwise,
+     * throw a {@link ParseException}.
+     */
+    public int consumeInt32() throws ParseException {
+      try {
+<span class="nc" id="L528">        int result = parseInt32(currentToken);</span>
+<span class="nc" id="L529">        nextToken();</span>
+<span class="nc" id="L530">        return result;</span>
+<span class="nc" id="L531">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L532">        throw integerParseException(e);</span>
+      }
+    }
+
+    /**
+     * If the next token is a 32-bit unsigned integer, consume it and return its value.
+     * Otherwise, throw a {@link ParseException}.
+     */
+    public int consumeUInt32() throws ParseException {
+      try {
+<span class="nc" id="L542">        int result = parseUInt32(currentToken);</span>
+<span class="nc" id="L543">        nextToken();</span>
+<span class="nc" id="L544">        return result;</span>
+<span class="nc" id="L545">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L546">        throw integerParseException(e);</span>
+      }
+    }
+
+    /**
+     * If the next token is a 64-bit signed integer, consume it and return its value. Otherwise,
+     * throw a {@link ParseException}.
+     */
+    public long consumeInt64() throws ParseException {
+      try {
+<span class="nc" id="L556">        long result = parseInt64(currentToken);</span>
+<span class="nc" id="L557">        nextToken();</span>
+<span class="nc" id="L558">        return result;</span>
+<span class="nc" id="L559">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L560">        throw integerParseException(e);</span>
+      }
+    }
+
+    /**
+     * If the next token is a 64-bit unsigned integer, consume it and return its value.
+     * Otherwise, throw a {@link ParseException}.
+     */
+    public long consumeUInt64() throws ParseException {
+      try {
+<span class="nc" id="L570">        long result = parseUInt64(currentToken);</span>
+<span class="nc" id="L571">        nextToken();</span>
+<span class="nc" id="L572">        return result;</span>
+<span class="nc" id="L573">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L574">        throw integerParseException(e);</span>
+      }
+    }
+
+    /**
+     * If the next token is a double, consume it and return its value. Otherwise, throw a
+     * {@link ParseException}.
+     */
+    public double consumeDouble() throws ParseException {
+      // We need to parse infinity and nan separately because
+      // Double.parseDouble() does not accept &quot;inf&quot;, &quot;infinity&quot;, or &quot;nan&quot;.
+<span class="nc bnc" id="L585" title="All 2 branches missed.">      if (DOUBLE_INFINITY.matcher(currentToken).matches()) {</span>
+<span class="nc" id="L586">        boolean negative = currentToken.startsWith(&quot;-&quot;);</span>
+<span class="nc" id="L587">        nextToken();</span>
+<span class="nc bnc" id="L588" title="All 2 branches missed.">        return negative ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY;</span>
+      }
+<span class="nc bnc" id="L590" title="All 2 branches missed.">      if (currentToken.equalsIgnoreCase(&quot;nan&quot;)) {</span>
+<span class="nc" id="L591">        nextToken();</span>
+<span class="nc" id="L592">        return Double.NaN;</span>
+      }
+      try {
+<span class="nc" id="L595">        double result = Double.parseDouble(currentToken);</span>
+<span class="nc" id="L596">        nextToken();</span>
+<span class="nc" id="L597">        return result;</span>
+<span class="nc" id="L598">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L599">        throw floatParseException(e);</span>
+      }
+    }
+
+    /**
+     * If the next token is a float, consume it and return its value. Otherwise, throw a
+     * {@link ParseException}.
+     */
+    public float consumeFloat() throws ParseException {
+      // We need to parse infinity and nan separately because
+      // Float.parseFloat() does not accept &quot;inf&quot;, &quot;infinity&quot;, or &quot;nan&quot;.
+<span class="nc bnc" id="L610" title="All 2 branches missed.">      if (FLOAT_INFINITY.matcher(currentToken).matches()) {</span>
+<span class="nc" id="L611">        boolean negative = currentToken.startsWith(&quot;-&quot;);</span>
+<span class="nc" id="L612">        nextToken();</span>
+<span class="nc bnc" id="L613" title="All 2 branches missed.">        return negative ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;</span>
+      }
+<span class="nc bnc" id="L615" title="All 2 branches missed.">      if (FLOAT_NAN.matcher(currentToken).matches()) {</span>
+<span class="nc" id="L616">        nextToken();</span>
+<span class="nc" id="L617">        return Float.NaN;</span>
+      }
+      try {
+<span class="nc" id="L620">        float result = Float.parseFloat(currentToken);</span>
+<span class="nc" id="L621">        nextToken();</span>
+<span class="nc" id="L622">        return result;</span>
+<span class="nc" id="L623">      } catch (NumberFormatException e) {</span>
+<span class="nc" id="L624">        throw floatParseException(e);</span>
+      }
+    }
+
+    /**
+     * If the next token is a boolean, consume it and return its value. Otherwise, throw a
+     * {@link ParseException}.
+     */
+    public boolean consumeBoolean() throws ParseException {
+<span class="nc bnc" id="L633" title="All 2 branches missed.">      if (currentToken.equals(&quot;true&quot;)) {</span>
+<span class="nc" id="L634">        nextToken();</span>
+<span class="nc" id="L635">        return true;</span>
+<span class="nc bnc" id="L636" title="All 2 branches missed.">      } else if (currentToken.equals(&quot;false&quot;)) {</span>
+<span class="nc" id="L637">        nextToken();</span>
+<span class="nc" id="L638">        return false;</span>
+      } else {
+<span class="nc" id="L640">        throw parseException(&quot;Expected \&quot;true\&quot; or \&quot;false\&quot;.&quot;);</span>
+      }
+    }
+
+    /**
+     * If the next token is a string, consume it and return its (unescaped) value. Otherwise,
+     * throw a {@link ParseException}.
+     */
+    public String consumeString() throws ParseException {
+<span class="nc bnc" id="L649" title="All 2 branches missed.">      char quote = currentToken.length() &gt; 0 ? currentToken.charAt(0) : '\0';</span>
+<span class="nc bnc" id="L650" title="All 4 branches missed.">      if ((quote != '\&quot;') &amp;&amp; (quote != '\'')) {</span>
+<span class="nc" id="L651">        throw parseException(&quot;Expected string.&quot;);</span>
+      }
+
+<span class="nc bnc" id="L654" title="All 2 branches missed.">      if ((currentToken.length() &lt; 2)</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">          || (currentToken.charAt(currentToken.length() - 1) != quote)) {</span>
+<span class="nc" id="L656">        throw parseException(&quot;String missing ending quote.&quot;);</span>
+      }
+
+      try {
+<span class="nc" id="L660">        String escaped = currentToken.substring(1, currentToken.length() - 1);</span>
+<span class="nc" id="L661">        String result = unescapeText(escaped);</span>
+<span class="nc" id="L662">        nextToken();</span>
+<span class="nc" id="L663">        return result;</span>
+<span class="nc" id="L664">      } catch (InvalidEscapeSequence e) {</span>
+<span class="nc" id="L665">        throw parseException(e.getMessage());</span>
+      }
+    }
+
+    /**
+     * If the next token is a string, consume it, unescape it as a
+     * {@link com.googlecode.protobuf.format.ByteString}, and return it. Otherwise, throw a
+     * {@link ParseException}.
+     */
+    public ByteString consumeByteString() throws ParseException {
+<span class="nc bnc" id="L675" title="All 2 branches missed.">      char quote = currentToken.length() &gt; 0 ? currentToken.charAt(0) : '\0';</span>
+<span class="nc bnc" id="L676" title="All 4 branches missed.">      if ((quote != '\&quot;') &amp;&amp; (quote != '\'')) {</span>
+<span class="nc" id="L677">        throw parseException(&quot;Expected string.&quot;);</span>
+      }
+
+<span class="nc bnc" id="L680" title="All 2 branches missed.">      if ((currentToken.length() &lt; 2)</span>
+<span class="nc bnc" id="L681" title="All 2 branches missed.">          || (currentToken.charAt(currentToken.length() - 1) != quote)) {</span>
+<span class="nc" id="L682">        throw parseException(&quot;String missing ending quote.&quot;);</span>
+      }
+
+      try {
+<span class="nc" id="L686">        String escaped = currentToken.substring(1, currentToken.length() - 1);</span>
+<span class="nc" id="L687">        ByteString result = unescapeBytes(escaped);</span>
+<span class="nc" id="L688">        nextToken();</span>
+<span class="nc" id="L689">        return result;</span>
+<span class="nc" id="L690">      } catch (InvalidEscapeSequence e) {</span>
+<span class="nc" id="L691">        throw parseException(e.getMessage());</span>
+      }
+    }
+
+    /**
+     * Returns a {@link ParseException} with the current line and column numbers in the
+     * description, suitable for throwing.
+     */
+    public ParseException parseException(String description) {
+      // Note: People generally prefer one-based line and column numbers.
+<span class="nc" id="L701">      return new ParseException((line + 1) + &quot;:&quot; + (column + 1) + &quot;: &quot; + description);</span>
+    }
+
+    /**
+     * Returns a {@link ParseException} with the line and column numbers of the previous token
+     * in the description, suitable for throwing.
+     */
+    public ParseException parseExceptionPreviousToken(String description) {
+      // Note: People generally prefer one-based line and column numbers.
+<span class="nc" id="L710">      return new ParseException((previousLine + 1) + &quot;:&quot; + (previousColumn + 1) + &quot;: &quot;</span>
+          + description);
+    }
+
+    /**
+     * Constructs an appropriate {@link ParseException} for the given {@code
+     * NumberFormatException} when trying to parse an integer.
+     */
+    private ParseException integerParseException(NumberFormatException e) {
+<span class="nc" id="L719">      return parseException(&quot;Couldn't parse integer: &quot; + e.getMessage());</span>
+    }
+
+    /**
+     * Constructs an appropriate {@link ParseException} for the given {@code
+     * NumberFormatException} when trying to parse a float or double.
+     */
+    private ParseException floatParseException(NumberFormatException e) {
+<span class="nc" id="L727">      return parseException(&quot;Couldn't parse number: &quot; + e.getMessage());</span>
+    }
+  }
+
+  /**
+   * Thrown when parsing an invalid text format message.
+   */
+  public static class ParseException extends IOException {
+
+    private static final long serialVersionUID = 1L;
+
+    public ParseException(String message) {
+<span class="nc" id="L739">      super(message);</span>
+<span class="nc" id="L740">    }</span>
+  }
+
+
+  /**
+   * Parse a text-format message from {@code input} and merge the contents into {@code builder}.
+   * Extensions will be recognized if they are registered in {@code extensionRegistry}.
+   */
+  public void merge(CharSequence input,
+                    ExtensionRegistry extensionRegistry,
+                    Message.Builder builder) throws ParseException {
+<span class="nc" id="L751">    Tokenizer tokenizer = new Tokenizer(input);</span>
+
+    // Based on the state machine @ http://json.org/
+
+<span class="nc" id="L755">    tokenizer.consume(&quot;{&quot;); // Needs to happen when the object starts.</span>
+<span class="nc bnc" id="L756" title="All 2 branches missed.">    while (!tokenizer.tryConsume(&quot;}&quot;)) { // Continue till the object is done</span>
+<span class="nc" id="L757">      mergeField(tokenizer, extensionRegistry, builder);</span>
+    }
+    // Test to make sure the tokenizer has reached the end of the stream.
+<span class="nc bnc" id="L760" title="All 2 branches missed.">    if (!tokenizer.atEnd()) {</span>
+<span class="nc" id="L761">      throw tokenizer.parseException(&quot;Expecting the end of the stream, but there seems to be more data!  Check the input for a valid JSON format.&quot;);</span>
+    }
+<span class="nc" id="L763">  }</span>
+
+
+  /**
+   * Parse a single field from {@code tokenizer} and merge it into {@code builder}. If a ',' is
+   * detected after the field ends, the next field will be parsed automatically
+   */
+  protected void mergeField(Tokenizer tokenizer,
+                            ExtensionRegistry extensionRegistry,
+                            Message.Builder builder) throws ParseException {
+    FieldDescriptor field;
+<span class="nc" id="L774">    Descriptor type = builder.getDescriptorForType();</span>
+<span class="nc" id="L775">    ExtensionRegistry.ExtensionInfo extension = null;</span>
+<span class="nc" id="L776">    boolean unknown = false;</span>
+
+<span class="nc" id="L778">    String name = tokenizer.consumeIdentifier();</span>
+<span class="nc" id="L779">    field = type.findFieldByName(name);</span>
+
+    // Group names are expected to be capitalized as they appear in the
+    // .proto file, which actually matches their type names, not their field
+    // names.
+<span class="nc bnc" id="L784" title="All 2 branches missed.">    if (field == null) {</span>
+      // Explicitly specify US locale so that this code does not break when
+      // executing in Turkey.
+<span class="nc" id="L787">      String lowerName = name.toLowerCase(Locale.US);</span>
+<span class="nc" id="L788">      field = type.findFieldByName(lowerName);</span>
+      // If the case-insensitive match worked but the field is NOT a group,
+<span class="nc bnc" id="L790" title="All 4 branches missed.">      if ((field != null) &amp;&amp; (field.getType() != FieldDescriptor.Type.GROUP)) {</span>
+<span class="nc" id="L791">        field = null;</span>
+      }
+    }
+    // Again, special-case group names as described above.
+<span class="nc bnc" id="L795" title="All 4 branches missed.">    if ((field != null) &amp;&amp; (field.getType() == FieldDescriptor.Type.GROUP)</span>
+<span class="nc bnc" id="L796" title="All 2 branches missed.">        &amp;&amp; !field.getMessageType().getName().equals(name)) {</span>
+<span class="nc" id="L797">      field = null;</span>
+    }
+
+    // Last try to lookup by field-index if 'name' is numeric,
+    // which indicates a possible unknown field
+<span class="nc bnc" id="L802" title="All 4 branches missed.">    if (field == null &amp;&amp; TextUtils.isDigits(name)) {</span>
+<span class="nc" id="L803">      field = type.findFieldByNumber(Integer.parseInt(name));</span>
+<span class="nc" id="L804">      unknown = true;</span>
+    }
+
+    // Finally, look for extensions
+<span class="nc" id="L808">    extension = extensionRegistry.findExtensionByName(name);</span>
+<span class="nc bnc" id="L809" title="All 2 branches missed.">    if (extension != null) {</span>
+<span class="nc bnc" id="L810" title="All 2 branches missed.">      if (extension.descriptor.getContainingType() != type) {</span>
+<span class="nc" id="L811">        throw tokenizer.parseExceptionPreviousToken(&quot;Extension \&quot;&quot; + name</span>
+            + &quot;\&quot; does not extend message type \&quot;&quot;
+<span class="nc" id="L813">            + type.getFullName() + &quot;\&quot;.&quot;);</span>
+      }
+<span class="nc" id="L815">      field = extension.descriptor;</span>
+    }
+
+    // Disabled throwing exception if field not found, since it could be a different version.
+<span class="nc bnc" id="L819" title="All 2 branches missed.">    if (field == null) {</span>
+<span class="nc" id="L820">      handleMissingField(tokenizer, extensionRegistry, builder);</span>
+      //throw tokenizer.parseExceptionPreviousToken(&quot;Message type \&quot;&quot; + type.getFullName()
+      //                                            + &quot;\&quot; has no field named \&quot;&quot; + name
+      //                                            + &quot;\&quot;.&quot;);
+    }
+
+<span class="nc bnc" id="L826" title="All 2 branches missed.">    if (field != null) {</span>
+<span class="nc" id="L827">      tokenizer.consume(&quot;:&quot;);</span>
+<span class="nc" id="L828">      boolean array = tokenizer.tryConsume(&quot;[&quot;);</span>
+
+<span class="nc bnc" id="L830" title="All 2 branches missed.">      if (array) {</span>
+<span class="nc bnc" id="L831" title="All 2 branches missed.">        while (!tokenizer.tryConsume(&quot;]&quot;)) {</span>
+<span class="nc" id="L832">          handleValue(tokenizer, extensionRegistry, builder, field, extension, unknown);</span>
+<span class="nc" id="L833">          tokenizer.tryConsume(&quot;,&quot;);</span>
+        }
+      } else {
+<span class="nc" id="L836">        handleValue(tokenizer, extensionRegistry, builder, field, extension, unknown);</span>
+      }
+    }
+
+<span class="nc bnc" id="L840" title="All 2 branches missed.">    if (tokenizer.tryConsume(&quot;,&quot;)) {</span>
+      // Continue with the next field
+<span class="nc" id="L842">      mergeField(tokenizer, extensionRegistry, builder);</span>
+    }
+<span class="nc" id="L844">  }</span>
+
+  private void handleMissingField(Tokenizer tokenizer,
+                                  ExtensionRegistry extensionRegistry,
+                                  Message.Builder builder) throws ParseException {
+<span class="nc" id="L849">    tokenizer.tryConsume(&quot;:&quot;);</span>
+<span class="nc bnc" id="L850" title="All 2 branches missed.">    if (&quot;{&quot;.equals(tokenizer.currentToken())) {</span>
+      // Message structure
+<span class="nc" id="L852">      tokenizer.consume(&quot;{&quot;);</span>
+      do {
+<span class="nc" id="L854">        tokenizer.consumeIdentifier();</span>
+<span class="nc" id="L855">        handleMissingField(tokenizer, extensionRegistry, builder);</span>
+<span class="nc bnc" id="L856" title="All 2 branches missed.">      } while (tokenizer.tryConsume(&quot;,&quot;));</span>
+<span class="nc" id="L857">      tokenizer.consume(&quot;}&quot;);</span>
+<span class="nc bnc" id="L858" title="All 2 branches missed.">    } else if (&quot;[&quot;.equals(tokenizer.currentToken())) {</span>
+      // Collection
+<span class="nc" id="L860">      tokenizer.consume(&quot;[&quot;);</span>
+      do {
+<span class="nc" id="L862">        handleMissingField(tokenizer, extensionRegistry, builder);</span>
+<span class="nc bnc" id="L863" title="All 2 branches missed.">      } while (tokenizer.tryConsume(&quot;,&quot;));</span>
+<span class="nc" id="L864">      tokenizer.consume(&quot;]&quot;);</span>
+    } else { //if (!&quot;,&quot;.equals(tokenizer.currentToken)){
+      // Primitive value
+<span class="nc bnc" id="L867" title="All 2 branches missed.">      if (&quot;null&quot;.equals(tokenizer.currentToken())) {</span>
+<span class="nc" id="L868">        tokenizer.consume(&quot;null&quot;);</span>
+<span class="nc bnc" id="L869" title="All 2 branches missed.">      } else if (tokenizer.lookingAtInteger()) {</span>
+<span class="nc" id="L870">        tokenizer.consumeInt64();</span>
+<span class="nc bnc" id="L871" title="All 2 branches missed.">      } else if (tokenizer.lookingAtBoolean()) {</span>
+<span class="nc" id="L872">        tokenizer.consumeBoolean();</span>
+      } else {
+<span class="nc" id="L874">        tokenizer.consumeString();</span>
+      }
+    }
+<span class="nc" id="L877">  }</span>
+
+  private void handleValue(Tokenizer tokenizer,
+                           ExtensionRegistry extensionRegistry,
+                           Message.Builder builder,
+                           FieldDescriptor field,
+                           ExtensionRegistry.ExtensionInfo extension,
+                           boolean unknown) throws ParseException {
+
+<span class="nc" id="L886">    Object value = null;</span>
+<span class="nc bnc" id="L887" title="All 2 branches missed.">    if (field.getJavaType() == FieldDescriptor.JavaType.MESSAGE) {</span>
+<span class="nc" id="L888">      value = handleObject(tokenizer, extensionRegistry, builder, field, extension, unknown);</span>
+    } else {
+<span class="nc" id="L890">      value = handlePrimitive(tokenizer, field);</span>
+    }
+<span class="nc bnc" id="L892" title="All 2 branches missed.">    if (value != null) {</span>
+<span class="nc bnc" id="L893" title="All 2 branches missed.">      if (field.isRepeated()) {</span>
+<span class="nc" id="L894">        builder.addRepeatedField(field, value);</span>
+      } else {
+<span class="nc" id="L896">        builder.setField(field, value);</span>
+      }
+    }
+<span class="nc" id="L899">  }</span>
+
+  private Object handlePrimitive(Tokenizer tokenizer, FieldDescriptor field) throws ParseException {
+<span class="nc" id="L902">    Object value = null;</span>
+<span class="nc bnc" id="L903" title="All 2 branches missed.">    if (&quot;null&quot;.equals(tokenizer.currentToken())) {</span>
+<span class="nc" id="L904">      tokenizer.consume(&quot;null&quot;);</span>
+<span class="nc" id="L905">      return value;</span>
+    }
+<span class="nc bnc" id="L907" title="All 12 branches missed.">    switch (field.getType()) {</span>
+      case INT32:
+      case SINT32:
+      case SFIXED32:
+<span class="nc" id="L911">        value = tokenizer.consumeInt32();</span>
+<span class="nc" id="L912">        break;</span>
+
+      case INT64:
+      case SINT64:
+      case SFIXED64:
+<span class="nc" id="L917">        value = tokenizer.consumeInt64();</span>
+<span class="nc" id="L918">        break;</span>
+
+      case UINT32:
+      case FIXED32:
+<span class="nc" id="L922">        value = tokenizer.consumeUInt32();</span>
+<span class="nc" id="L923">        break;</span>
+
+      case UINT64:
+      case FIXED64:
+<span class="nc" id="L927">        value = tokenizer.consumeUInt64();</span>
+<span class="nc" id="L928">        break;</span>
+
+      case FLOAT:
+<span class="nc" id="L931">        value = tokenizer.consumeFloat();</span>
+<span class="nc" id="L932">        break;</span>
+
+      case DOUBLE:
+<span class="nc" id="L935">        value = tokenizer.consumeDouble();</span>
+<span class="nc" id="L936">        break;</span>
+
+      case BOOL:
+<span class="nc" id="L939">        value = tokenizer.consumeBoolean();</span>
+<span class="nc" id="L940">        break;</span>
+
+      case STRING:
+<span class="nc" id="L943">        value = tokenizer.consumeString();</span>
+<span class="nc" id="L944">        break;</span>
+
+      case BYTES:
+<span class="nc" id="L947">        value = tokenizer.consumeByteString();</span>
+<span class="nc" id="L948">        break;</span>
+
+      case ENUM: {
+<span class="nc" id="L951">        EnumDescriptor enumType = field.getEnumType();</span>
+
+<span class="nc bnc" id="L953" title="All 2 branches missed.">        if (tokenizer.lookingAtInteger()) {</span>
+<span class="nc" id="L954">          int number = tokenizer.consumeInt32();</span>
+<span class="nc" id="L955">          value = enumType.findValueByNumber(number);</span>
+<span class="nc bnc" id="L956" title="All 2 branches missed.">          if (value == null) {</span>
+<span class="nc" id="L957">            throw tokenizer.parseExceptionPreviousToken(&quot;Enum type \&quot;&quot;</span>
+<span class="nc" id="L958">                + enumType.getFullName()</span>
+                + &quot;\&quot; has no value with number &quot;
+                + number + &quot;.&quot;);
+          }
+<span class="nc" id="L962">        } else {</span>
+<span class="nc" id="L963">          String id = tokenizer.consumeIdentifier();</span>
+<span class="nc" id="L964">          value = enumType.findValueByName(id);</span>
+<span class="nc bnc" id="L965" title="All 2 branches missed.">          if (value == null) {</span>
+<span class="nc" id="L966">            throw tokenizer.parseExceptionPreviousToken(&quot;Enum type \&quot;&quot;</span>
+<span class="nc" id="L967">                + enumType.getFullName()</span>
+                + &quot;\&quot; has no value named \&quot;&quot;
+                + id + &quot;\&quot;.&quot;);
+          }
+        }
+
+<span class="nc" id="L973">        break;</span>
+      }
+
+      case MESSAGE:
+      case GROUP:
+<span class="nc" id="L978">        throw new RuntimeException(&quot;Can't get here.&quot;);</span>
+    }
+<span class="nc" id="L980">    return value;</span>
+  }
+
+  private Object handleObject(Tokenizer tokenizer,
+                              ExtensionRegistry extensionRegistry,
+                              Message.Builder builder,
+                              FieldDescriptor field,
+                              ExtensionRegistry.ExtensionInfo extension,
+                              boolean unknown) throws ParseException {
+
+    Message.Builder subBuilder;
+<span class="nc bnc" id="L991" title="All 2 branches missed.">    if (extension == null) {</span>
+<span class="nc" id="L992">      subBuilder = builder.newBuilderForField(field);</span>
+    } else {
+<span class="nc" id="L994">      subBuilder = extension.defaultInstance.newBuilderForType();</span>
+    }
+
+<span class="nc bnc" id="L997" title="All 2 branches missed.">    if (unknown) {</span>
+<span class="nc" id="L998">      ByteString data = tokenizer.consumeByteString();</span>
+      try {
+<span class="nc" id="L1000">        subBuilder.mergeFrom(data);</span>
+<span class="nc" id="L1001">        return subBuilder.build();</span>
+<span class="nc" id="L1002">      } catch (InvalidProtocolBufferException e) {</span>
+<span class="nc" id="L1003">        throw tokenizer.parseException(&quot;Failed to build &quot; + field.getFullName() + &quot; from &quot; + data);</span>
+      }
+    }
+
+<span class="nc" id="L1007">    tokenizer.consume(&quot;{&quot;);</span>
+<span class="nc" id="L1008">    String endToken = &quot;}&quot;;</span>
+
+<span class="nc bnc" id="L1010" title="All 2 branches missed.">    while (!tokenizer.tryConsume(endToken)) {</span>
+<span class="nc bnc" id="L1011" title="All 2 branches missed.">      if (tokenizer.atEnd()) {</span>
+<span class="nc" id="L1012">        throw tokenizer.parseException(&quot;Expected \&quot;&quot; + endToken + &quot;\&quot;.&quot;);</span>
+      }
+<span class="nc" id="L1014">      mergeField(tokenizer, extensionRegistry, subBuilder);</span>
+<span class="nc bnc" id="L1015" title="All 2 branches missed.">      if (tokenizer.tryConsume(&quot;,&quot;)) {</span>
+        // there are more fields in the object, so continue
+<span class="nc" id="L1017">        continue;</span>
+      }
+    }
+
+<span class="nc" id="L1021">    return subBuilder.build();</span>
+  }
+
+  // =================================================================
+  // Utility functions
+  //
+  // Some of these methods are package-private because Descriptors.java uses
+  // them.
+
+  /**
+   * Escapes bytes in the format used in protocol buffer text format, which is the same as the
+   * format used for C string literals. All bytes that are not printable 7-bit ASCII characters
+   * are escaped, as well as backslash, single-quote, and double-quote characters. Characters for
+   * which no defined short-hand escape sequence is defined will be escaped using 3-digit octal
+   * sequences.
+   */
+  static String escapeBytes(ByteString input) {
+<span class="nc" id="L1038">    StringBuilder builder = new StringBuilder(input.size());</span>
+<span class="nc bnc" id="L1039" title="All 2 branches missed.">    for (int i = 0; i &lt; input.size(); i++) {</span>
+<span class="nc" id="L1040">      byte b = input.byteAt(i);</span>
+<span class="nc bnc" id="L1041" title="All 11 branches missed.">      switch (b) {</span>
+        // Java does not recognize \a or \v, apparently.
+        case 0x07:
+<span class="nc" id="L1044">          builder.append(&quot;\\a&quot;);</span>
+<span class="nc" id="L1045">          break;</span>
+        case '\b':
+<span class="nc" id="L1047">          builder.append(&quot;\\b&quot;);</span>
+<span class="nc" id="L1048">          break;</span>
+        case '\f':
+<span class="nc" id="L1050">          builder.append(&quot;\\f&quot;);</span>
+<span class="nc" id="L1051">          break;</span>
+        case '\n':
+<span class="nc" id="L1053">          builder.append(&quot;\\n&quot;);</span>
+<span class="nc" id="L1054">          break;</span>
+        case '\r':
+<span class="nc" id="L1056">          builder.append(&quot;\\r&quot;);</span>
+<span class="nc" id="L1057">          break;</span>
+        case '\t':
+<span class="nc" id="L1059">          builder.append(&quot;\\t&quot;);</span>
+<span class="nc" id="L1060">          break;</span>
+        case 0x0b:
+<span class="nc" id="L1062">          builder.append(&quot;\\v&quot;);</span>
+<span class="nc" id="L1063">          break;</span>
+        case '\\':
+<span class="nc" id="L1065">          builder.append(&quot;\\\\&quot;);</span>
+<span class="nc" id="L1066">          break;</span>
+        case '\'':
+<span class="nc" id="L1068">          builder.append(&quot;\\\'&quot;);</span>
+<span class="nc" id="L1069">          break;</span>
+        case '&quot;':
+<span class="nc" id="L1071">          builder.append(&quot;\\\&quot;&quot;);</span>
+<span class="nc" id="L1072">          break;</span>
+        default:
+<span class="nc bnc" id="L1074" title="All 2 branches missed.">          if (b &gt;= 0x20) {</span>
+<span class="nc" id="L1075">            builder.append((char) b);</span>
+          } else {
+<span class="nc" id="L1077">            final String unicodeString = unicodeEscaped((char) b);</span>
+<span class="nc" id="L1078">            builder.append(unicodeString);</span>
+          }
+          break;
+      }
+    }
+<span class="nc" id="L1083">    return builder.toString();</span>
+  }
+
+  static String unicodeEscaped(char ch) {
+<span class="nc bnc" id="L1087" title="All 2 branches missed.">    if (ch &lt; 0x10) {</span>
+<span class="nc" id="L1088">      return &quot;\\u000&quot; + Integer.toHexString(ch);</span>
+<span class="nc bnc" id="L1089" title="All 2 branches missed.">    } else if (ch &lt; 0x100) {</span>
+<span class="nc" id="L1090">      return &quot;\\u00&quot; + Integer.toHexString(ch);</span>
+<span class="nc bnc" id="L1091" title="All 2 branches missed.">    } else if (ch &lt; 0x1000) {</span>
+<span class="nc" id="L1092">      return &quot;\\u0&quot; + Integer.toHexString(ch);</span>
+    }
+<span class="nc" id="L1094">    return &quot;\\u&quot; + Integer.toHexString(ch);</span>
+  }
+
+  /**
+   * Un-escape a byte sequence as escaped using
+   * {@link #escapeBytes(com.googlecode.protobuf.format.ByteString)}. Two-digit hex escapes (starting with
+   * &quot;\x&quot;) are also recognized.
+   */
+  static ByteString unescapeBytes(CharSequence input) throws InvalidEscapeSequence {
+<span class="nc" id="L1103">    byte[] result = new byte[input.length()];</span>
+<span class="nc" id="L1104">    int pos = 0;</span>
+<span class="nc bnc" id="L1105" title="All 2 branches missed.">    for (int i = 0; i &lt; input.length(); i++) {</span>
+<span class="nc" id="L1106">      char c = input.charAt(i);</span>
+<span class="nc bnc" id="L1107" title="All 2 branches missed.">      if (c == '\\') {</span>
+<span class="nc bnc" id="L1108" title="All 2 branches missed.">        if (i + 1 &lt; input.length()) {</span>
+<span class="nc" id="L1109">          ++i;</span>
+<span class="nc" id="L1110">          c = input.charAt(i);</span>
+<span class="nc bnc" id="L1111" title="All 2 branches missed.">          if (TextUtils.isOctal(c)) {</span>
+            // Octal escape.
+<span class="nc" id="L1113">            int code = TextUtils.digitValue(c);</span>
+<span class="nc bnc" id="L1114" title="All 4 branches missed.">            if ((i + 1 &lt; input.length()) &amp;&amp; TextUtils.isOctal(input.charAt(i + 1))) {</span>
+<span class="nc" id="L1115">              ++i;</span>
+<span class="nc" id="L1116">              code = code * 8 + TextUtils.digitValue(input.charAt(i));</span>
+            }
+<span class="nc bnc" id="L1118" title="All 4 branches missed.">            if ((i + 1 &lt; input.length()) &amp;&amp; TextUtils.isOctal(input.charAt(i + 1))) {</span>
+<span class="nc" id="L1119">              ++i;</span>
+<span class="nc" id="L1120">              code = code * 8 + TextUtils.digitValue(input.charAt(i));</span>
+            }
+<span class="nc" id="L1122">            result[pos++] = (byte) code;</span>
+<span class="nc" id="L1123">          } else {</span>
+<span class="nc bnc" id="L1124" title="All 13 branches missed.">            switch (c) {</span>
+              case 'a':
+<span class="nc" id="L1126">                result[pos++] = 0x07;</span>
+<span class="nc" id="L1127">                break;</span>
+              case 'b':
+<span class="nc" id="L1129">                result[pos++] = '\b';</span>
+<span class="nc" id="L1130">                break;</span>
+              case 'f':
+<span class="nc" id="L1132">                result[pos++] = '\f';</span>
+<span class="nc" id="L1133">                break;</span>
+              case 'n':
+<span class="nc" id="L1135">                result[pos++] = '\n';</span>
+<span class="nc" id="L1136">                break;</span>
+              case 'r':
+<span class="nc" id="L1138">                result[pos++] = '\r';</span>
+<span class="nc" id="L1139">                break;</span>
+              case 't':
+<span class="nc" id="L1141">                result[pos++] = '\t';</span>
+<span class="nc" id="L1142">                break;</span>
+              case 'v':
+<span class="nc" id="L1144">                result[pos++] = 0x0b;</span>
+<span class="nc" id="L1145">                break;</span>
+              case '\\':
+<span class="nc" id="L1147">                result[pos++] = '\\';</span>
+<span class="nc" id="L1148">                break;</span>
+              case '\'':
+<span class="nc" id="L1150">                result[pos++] = '\'';</span>
+<span class="nc" id="L1151">                break;</span>
+              case '&quot;':
+<span class="nc" id="L1153">                result[pos++] = '\&quot;';</span>
+<span class="nc" id="L1154">                break;</span>
+
+              case 'x':
+                // hex escape
+<span class="nc" id="L1158">                int code = 0;</span>
+<span class="nc bnc" id="L1159" title="All 4 branches missed.">                if ((i + 1 &lt; input.length()) &amp;&amp; TextUtils.isHex(input.charAt(i + 1))) {</span>
+<span class="nc" id="L1160">                  ++i;</span>
+<span class="nc" id="L1161">                  code = TextUtils.digitValue(input.charAt(i));</span>
+                } else {
+<span class="nc" id="L1163">                  throw new InvalidEscapeSequence(&quot;Invalid escape sequence: '\\x' with no digits&quot;);</span>
+                }
+<span class="nc bnc" id="L1165" title="All 4 branches missed.">                if ((i + 1 &lt; input.length()) &amp;&amp; TextUtils.isHex(input.charAt(i + 1))) {</span>
+<span class="nc" id="L1166">                  ++i;</span>
+<span class="nc" id="L1167">                  code = code * 16 + TextUtils.digitValue(input.charAt(i));</span>
+                }
+<span class="nc" id="L1169">                result[pos++] = (byte) code;</span>
+<span class="nc" id="L1170">                break;</span>
+              case 'u':
+                // UTF8 escape
+<span class="nc" id="L1173">                code = (16 * 3 * TextUtils.digitValue(input.charAt(i+1))) +</span>
+<span class="nc" id="L1174">                    (16 * 2 * TextUtils.digitValue(input.charAt(i+2))) +</span>
+<span class="nc" id="L1175">                    (16 * TextUtils.digitValue(input.charAt(i+3))) +</span>
+<span class="nc" id="L1176">                    TextUtils.digitValue(input.charAt(i+4));</span>
+<span class="nc" id="L1177">                i = i+4;</span>
+<span class="nc" id="L1178">                result[pos++] = (byte) code;</span>
+<span class="nc" id="L1179">                break;</span>
+
+              default:
+<span class="nc" id="L1182">                throw new InvalidEscapeSequence(&quot;Invalid escape sequence: '\\&quot; + c</span>
+                    + &quot;'&quot;);
+            }
+          }
+        } else {
+<span class="nc" id="L1187">          throw new InvalidEscapeSequence(&quot;Invalid escape sequence: '\\' at end of string.&quot;);</span>
+        }
+      } else {
+<span class="nc" id="L1190">        result[pos++] = (byte) c;</span>
+      }
+    }
+
+<span class="nc" id="L1194">    return ByteString.copyFrom(result, 0, pos);</span>
+  }
+
+  /**
+   * Thrown by {@link ProtobufJsonFormat#unescapeBytes} and {@link ProtobufJsonFormat#unescapeText} when an
+   * invalid escape sequence is seen.
+   */
+  static class InvalidEscapeSequence extends IOException {
+
+    private static final long serialVersionUID = 1L;
+
+    public InvalidEscapeSequence(String description) {
+<span class="nc" id="L1206">      super(description);</span>
+<span class="nc" id="L1207">    }</span>
+  }
+
+  /**
+   * Implements JSON string escaping as specified &lt;a href=&quot;http://www.ietf.org/rfc/rfc4627.txt&quot;&gt;here&lt;/a&gt;.
+   * &lt;ul&gt;
+   *  &lt;li&gt;The following characters are escaped by prefixing them with a '\' : \b,\f,\n,\r,\t,\,&quot;&lt;/li&gt;
+   *  &lt;li&gt;Other control characters in the range 0x0000-0x001F are escaped using the \\uXXXX notation&lt;/li&gt;
+   *  &lt;li&gt;UTF-16 surrogate pairs are encoded using the \\uXXXX\\uXXXX notation&lt;/li&gt;
+   *  &lt;li&gt;any other character is printed as-is&lt;/li&gt;
+   * &lt;/ul&gt;
+   */
+  static String escapeText(String input) {
+<span class="nc" id="L1220">    StringBuilder builder = new StringBuilder(input.length());</span>
+<span class="nc" id="L1221">    CharacterIterator iter = new StringCharacterIterator(input);</span>
+<span class="nc bnc" id="L1222" title="All 2 branches missed.">    for(char c = iter.first(); c != CharacterIterator.DONE; c = iter.next()) {</span>
+<span class="nc bnc" id="L1223" title="All 8 branches missed.">      switch(c) {</span>
+        case '\b':
+<span class="nc" id="L1225">          builder.append(&quot;\\b&quot;);</span>
+<span class="nc" id="L1226">          break;</span>
+        case '\f':
+<span class="nc" id="L1228">          builder.append(&quot;\\f&quot;);</span>
+<span class="nc" id="L1229">          break;</span>
+        case '\n':
+<span class="nc" id="L1231">          builder.append(&quot;\\n&quot;);</span>
+<span class="nc" id="L1232">          break;</span>
+        case '\r':
+<span class="nc" id="L1234">          builder.append(&quot;\\r&quot;);</span>
+<span class="nc" id="L1235">          break;</span>
+        case '\t':
+<span class="nc" id="L1237">          builder.append(&quot;\\t&quot;);</span>
+<span class="nc" id="L1238">          break;</span>
+        case '\\':
+<span class="nc" id="L1240">          builder.append(&quot;\\\\&quot;);</span>
+<span class="nc" id="L1241">          break;</span>
+        case '&quot;':
+<span class="nc" id="L1243">          builder.append(&quot;\\\&quot;&quot;);</span>
+<span class="nc" id="L1244">          break;</span>
+        default:
+          // Check for other control characters
+<span class="nc bnc" id="L1247" title="All 4 branches missed.">          if(c &gt;= 0x0000 &amp;&amp; c &lt;= 0x001F) {</span>
+<span class="nc" id="L1248">            appendEscapedUnicode(builder, c);</span>
+<span class="nc bnc" id="L1249" title="All 2 branches missed.">          } else if(Character.isHighSurrogate(c)) {</span>
+            // Encode the surrogate pair using 2 six-character sequence (\\uXXXX\\uXXXX)
+<span class="nc" id="L1251">            appendEscapedUnicode(builder, c);</span>
+<span class="nc" id="L1252">            c = iter.next();</span>
+<span class="nc bnc" id="L1253" title="All 2 branches missed.">            if(c == CharacterIterator.DONE) throw new IllegalArgumentException(&quot;invalid unicode string: unexpected high surrogate pair value without corresponding low value.&quot;);</span>
+<span class="nc" id="L1254">            appendEscapedUnicode(builder, c);</span>
+          } else {
+            // Anything else can be printed as-is
+<span class="nc" id="L1257">            builder.append(c);</span>
+          }
+          break;
+      }
+    }
+<span class="nc" id="L1262">    return builder.toString();</span>
+  }
+
+  static void appendEscapedUnicode(StringBuilder builder, char ch) {
+<span class="nc" id="L1266">    String prefix = &quot;\\u&quot;;</span>
+<span class="nc bnc" id="L1267" title="All 2 branches missed.">    if(ch &lt; 0x10) {</span>
+<span class="nc" id="L1268">      prefix = &quot;\\u000&quot;;</span>
+<span class="nc bnc" id="L1269" title="All 2 branches missed.">    } else if(ch &lt; 0x100) {</span>
+<span class="nc" id="L1270">      prefix = &quot;\\u00&quot;;</span>
+<span class="nc bnc" id="L1271" title="All 2 branches missed.">    } else if(ch &lt; 0x1000) {</span>
+<span class="nc" id="L1272">      prefix = &quot;\\u0&quot;;</span>
+    }
+<span class="nc" id="L1274">    builder.append(prefix).append(Integer.toHexString(ch));</span>
+<span class="nc" id="L1275">  }</span>
+
+  /**
+   * Un-escape a text string as escaped using {@link #escapeText(String)}.
+   */
+  static String unescapeText(String input) throws InvalidEscapeSequence {
+<span class="nc" id="L1281">    StringBuilder builder = new StringBuilder();</span>
+<span class="nc" id="L1282">    char[] array = input.toCharArray();</span>
+<span class="nc bnc" id="L1283" title="All 2 branches missed.">    for(int i = 0; i &lt; array.length; i++) {</span>
+<span class="nc" id="L1284">      char c = array[i];</span>
+<span class="nc bnc" id="L1285" title="All 2 branches missed.">      if(c == '\\') {</span>
+<span class="nc bnc" id="L1286" title="All 2 branches missed.">        if(i + 1 &lt; array.length) {</span>
+<span class="nc" id="L1287">          ++i;</span>
+<span class="nc" id="L1288">          c = array[i];</span>
+<span class="nc bnc" id="L1289" title="All 10 branches missed.">          switch(c) {</span>
+            case 'b':
+<span class="nc" id="L1291">              builder.append('\b');</span>
+<span class="nc" id="L1292">              break;</span>
+            case 'f':
+<span class="nc" id="L1294">              builder.append('\f');</span>
+<span class="nc" id="L1295">              break;</span>
+            case 'n':
+<span class="nc" id="L1297">              builder.append('\n');</span>
+<span class="nc" id="L1298">              break;</span>
+            case 'r':
+<span class="nc" id="L1300">              builder.append('\r');</span>
+<span class="nc" id="L1301">              break;</span>
+            case 't':
+<span class="nc" id="L1303">              builder.append('\t');</span>
+<span class="nc" id="L1304">              break;</span>
+            case '\\':
+<span class="nc" id="L1306">              builder.append('\\');</span>
+<span class="nc" id="L1307">              break;</span>
+            case '&quot;':
+<span class="nc" id="L1309">              builder.append('\&quot;');</span>
+<span class="nc" id="L1310">              break;</span>
+            case '\'':
+<span class="nc" id="L1312">              builder.append('\'');</span>
+<span class="nc" id="L1313">              break;</span>
+            case 'u':
+              // read the next 4 chars
+<span class="nc bnc" id="L1316" title="All 2 branches missed.">              if(i + 4 &lt; array.length) {</span>
+<span class="nc" id="L1317">                ++i;</span>
+<span class="nc" id="L1318">                int code = Integer.parseInt(new String(array, i, 4), 16);</span>
+                // this cast is safe because we know how many chars we read
+<span class="nc" id="L1320">                builder.append((char)code);</span>
+<span class="nc" id="L1321">                i += 3;</span>
+<span class="nc" id="L1322">              } else {</span>
+<span class="nc" id="L1323">                throw new InvalidEscapeSequence(&quot;Invalid escape sequence: '\\u' at end of string.&quot;);</span>
+              }
+              break;
+            default:
+<span class="nc" id="L1327">              throw new InvalidEscapeSequence(&quot;Invalid escape sequence: '\\&quot; + c + &quot;'&quot;);</span>
+          }
+        } else {
+<span class="nc" id="L1330">          throw new InvalidEscapeSequence(&quot;Invalid escape sequence: '\\' at end of string.&quot;);</span>
+        }
+      } else {
+<span class="nc" id="L1333">        builder.append(c);</span>
+      }
+    }
+
+<span class="nc" id="L1337">    return builder.toString();</span>
+  }
+
+
+  /**
+   * Parse a 32-bit signed integer from the text. Unlike the Java standard {@code
+   * Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot; and &quot;0&quot; to signify
+   * hexidecimal and octal numbers, respectively.
+   */
+  static int parseInt32(String text) throws NumberFormatException {
+<span class="nc" id="L1347">    return (int) parseInteger(text, true, false);</span>
+  }
+
+  /**
+   * Parse a 32-bit unsigned integer from the text. Unlike the Java standard {@code
+   * Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot; and &quot;0&quot; to signify
+   * hexidecimal and octal numbers, respectively. The result is coerced to a (signed) {@code int}
+   * when returned since Java has no unsigned integer type.
+   */
+  static int parseUInt32(String text) throws NumberFormatException {
+<span class="nc" id="L1357">    return (int) parseInteger(text, false, false);</span>
+  }
+
+  /**
+   * Parse a 64-bit signed integer from the text. Unlike the Java standard {@code
+   * Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot; and &quot;0&quot; to signify
+   * hexidecimal and octal numbers, respectively.
+   */
+  static long parseInt64(String text) throws NumberFormatException {
+<span class="nc" id="L1366">    return parseInteger(text, true, true);</span>
+  }
+
+  /**
+   * Parse a 64-bit unsigned integer from the text. Unlike the Java standard {@code
+   * Integer.parseInt()}, this function recognizes the prefixes &quot;0x&quot; and &quot;0&quot; to signify
+   * hexidecimal and octal numbers, respectively. The result is coerced to a (signed) {@code long}
+   * when returned since Java has no unsigned long type.
+   */
+  static long parseUInt64(String text) throws NumberFormatException {
+<span class="nc" id="L1376">    return parseInteger(text, false, true);</span>
+  }
+
+  private static long parseInteger(String text, boolean isSigned, boolean isLong) throws NumberFormatException {
+<span class="nc" id="L1380">    int pos = 0;</span>
+
+<span class="nc" id="L1382">    boolean negative = false;</span>
+<span class="nc bnc" id="L1383" title="All 2 branches missed.">    if (text.startsWith(&quot;-&quot;, pos)) {</span>
+<span class="nc bnc" id="L1384" title="All 2 branches missed.">      if (!isSigned) {</span>
+<span class="nc" id="L1385">        throw new NumberFormatException(&quot;Number must be positive: &quot; + text);</span>
+      }
+<span class="nc" id="L1387">      ++pos;</span>
+<span class="nc" id="L1388">      negative = true;</span>
+    }
+
+<span class="nc" id="L1391">    int radix = 10;</span>
+<span class="nc bnc" id="L1392" title="All 2 branches missed.">    if (text.startsWith(&quot;0x&quot;, pos)) {</span>
+<span class="nc" id="L1393">      pos += 2;</span>
+<span class="nc" id="L1394">      radix = 16;</span>
+<span class="nc bnc" id="L1395" title="All 2 branches missed.">    } else if (text.startsWith(&quot;0&quot;, pos)) {</span>
+<span class="nc" id="L1396">      radix = 8;</span>
+    }
+
+<span class="nc" id="L1399">    String numberText = text.substring(pos);</span>
+
+<span class="nc" id="L1401">    long result = 0;</span>
+<span class="nc bnc" id="L1402" title="All 2 branches missed.">    if (numberText.length() &lt; 16) {</span>
+      // Can safely assume no overflow.
+<span class="nc" id="L1404">      result = Long.parseLong(numberText, radix);</span>
+<span class="nc bnc" id="L1405" title="All 2 branches missed.">      if (negative) {</span>
+<span class="nc" id="L1406">        result = -result;</span>
+      }
+
+      // Check bounds.
+      // No need to check for 64-bit numbers since they'd have to be 16 chars
+      // or longer to overflow.
+<span class="nc bnc" id="L1412" title="All 2 branches missed.">      if (!isLong) {</span>
+<span class="nc bnc" id="L1413" title="All 2 branches missed.">        if (isSigned) {</span>
+<span class="nc bnc" id="L1414" title="All 4 branches missed.">          if ((result &gt; Integer.MAX_VALUE) || (result &lt; Integer.MIN_VALUE)) {</span>
+<span class="nc" id="L1415">            throw new NumberFormatException(&quot;Number out of range for 32-bit signed integer: &quot;</span>
+                + text);
+          }
+        } else {
+<span class="nc bnc" id="L1419" title="All 4 branches missed.">          if ((result &gt;= (1L &lt;&lt; 32)) || (result &lt; 0)) {</span>
+<span class="nc" id="L1420">            throw new NumberFormatException(&quot;Number out of range for 32-bit unsigned integer: &quot;</span>
+                + text);
+          }
+        }
+      }
+    } else {
+<span class="nc" id="L1426">      BigInteger bigValue = new BigInteger(numberText, radix);</span>
+<span class="nc bnc" id="L1427" title="All 2 branches missed.">      if (negative) {</span>
+<span class="nc" id="L1428">        bigValue = bigValue.negate();</span>
+      }
+
+      // Check bounds.
+<span class="nc bnc" id="L1432" title="All 2 branches missed.">      if (!isLong) {</span>
+<span class="nc bnc" id="L1433" title="All 2 branches missed.">        if (isSigned) {</span>
+<span class="nc bnc" id="L1434" title="All 2 branches missed.">          if (bigValue.bitLength() &gt; 31) {</span>
+<span class="nc" id="L1435">            throw new NumberFormatException(&quot;Number out of range for 32-bit signed integer: &quot;</span>
+                + text);
+          }
+        } else {
+<span class="nc bnc" id="L1439" title="All 2 branches missed.">          if (bigValue.bitLength() &gt; 32) {</span>
+<span class="nc" id="L1440">            throw new NumberFormatException(&quot;Number out of range for 32-bit unsigned integer: &quot;</span>
+                + text);
+          }
+        }
+      } else {
+<span class="nc bnc" id="L1445" title="All 2 branches missed.">        if (isSigned) {</span>
+<span class="nc bnc" id="L1446" title="All 2 branches missed.">          if (bigValue.bitLength() &gt; 63) {</span>
+<span class="nc" id="L1447">            throw new NumberFormatException(&quot;Number out of range for 64-bit signed integer: &quot;</span>
+                + text);
+          }
+        } else {
+<span class="nc bnc" id="L1451" title="All 2 branches missed.">          if (bigValue.bitLength() &gt; 64) {</span>
+<span class="nc" id="L1452">            throw new NumberFormatException(&quot;Number out of range for 64-bit unsigned integer: &quot;</span>
+                + text);
+          }
+        }
+      }
+
+<span class="nc" id="L1458">      result = bigValue.longValue();</span>
+    }
+
+<span class="nc" id="L1461">    return result;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EmptyTuple.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.storage</a> &gt; <span class="el_source">EmptyTuple.java</span></div><h1>EmptyTuple.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.storage;
+
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+/* This class doesn’t have content datum. if selected column is zero, this is useful
+*  e.g. select count(*) from table
+* */
+public class EmptyTuple extends NullTuple {
+
+  private static EmptyTuple tuple;
+<span class="nc" id="L33">  private static Datum[] EMPTY_VALUES = new Datum[0];</span>
+
+  static {
+<span class="nc" id="L36">    tuple = new EmptyTuple();</span>
+<span class="nc" id="L37">  }</span>
+
+  public static EmptyTuple get() {
+<span class="nc" id="L40">    return tuple;</span>
+  }
+
+  private EmptyTuple() {
+<span class="nc" id="L44">    super(0);</span>
+<span class="nc" id="L45">  }</span>
+
+  @Override
+  public int size() {
+<span class="nc" id="L49">    return 0;</span>
+  }
+
+  public boolean contains(int fieldId) {
+<span class="nc" id="L53">    return false;</span>
+  }
+
+  @Override
+  public boolean isBlank(int fieldid) {
+<span class="nc" id="L58">    return true;</span>
+  }
+
+  @Override
+  public boolean isBlankOrNull(int fieldid) {
+<span class="nc" id="L63">    return true;</span>
+  }
+
+  @Override
+  public void clear() {
+<span class="nc" id="L68">  }</span>
+
+  @Override
+  public void put(int fieldId, Datum value) {
+<span class="nc" id="L72">    throw new UnsupportedOperationException();</span>
+  }
+
+  @Override
+  public Datum asDatum(int fieldId) {
+<span class="nc" id="L77">    return NullDatum.get();</span>
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+<span class="nc" id="L82">    return null;</span>
+  }
+
+  @Override
+  public int size(int fieldId) {
+<span class="nc" id="L87">    return 0;</span>
+  }
+
+  @Override
+  public void setOffset(long offset) {
+<span class="nc" id="L92">  }</span>
+
+  @Override
+  public long getOffset() {
+<span class="nc" id="L96">    return -1;</span>
+  }
+
+  @Override
+  public boolean getBool(int fieldId) {
+<span class="nc" id="L101">    throw new UnsupportedOperationException();</span>
+  }
+
+  @Override
+  public byte getByte(int fieldId) {
+<span class="nc" id="L106">    return NullDatum.get().asByte();</span>
+  }
+
+  @Override
+  public char getChar(int fieldId) {
+<span class="nc" id="L111">    return NullDatum.get().asChar();</span>
+  }
+
+  @Override
+  public byte[] getBytes(int fieldId) {
+<span class="nc" id="L116">    return NullDatum.get().asByteArray();</span>
+  }
+
+  @Override
+  public byte[] getTextBytes(int fieldId) {
+<span class="nc" id="L121">    return NullDatum.get().asTextBytes();</span>
+  }
+
+  @Override
+  public short getInt2(int fieldId) {
+<span class="nc" id="L126">    return NullDatum.get().asInt2();</span>
+  }
+
+  @Override
+  public int getInt4(int fieldId) {
+<span class="nc" id="L131">    return NullDatum.get().asInt4();</span>
+  }
+
+  @Override
+  public long getInt8(int fieldId) {
+<span class="nc" id="L136">    return NullDatum.get().asInt8();</span>
+  }
+
+  @Override
+  public float getFloat4(int fieldId) {
+<span class="nc" id="L141">    return NullDatum.get().asFloat4();</span>
+  }
+
+  @Override
+  public double getFloat8(int fieldId) {
+<span class="nc" id="L146">    return NullDatum.get().asFloat8();</span>
+  }
+
+  @Override
+  public String getText(int fieldId) {
+<span class="nc" id="L151">    return NullDatum.get().asChars();</span>
+  }
+
+  @Override
+  public TimeMeta getTimeDate(int fieldId) {
+<span class="nc" id="L156">    throw new UnsupportedOperationException();</span>
+  }
+
+  @Override
+  public ProtobufDatum getProtobufDatum(int fieldId) {
+<span class="nc" id="L161">    throw new UnsupportedOperationException();</span>
+  }
+
+  @Override
+  public Datum getInterval(int fieldId) {
+<span class="nc" id="L166">    return NullDatum.get();</span>
+  }
+
+  @Override
+  public char[] getUnicodeChars(int fieldId) {
+<span class="nc" id="L171">    return NullDatum.get().asUnicodeChars();</span>
+  }
+
+  @Override
+  public Datum[] getValues() {
+<span class="nc" id="L176">    return EMPTY_VALUES;</span>
+  }
+
+  @Override
+  public Tuple clone() throws CloneNotSupportedException {
+<span class="nc" id="L181">    return this;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

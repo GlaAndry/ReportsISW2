@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SimpleDirectedGraph.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util.graph</a> &gt; <span class="el_source">SimpleDirectedGraph.java</span></div><h1>SimpleDirectedGraph.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util.graph;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.util.TUtil;
+
+import java.util.*;
+
+/**
+ * This represents a simple directed graph. It does not support multiple edges between both vertices.
+ *
+ * @param &lt;V&gt; The vertex class type
+ * @param &lt;E&gt; The edge class type
+ */
+<span class="nc" id="L36">public class SimpleDirectedGraph&lt;V, E&gt; implements DirectedGraph&lt;V,E&gt; {</span>
+  /** map: child -&gt; parent */
+<span class="nc" id="L38">  protected Map&lt;V, Map&lt;V, E&gt;&gt; directedEdges = new LinkedHashMap&lt;&gt;();</span>
+  /** map: parent -&gt; child */
+<span class="nc" id="L40">  protected Map&lt;V, Map&lt;V, E&gt;&gt; reversedEdges = new LinkedHashMap&lt;&gt;();</span>
+
+  public void clear() {
+<span class="nc bnc" id="L43" title="All 2 branches missed.">    for (Map&lt;V, E&gt; eachEdge : directedEdges.values()) {</span>
+<span class="nc" id="L44">      eachEdge.clear();</span>
+<span class="nc" id="L45">    }</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">    for (Map&lt;V, E&gt; eachEdge : reversedEdges.values()) {</span>
+<span class="nc" id="L47">      eachEdge.clear();</span>
+<span class="nc" id="L48">    }</span>
+<span class="nc" id="L49">    directedEdges.clear();</span>
+<span class="nc" id="L50">    reversedEdges.clear();</span>
+<span class="nc" id="L51">  }</span>
+
+  @Override
+  public int getVertexSize() {
+<span class="nc" id="L55">    return directedEdges.size();</span>
+  }
+
+  @Override
+  public int getEdgeNum() {
+<span class="nc" id="L60">    int edgeNum = 0;</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">    for (Map&lt;V, E&gt; map : directedEdges.values()) {</span>
+<span class="nc" id="L62">      edgeNum += map.values().size();</span>
+<span class="nc" id="L63">    }</span>
+
+<span class="nc" id="L65">    return edgeNum;</span>
+  }
+
+  @Override
+  public void addEdge(V tail, V head, E edge) {
+<span class="nc" id="L70">    TUtil.putToNestedMap(directedEdges, tail, head, edge);</span>
+<span class="nc" id="L71">    TUtil.putToNestedMap(reversedEdges, head, tail, edge);</span>
+<span class="nc" id="L72">  }</span>
+
+  @Override
+  public void removeEdge(V tail, V head) {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">    if (directedEdges.containsKey(tail)) {</span>
+<span class="nc" id="L77">      directedEdges.get(tail).remove(head);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">      if (directedEdges.get(tail).isEmpty()) {</span>
+<span class="nc" id="L79">        directedEdges.remove(tail);</span>
+      }
+
+<span class="nc" id="L82">      reversedEdges.get(head).remove(tail);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">      if (reversedEdges.get(head).isEmpty()) {</span>
+<span class="nc" id="L84">        reversedEdges.remove(head);</span>
+      }
+    } else {
+<span class="nc" id="L87">      throw new RuntimeException(&quot;Not connected channel: &quot; + tail + &quot; -&gt; &quot; + head);</span>
+    }
+<span class="nc" id="L89">  }</span>
+
+  @Override
+  public boolean hasEdge(V tail, V head) {
+<span class="nc bnc" id="L93" title="All 4 branches missed.">    return directedEdges.containsKey(tail) &amp;&amp; directedEdges.get(tail).containsKey(head);</span>
+  }
+
+  @Override
+  public boolean hasReversedEdge(V head, V tail) {
+<span class="nc bnc" id="L98" title="All 4 branches missed.">    return reversedEdges.containsKey(head) &amp;&amp; reversedEdges.get(head).containsKey(tail);</span>
+  }
+
+  @Override
+  public @Nullable E getEdge(V tail, V head) {
+<span class="nc bnc" id="L103" title="All 2 branches missed.">    if (hasEdge(tail, head)) {</span>
+<span class="nc" id="L104">      return directedEdges.get(tail).get(head);</span>
+    } else {
+<span class="nc" id="L106">      return null;</span>
+    }
+  }
+
+  @Override
+  public @Nullable
+  E getReverseEdge(V head, V tail) {
+<span class="nc bnc" id="L113" title="All 2 branches missed.">    if (hasReversedEdge(head, tail)) {</span>
+<span class="nc" id="L114">      return reversedEdges.get(head).get(tail);</span>
+    } else {
+<span class="nc" id="L116">      return null;</span>
+    }
+  }
+
+  @Override
+  public Collection&lt;E&gt; getEdgesAll() {
+<span class="nc" id="L122">    List&lt;E&gt; edges = Lists.newArrayList();</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">    for (Map&lt;V, E&gt; map : directedEdges.values()) {</span>
+<span class="nc" id="L124">      edges.addAll(map.values());</span>
+<span class="nc" id="L125">    }</span>
+<span class="nc" id="L126">    return edges;</span>
+  }
+
+  @Override
+  public int getChildCount(V v) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    if (reversedEdges.containsKey(v)) {</span>
+<span class="nc" id="L132">      return reversedEdges.get(v).size();</span>
+    } else {
+<span class="nc" id="L134">      return 0;</span>
+    }
+  }
+
+  @Override
+  public List&lt;E&gt; getIncomingEdges(V head) {
+<span class="nc bnc" id="L140" title="All 2 branches missed.">    if (reversedEdges.containsKey(head)) {</span>
+<span class="nc" id="L141">      return ImmutableList.copyOf(reversedEdges.get(head).values());</span>
+    } else {
+<span class="nc" id="L143">      return null;</span>
+    }
+  }
+
+  @Override
+  public List&lt;E&gt; getOutgoingEdges(V tail) {
+<span class="nc bnc" id="L149" title="All 2 branches missed.">    if (directedEdges.containsKey(tail)) {</span>
+<span class="nc" id="L150">      return ImmutableList.copyOf(directedEdges.get(tail).values());</span>
+    } else {
+<span class="nc" id="L152">      return null;</span>
+    }
+  }
+
+  @Override
+  public List&lt;V&gt; getChilds(V v) {
+<span class="nc" id="L158">    List&lt;V&gt; childBlocks = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">    if (reversedEdges.containsKey(v)) {</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">      for (Map.Entry&lt;V, E&gt; entry: reversedEdges.get(v).entrySet()) {</span>
+<span class="nc" id="L161">        childBlocks.add(entry.getKey());</span>
+<span class="nc" id="L162">      }</span>
+    }
+<span class="nc" id="L164">    return childBlocks;</span>
+  }
+
+  @Override
+  public V getChild(V block, int idx) {
+<span class="nc bnc" id="L169" title="All 2 branches missed.">    if (reversedEdges.containsKey(block)) {</span>
+<span class="nc" id="L170">      int i = 0;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">      for (Map.Entry&lt;V, E&gt; entry: reversedEdges.get(block).entrySet()) {</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (idx == i++) {</span>
+<span class="nc" id="L173">          return entry.getKey();</span>
+        }
+<span class="nc" id="L175">      }</span>
+    }
+<span class="nc" id="L177">    return null;</span>
+  }
+
+  @Override
+  public @Nullable V getParent(V block, int idx) {
+<span class="nc bnc" id="L182" title="All 2 branches missed.">    if (directedEdges.containsKey(block)) {</span>
+<span class="nc" id="L183">      int i = 0;</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">      for (Map.Entry&lt;V, E&gt; entry: directedEdges.get(block).entrySet()) {</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (idx == i++) {</span>
+<span class="nc" id="L186">          return entry.getKey();</span>
+        }
+<span class="nc" id="L188">      }</span>
+    }
+<span class="nc" id="L190">    return null;</span>
+  }
+
+  @Override
+  public List&lt;V&gt; getParents(V block) {
+<span class="nc" id="L195">    List&lt;V&gt; childBlocks = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">    if (directedEdges.containsKey(block)) {</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">      for (Map.Entry&lt;V, E&gt; entry: directedEdges.get(block).entrySet()) {</span>
+<span class="nc" id="L198">        childBlocks.add(entry.getKey());</span>
+<span class="nc" id="L199">      }</span>
+    }
+<span class="nc" id="L201">    return childBlocks;</span>
+  }
+
+  @Override
+  public boolean isRoot(V v) {
+<span class="nc bnc" id="L206" title="All 2 branches missed.">    return !directedEdges.containsKey(v);</span>
+  }
+
+  @Override
+  public boolean isLeaf(V v) {
+<span class="nc bnc" id="L211" title="All 2 branches missed.">    return !reversedEdges.containsKey(v);</span>
+  }
+
+  @Override
+  public int getParentCount(V block) {
+<span class="nc bnc" id="L216" title="All 2 branches missed.">    if (directedEdges.containsKey(block)) {</span>
+<span class="nc" id="L217">      return directedEdges.get(block).size();</span>
+    } else {
+<span class="nc" id="L219">      return -1;</span>
+    }
+  }
+
+  @Override
+  public &lt;CONTEXT&gt; void accept(CONTEXT context, V source, DirectedGraphVisitor&lt;CONTEXT, V&gt; visitor)
+      throws TajoException {
+<span class="nc" id="L226">    Stack&lt;V&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L227">    visitRecursive(context, stack, source, visitor);</span>
+<span class="nc" id="L228">  }</span>
+
+  private &lt;CONTEXT&gt; void visitRecursive(CONTEXT context, Stack&lt;V&gt; stack, V current,
+                                        DirectedGraphVisitor&lt;CONTEXT, V&gt; visitor) throws TajoException {
+<span class="nc" id="L232">    stack.push(current);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">    for (V child : getChilds(current)) {</span>
+<span class="nc" id="L234">      visitRecursive(context, stack, child, visitor);</span>
+<span class="nc" id="L235">    }</span>
+<span class="nc" id="L236">    stack.pop();</span>
+<span class="nc" id="L237">    visitor.visit(context, stack, current);</span>
+<span class="nc" id="L238">  }</span>
+
+  public String toString() {
+<span class="nc" id="L241">    return &quot;G (|v| = &quot; + directedEdges.size() +&quot;)&quot;;</span>
+  }
+
+  public String printDepthString(DepthString planStr) {
+<span class="nc" id="L245">    StringBuilder output = new StringBuilder();</span>
+<span class="nc" id="L246">    String pad = new String(new char[planStr.depth * 3]).replace('\0', ' ');</span>
+<span class="nc" id="L247">    output.append(pad + &quot;|-&quot; + planStr.vertexStr).append(&quot;\n&quot;);</span>
+
+<span class="nc" id="L249">    return output.toString();</span>
+  }
+
+  public String toStringGraph(V vertex) {
+<span class="nc" id="L253">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L254">    QueryGraphTopologyStringBuilder visitor = new QueryGraphTopologyStringBuilder();</span>
+    try {
+<span class="nc" id="L256">      accept(null, vertex, visitor);</span>
+<span class="nc" id="L257">    } catch (TajoException e) {</span>
+<span class="nc" id="L258">      throw new TajoRuntimeException(e);</span>
+<span class="nc" id="L259">    }</span>
+<span class="nc" id="L260">    Stack&lt;DepthString&gt; depthStrings = visitor.getDepthStrings();</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">    while(!depthStrings.isEmpty()) {</span>
+<span class="nc" id="L262">      sb.append(printDepthString(depthStrings.pop()));</span>
+    }
+<span class="nc" id="L264">    return sb.toString();</span>
+  }
+
+  private class DepthString {
+    int depth;
+    String vertexStr;
+
+<span class="nc" id="L271">    DepthString(int depth, String vertexStr) {</span>
+<span class="nc" id="L272">      this.depth = depth;</span>
+<span class="nc" id="L273">      this.vertexStr = vertexStr;</span>
+<span class="nc" id="L274">    }</span>
+  }
+
+<span class="nc" id="L277">  private class QueryGraphTopologyStringBuilder implements DirectedGraphVisitor&lt;Object, V&gt; {</span>
+<span class="nc" id="L278">    Stack&lt;DepthString&gt; depthString = new Stack&lt;&gt;();</span>
+
+    @Override
+    public void visit(Object context, Stack&lt;V&gt; stack, V vertex) {
+<span class="nc" id="L282">      depthString.push(new DepthString(stack.size(), vertex.toString()));</span>
+<span class="nc" id="L283">    }</span>
+
+    public Stack&lt;DepthString&gt; getDepthStrings() {
+<span class="nc" id="L286">      return depthString;</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

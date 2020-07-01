@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CharDatum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">CharDatum.java</span></div><h1>CharDatum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.common.primitives.UnsignedBytes;
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.exception.InvalidOperationException;
+
+import java.util.Arrays;
+
+import static org.apache.tajo.type.Type.Char;
+
+public class CharDatum extends Datum {
+  @Expose private final int size;
+  @Expose private final byte[] bytes;
+<span class="pc" id="L32">  private String chars = null;</span>
+
+	public CharDatum(byte val) {
+<span class="nc" id="L35">    super(Char(1));</span>
+<span class="nc" id="L36">    this.size = 1;</span>
+<span class="nc" id="L37">    bytes = new byte[size];</span>
+<span class="nc" id="L38">    bytes[0] = val;</span>
+<span class="nc" id="L39">	}</span>
+
+  public CharDatum(char val) {
+<span class="nc" id="L42">    this((byte)val);</span>
+<span class="nc" id="L43">  }</span>
+
+  public CharDatum(byte [] bytes) {
+<span class="fc" id="L46">    super(Char(1));</span>
+<span class="fc" id="L47">    this.bytes = bytes;</span>
+<span class="fc" id="L48">    this.size = bytes.length;</span>
+<span class="fc" id="L49">  }</span>
+
+  public CharDatum(String val) {
+<span class="nc" id="L52">    this(val.getBytes());</span>
+<span class="nc" id="L53">  }</span>
+
+  private String getString() {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">    if (chars == null) {</span>
+<span class="nc" id="L57">      chars = new String(bytes);</span>
+    }
+<span class="nc" id="L59">    return chars;</span>
+  }
+
+  @Override
+  public char asChar() {
+<span class="nc" id="L64">    return getString().charAt(0);</span>
+  }
+
+  @Override
+  public short asInt2() {
+<span class="nc" id="L69">    return Short.valueOf(getString());</span>
+  }
+
+  @Override
+	public int asInt4() {
+<span class="nc" id="L74">		return Integer.parseInt(getString());</span>
+	}
+
+  @Override
+	public long asInt8() {
+<span class="nc" id="L79">		return Long.parseLong(getString());</span>
+	}
+
+  @Override
+	public byte[] asByteArray() {
+<span class="fc" id="L84">		return bytes;</span>
+	}
+
+  @Override
+	public float asFloat4() {
+<span class="nc" id="L89">    return Float.valueOf(getString());</span>
+	}
+
+  @Override
+	public double asFloat8() {
+<span class="nc" id="L94">		return Double.valueOf(getString());</span>
+	}
+
+  @Override
+  public byte asByte() {
+<span class="nc" id="L99">    return bytes[0];</span>
+  }
+
+  @Override
+	public String asChars() {
+<span class="nc" id="L104">		return getString();</span>
+	}
+
+  /**
+   * Return the real length of the string
+   * @return the length of the string
+   */
+  @Override
+  public int size() {
+<span class="nc" id="L113">    return size;</span>
+  }
+  
+  @Override
+  public int hashCode() {
+<span class="nc" id="L118">    return getString().hashCode();</span>
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">    if (obj instanceof CharDatum) {</span>
+<span class="nc" id="L124">      CharDatum other = (CharDatum) obj;</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">      return this.size == other.size &amp;&amp;</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">          Arrays.equals(this.bytes, other.bytes);</span>
+    }
+    
+<span class="nc" id="L129">    return false;</span>
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+<span class="nc bnc" id="L134" title="All 3 branches missed.">    switch (datum.kind()) {</span>
+      case CHAR:
+      case VARCHAR:
+      case TEXT:
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        return DatumFactory.createBool(TextDatum.COMPARATOR.compare(bytes, datum.asTextBytes()) == 0);</span>
+
+      case NULL_TYPE:
+<span class="nc" id="L141">        return datum;</span>
+
+      default:
+<span class="nc" id="L144">        throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+  
+  @Override
+  public int compareTo(Datum datum) {
+<span class="nc bnc" id="L150" title="All 3 branches missed.">    switch (datum.kind()) {</span>
+      case CHAR:
+      case TEXT:
+<span class="nc" id="L153">        return UnsignedBytes.lexicographicalComparator().compare(bytes, datum.asByteArray());</span>
+      case NULL_TYPE:
+<span class="nc" id="L155">        return -1;</span>
+
+      default:
+<span class="nc" id="L158">        throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

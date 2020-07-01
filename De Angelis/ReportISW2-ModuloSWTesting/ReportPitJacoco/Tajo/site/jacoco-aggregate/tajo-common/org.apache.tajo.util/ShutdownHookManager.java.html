@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ShutdownHookManager.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">ShutdownHookManager.java</span></div><h1>ShutdownHookManager.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * The &lt;code&gt;ShutdownHookManager&lt;/code&gt; enables running shutdownHook
+ * in a deterministic order, higher priority first.
+ * &lt;p/&gt;
+ * The JVM runs ShutdownHooks in a non-deterministic order or in parallel.
+ * This class registers a single JVM shutdownHook and run all the
+ * shutdownHooks registered to it (to this class) in order based on their
+ * priority.
+ *
+ * this is an implementation copied from hadoop-common
+ */
+public class ShutdownHookManager {
+
+<span class="nc" id="L40">  private static final ShutdownHookManager MGR = new ShutdownHookManager();</span>
+
+<span class="nc" id="L42">  private static final Log LOG = LogFactory.getLog(ShutdownHookManager.class);</span>
+
+  static {
+<span class="nc" id="L45">    Runtime.getRuntime().addShutdownHook(</span>
+<span class="nc" id="L46">        new Thread() {</span>
+          @Override
+          public void run() {
+<span class="nc" id="L49">            MGR.shutdownInProgress.set(true);</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            for (Runnable hook: MGR.getShutdownHooksInOrder()) {</span>
+              try {
+<span class="nc" id="L52">                hook.run();</span>
+<span class="nc" id="L53">              } catch (Throwable ex) {</span>
+<span class="nc" id="L54">                LOG.warn(&quot;ShutdownHook '&quot; + hook.getClass().getSimpleName() +</span>
+<span class="nc" id="L55">                    &quot;' failed, &quot; + ex.toString(), ex);</span>
+<span class="nc" id="L56">              }</span>
+<span class="nc" id="L57">            }</span>
+<span class="nc" id="L58">          }</span>
+        }
+    );
+<span class="nc" id="L61">  }</span>
+
+  /**
+   * Return &lt;code&gt;ShutdownHookManager&lt;/code&gt; singleton.
+   *
+   * @return &lt;code&gt;ShutdownHookManager&lt;/code&gt; singleton.
+   */
+  public static ShutdownHookManager get() {
+<span class="nc" id="L69">    return MGR;</span>
+  }
+
+  /**
+   * Private structure to store ShutdownHook and its priority.
+   */
+  private static class HookEntry {
+    Runnable hook;
+    int priority;
+
+<span class="nc" id="L79">    public HookEntry(Runnable hook, int priority) {</span>
+<span class="nc" id="L80">      this.hook = hook;</span>
+<span class="nc" id="L81">      this.priority = priority;</span>
+<span class="nc" id="L82">    }</span>
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L86">      return hook.hashCode();</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L91">      boolean eq = false;</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">      if (obj != null) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (obj instanceof HookEntry) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">          eq = (hook == ((HookEntry)obj).hook);</span>
+        }
+      }
+<span class="nc" id="L97">      return eq;</span>
+    }
+
+  }
+
+<span class="nc" id="L102">  private Set&lt;HookEntry&gt; hooks =</span>
+<span class="nc" id="L103">      Collections.synchronizedSet(new HashSet&lt;HookEntry&gt;());</span>
+
+<span class="nc" id="L105">  private AtomicBoolean shutdownInProgress = new AtomicBoolean(false);</span>
+
+  //private to constructor to ensure singularity
+<span class="nc" id="L108">  private ShutdownHookManager() {</span>
+<span class="nc" id="L109">  }</span>
+
+  /**
+   * Returns the list of shutdownHooks in order of execution,
+   * Highest priority first.
+   *
+   * @return the list of shutdownHooks in order of execution.
+   */
+  List&lt;Runnable&gt; getShutdownHooksInOrder() {
+    List&lt;HookEntry&gt; list;
+<span class="nc" id="L119">    synchronized (MGR.hooks) {</span>
+<span class="nc" id="L120">      list = new ArrayList&lt;&gt;(MGR.hooks);</span>
+<span class="nc" id="L121">    }</span>
+<span class="nc" id="L122">    Collections.sort(list, new Comparator&lt;HookEntry&gt;() {</span>
+
+      //reversing comparison so highest priority hooks are first
+      @Override
+      public int compare(HookEntry o1, HookEntry o2) {
+<span class="nc" id="L127">        return o2.priority - o1.priority;</span>
+      }
+    });
+<span class="nc" id="L130">    List&lt;Runnable&gt; ordered = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    for (HookEntry entry: list) {</span>
+<span class="nc" id="L132">      ordered.add(entry.hook);</span>
+<span class="nc" id="L133">    }</span>
+<span class="nc" id="L134">    return ordered;</span>
+  }
+
+  /**
+   * Adds a shutdownHook with a priority, the higher the priority
+   * the earlier will run. ShutdownHooks with same priority run
+   * in a non-deterministic order.
+   *
+   * @param shutdownHook shutdownHook &lt;code&gt;Runnable&lt;/code&gt;
+   * @param priority priority of the shutdownHook.
+   */
+  public void addShutdownHook(Runnable shutdownHook, int priority) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">    if (shutdownHook == null) {</span>
+<span class="nc" id="L147">      throw new IllegalArgumentException(&quot;shutdownHook cannot be NULL&quot;);</span>
+    }
+<span class="nc bnc" id="L149" title="All 2 branches missed.">    if (shutdownInProgress.get()) {</span>
+<span class="nc" id="L150">      throw new IllegalStateException(&quot;Shutdown in progress, cannot add a shutdownHook&quot;);</span>
+    }
+<span class="nc" id="L152">    hooks.add(new HookEntry(shutdownHook, priority));</span>
+<span class="nc" id="L153">  }</span>
+
+  /**
+   * Removes a shutdownHook.
+   *
+   * @param shutdownHook shutdownHook to remove.
+   * @return TRUE if the shutdownHook was registered and removed,
+   * FALSE otherwise.
+   */
+  public boolean removeShutdownHook(Runnable shutdownHook) {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">    if (shutdownInProgress.get()) {</span>
+<span class="nc" id="L164">      throw new IllegalStateException(&quot;Shutdown in progress, cannot remove a shutdownHook&quot;);</span>
+    }
+<span class="nc" id="L166">    return hooks.remove(new HookEntry(shutdownHook, 0));</span>
+  }
+
+  /**
+   * Indicates if a shutdownHook is registered or not.
+   *
+   * @param shutdownHook shutdownHook to check if registered.
+   * @return TRUE/FALSE depending if the shutdownHook is is registered.
+   */
+  public boolean hasShutdownHook(Runnable shutdownHook) {
+<span class="nc" id="L176">    return hooks.contains(new HookEntry(shutdownHook, 0));</span>
+  }
+
+  /**
+   * Indicates if shutdown is in progress or not.
+   *
+   * @return TRUE if the shutdown is in progress, otherwise FALSE.
+   */
+  public boolean isShutdownInProgress() {
+<span class="nc" id="L185">    return shutdownInProgress.get();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

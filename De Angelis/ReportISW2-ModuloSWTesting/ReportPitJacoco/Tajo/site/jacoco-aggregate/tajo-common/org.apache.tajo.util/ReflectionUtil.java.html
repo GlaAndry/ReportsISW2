@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReflectionUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">ReflectionUtil.java</span></div><h1>ReflectionUtil.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import org.apache.tajo.conf.TajoConf;
+
+import java.lang.reflect.Constructor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+<span class="nc" id="L27">public class ReflectionUtil {</span>
+<span class="nc" id="L28">  public static final Class&lt;?&gt;[] EMPTY_PARAM = new Class[]{};</span>
+<span class="nc" id="L29">  public static final Object [] EMPTY_OBJECT = new Object[] {};</span>
+<span class="nc" id="L30">  public static final Class&lt;?&gt;[] CONF_PARAM = new Class[]{TajoConf.class};</span>
+
+  /**
+   * Caches of constructors for each class. Pins the classes so they
+   * can't be garbage collected until ReflectionUtils can be collected.
+   *
+   * EMPTY_CONSTRUCTOR_CACHE keeps classes which don't have any parameterized constructor, and
+   * CONF_CONSTRUCTOR_CACHE keeps classes which have one constructor to take TajoConf.
+   */
+<span class="nc" id="L39">  private static final Map&lt;Class&lt;?&gt;, Constructor&lt;?&gt;&gt; EMPTY_CONSTRUCTOR_CACHE =</span>
+          new ConcurrentHashMap&lt;&gt;();
+<span class="nc" id="L41">  private static final Map&lt;Class&lt;?&gt;, Constructor&lt;?&gt;&gt; CONF_CONSTRUCTOR_CACHE =</span>
+          new ConcurrentHashMap&lt;&gt;();
+
+  /**
+   * Initialize an instance by a given class
+   *
+   * @param clazz Class to be initialized
+   * @return initialized object
+   */
+	public static &lt;T&gt; T newInstance(Class&lt;? extends T&gt; clazz) {
+    try {
+      Constructor&lt;?&gt; constructor;
+<span class="nc bnc" id="L53" title="All 2 branches missed.">      if (EMPTY_CONSTRUCTOR_CACHE.containsKey(clazz)) {</span>
+<span class="nc" id="L54">        constructor = EMPTY_CONSTRUCTOR_CACHE.get(clazz);</span>
+      } else {
+<span class="nc" id="L56">        constructor = clazz.getConstructor(EMPTY_PARAM);</span>
+<span class="nc" id="L57">        EMPTY_CONSTRUCTOR_CACHE.put(clazz, constructor);</span>
+      }
+
+<span class="nc" id="L60">      return (T) constructor.newInstance(EMPTY_OBJECT);</span>
+<span class="nc" id="L61">    } catch (Throwable t) {</span>
+<span class="nc" id="L62">      throw new RuntimeException(t);</span>
+    }
+	}
+
+  /**
+   * Initialize an instance by a given class with TajoConf parameter
+   *
+   * @param clazz Class to be initialized
+   * @param conf TajoConf instance
+   * @return initialized object
+   */
+  public static &lt;T&gt; T newInstance(Class&lt;? extends T&gt; clazz, TajoConf conf) {
+    try {
+      Constructor&lt;?&gt; constructor;
+<span class="nc bnc" id="L76" title="All 2 branches missed.">      if (CONF_CONSTRUCTOR_CACHE.containsKey(clazz)) {</span>
+<span class="nc" id="L77">        constructor = CONF_CONSTRUCTOR_CACHE.get(clazz);</span>
+      } else {
+<span class="nc" id="L79">        constructor = clazz.getConstructor(CONF_PARAM);</span>
+<span class="nc" id="L80">        CONF_CONSTRUCTOR_CACHE.put(clazz, constructor);</span>
+      }
+
+<span class="nc" id="L83">      return (T) constructor.newInstance(new Object[]{conf});</span>
+<span class="nc" id="L84">    } catch (Throwable t) {</span>
+<span class="nc" id="L85">      throw new RuntimeException(t);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

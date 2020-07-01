@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClassSize.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">ClassSize.java</span></div><h1>ClassSize.java</h1><pre class="source lang-java linenums">/**
+ * Copyright The Apache Software Foundation
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+
+/**
+ * Class for determining the &quot;size&quot; of a class, an attempt to calculate the
+ * actual bytes that an object of this class will occupy in memory
+ *
+ * The core of this class is taken from the Derby project
+ */
+
+<span class="nc" id="L38">public class ClassSize {</span>
+<span class="nc" id="L39">  static final Log LOG = LogFactory.getLog(ClassSize.class);</span>
+
+<span class="nc" id="L41">  private static int nrOfRefsPerObj = 2;</span>
+
+  /** Array overhead */
+  public static final int ARRAY;
+
+  /** Overhead for ArrayList(0) */
+  public static final int ARRAYLIST;
+
+  /** Overhead for ByteBuffer */
+  public static final int BYTE_BUFFER;
+
+  /** Overhead for an Short */
+  public static final int SHORT;
+
+  /** Overhead for an Integer */
+  public static final int INTEGER;
+
+  /** Overhead for an Long */
+  public static final int LONG;
+
+  /** Overhead for an Float */
+  public static final int FLOAT;
+
+  /** Overhead for an Double */
+  public static final int DOUBLE;
+
+  /** Overhead for entry in map */
+  public static final int MAP_ENTRY;
+
+  /** Object overhead is minimum 2 * reference size (8 bytes on 64-bit) */
+  public static final int OBJECT;
+
+  /** Reference size is 8 bytes on 64-bit, 4 bytes on 32-bit */
+  public static final int REFERENCE;
+
+  /** String overhead */
+  public static final int STRING;
+
+  /** Overhead for TreeMap */
+  public static final int TREEMAP;
+
+  /** Overhead for ConcurrentHashMap */
+  public static final int CONCURRENT_HASHMAP;
+
+  /** Overhead for ConcurrentHashMap.Entry */
+  public static final int CONCURRENT_HASHMAP_ENTRY;
+
+  /** Overhead for ConcurrentHashMap.Segment */
+  public static final int CONCURRENT_HASHMAP_SEGMENT;
+
+  /** Overhead for ConcurrentSkipListMap */
+  public static final int CONCURRENT_SKIPLISTMAP;
+
+  /** Overhead for ConcurrentSkipListMap Entry */
+  public static final int CONCURRENT_SKIPLISTMAP_ENTRY;
+
+  /** Overhead for ReentrantReadWriteLock */
+  public static final int REENTRANT_LOCK;
+
+  /** Overhead for AtomicLong */
+  public static final int ATOMIC_LONG;
+
+  /** Overhead for AtomicInteger */
+  public static final int ATOMIC_INTEGER;
+
+  /** Overhead for AtomicBoolean */
+  public static final int ATOMIC_BOOLEAN;
+
+  /** Overhead for CopyOnWriteArraySet */
+  public static final int COPYONWRITE_ARRAYSET;
+
+  /** Overhead for CopyOnWriteArrayList */
+  public static final int COPYONWRITE_ARRAYLIST;
+
+  /** Overhead for timerange */
+  public static final int TIMERANGE;
+
+  /** Overhead for TimeRangeTracker */
+  public static final int TIMERANGE_TRACKER;
+
+  /** Overhead for KeyValueSkipListSet */
+  public static final int KEYVALUE_SKIPLIST_SET;
+
+  /* Are we running on jdk7? */
+  private static final boolean JDK7;
+  static {
+<span class="nc" id="L127">    final String version = System.getProperty(&quot;java.version&quot;);</span>
+    // Verify String looks like this: 1.6.0_29
+<span class="nc bnc" id="L129" title="All 2 branches missed.">    if (!version.matches(&quot;\\d\\.\\d\\..*&quot;)) {</span>
+<span class="nc" id="L130">      throw new RuntimeException(&quot;Unexpected version format: &quot; + version);</span>
+    }
+    // Convert char to int
+<span class="nc" id="L133">    int major = (int)(version.charAt(0) - '0');</span>
+<span class="nc" id="L134">    int minor = (int)(version.charAt(2) - '0');</span>
+<span class="nc bnc" id="L135" title="All 4 branches missed.">    JDK7 = major == 1 &amp;&amp; minor == 7;</span>
+  }
+
+  /**
+   * Method for reading the arc settings and setting overheads according
+   * to 32-bit or 64-bit architecture.
+   */
+  static {
+    //Default value is set to 8, covering the case when arcModel is unknown
+<span class="nc bnc" id="L144" title="All 4 branches missed.">    switch (UnsafeUtil.ADDRESS_MODE) {</span>
+      case MEM_32BIT:
+<span class="nc" id="L146">        REFERENCE = 4;</span>
+<span class="nc" id="L147">        break;</span>
+      case MEM_64BIT:
+<span class="nc" id="L149">        REFERENCE = 8;</span>
+<span class="nc" id="L150">        break;</span>
+      case MEM_64BIT_COMPRESSED_OOPS:
+<span class="nc" id="L152">        REFERENCE = 4;</span>
+<span class="nc" id="L153">        break;</span>
+      default:
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        REFERENCE = is32BitJVM() ? 4 : 8;</span>
+        break;
+    }
+
+<span class="nc" id="L159">    OBJECT = 2 * REFERENCE;</span>
+
+<span class="nc" id="L161">    ARRAY = align(3 * REFERENCE);</span>
+
+<span class="nc" id="L163">    ARRAYLIST = align(OBJECT + align(REFERENCE) + align(ARRAY) +</span>
+        (2 * Bytes.SIZEOF_INT));
+
+    //noinspection PointlessArithmeticExpression
+<span class="nc" id="L167">    BYTE_BUFFER = align(OBJECT + align(REFERENCE) + align(ARRAY) +</span>
+        (5 * Bytes.SIZEOF_INT) +
+        (3 * Bytes.SIZEOF_BOOLEAN) + Bytes.SIZEOF_LONG);
+
+<span class="nc" id="L171">    SHORT = align(OBJECT + Bytes.SIZEOF_SHORT);</span>
+
+<span class="nc" id="L173">    INTEGER = align(OBJECT + Bytes.SIZEOF_INT);</span>
+
+<span class="nc" id="L175">    LONG = align(OBJECT + Bytes.SIZEOF_LONG);</span>
+
+<span class="nc" id="L177">    FLOAT = align(OBJECT + Bytes.SIZEOF_FLOAT);</span>
+
+<span class="nc" id="L179">    DOUBLE = align(OBJECT + Bytes.SIZEOF_DOUBLE);</span>
+
+<span class="nc" id="L181">    MAP_ENTRY = align(OBJECT + 5 * REFERENCE + Bytes.SIZEOF_BOOLEAN);</span>
+
+<span class="nc" id="L183">    TREEMAP = align(OBJECT + (2 * Bytes.SIZEOF_INT) + align(7 * REFERENCE));</span>
+
+    // STRING is different size in jdk6 and jdk7. Just use what we estimate as size rather than
+    // have a conditional on whether jdk7.
+<span class="nc" id="L187">    STRING = (int) estimateBase(String.class, false);</span>
+
+    // CONCURRENT_HASHMAP is different size in jdk6 and jdk7; it looks like its different between
+    // 23.6-b03 and 23.0-b21. Just use what we estimate as size rather than have a conditional on
+    // whether jdk7.
+<span class="nc" id="L192">    CONCURRENT_HASHMAP = (int) estimateBase(ConcurrentHashMap.class, false);</span>
+
+<span class="nc" id="L194">    CONCURRENT_HASHMAP_ENTRY = align(REFERENCE + OBJECT + (3 * REFERENCE) +</span>
+        (2 * Bytes.SIZEOF_INT));
+
+<span class="nc" id="L197">    CONCURRENT_HASHMAP_SEGMENT = align(REFERENCE + OBJECT +</span>
+        (3 * Bytes.SIZEOF_INT) + Bytes.SIZEOF_FLOAT + ARRAY);
+
+    // The size changes from jdk7 to jdk8, estimate the size rather than use a conditional
+<span class="nc" id="L201">    CONCURRENT_SKIPLISTMAP = (int) estimateBase(ConcurrentSkipListMap.class, false);</span>
+
+<span class="nc" id="L203">    CONCURRENT_SKIPLISTMAP_ENTRY = align(</span>
+<span class="nc" id="L204">        align(OBJECT + (3 * REFERENCE)) + /* one node per entry */</span>
+<span class="nc" id="L205">        align((OBJECT + (3 * REFERENCE))/2)); /* one index per two entries */</span>
+
+<span class="nc" id="L207">    REENTRANT_LOCK = align(OBJECT + (3 * REFERENCE));</span>
+
+<span class="nc" id="L209">    ATOMIC_LONG = align(OBJECT + Bytes.SIZEOF_LONG);</span>
+
+<span class="nc" id="L211">    ATOMIC_INTEGER = align(OBJECT + Bytes.SIZEOF_INT);</span>
+
+<span class="nc" id="L213">    ATOMIC_BOOLEAN = align(OBJECT + Bytes.SIZEOF_BOOLEAN);</span>
+
+<span class="nc" id="L215">    COPYONWRITE_ARRAYSET = align(OBJECT + REFERENCE);</span>
+
+<span class="nc" id="L217">    COPYONWRITE_ARRAYLIST = align(OBJECT + (2 * REFERENCE) + ARRAY);</span>
+
+<span class="nc" id="L219">    TIMERANGE = align(ClassSize.OBJECT + Bytes.SIZEOF_LONG * 2 + Bytes.SIZEOF_BOOLEAN);</span>
+
+<span class="nc" id="L221">    TIMERANGE_TRACKER = align(ClassSize.OBJECT + Bytes.SIZEOF_LONG * 2);</span>
+
+<span class="nc" id="L223">    KEYVALUE_SKIPLIST_SET = align(OBJECT + REFERENCE);</span>
+<span class="nc" id="L224">  }</span>
+
+  /**
+   * The estimate of the size of a class instance depends on whether the JVM
+   * uses 32 or 64 bit addresses, that is it depends on the size of an object
+   * reference. It is a linear function of the size of a reference, e.g.
+   * 24 + 5*r where r is the size of a reference (usually 4 or 8 bytes).
+   *
+   * This method returns the coefficients of the linear function, e.g. {24, 5}
+   * in the above example.
+   *
+   * @param cl A class whose instance size is to be estimated
+   * @param debug debug flag
+   * @return an array of 3 integers. The first integer is the size of the
+   * primitives, the second the number of arrays and the third the number of
+   * references.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  private static int [] getSizeCoefficients(Class cl, boolean debug) {
+<span class="nc" id="L243">    int primitives = 0;</span>
+<span class="nc" id="L244">    int arrays = 0;</span>
+    //The number of references that a new object takes
+<span class="nc" id="L246">    int references = nrOfRefsPerObj;</span>
+<span class="nc" id="L247">    int index = 0;</span>
+
+<span class="nc bnc" id="L249" title="All 2 branches missed.">    for ( ; null != cl; cl = cl.getSuperclass()) {</span>
+<span class="nc" id="L250">      Field[] field = cl.getDeclaredFields();</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">      if (null != field) {</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        for (Field aField : field) {</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">          if (Modifier.isStatic(aField.getModifiers())) continue;</span>
+<span class="nc" id="L254">          Class fieldClass = aField.getType();</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">          if (fieldClass.isArray()) {</span>
+<span class="nc" id="L256">            arrays++;</span>
+<span class="nc" id="L257">            references++;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">          } else if (!fieldClass.isPrimitive()) {</span>
+<span class="nc" id="L259">            references++;</span>
+          } else {// Is simple primitive
+<span class="nc" id="L261">            String name = fieldClass.getName();</span>
+
+<span class="nc bnc" id="L263" title="All 4 branches missed.">            if (name.equals(&quot;int&quot;) || name.equals(&quot;I&quot;))</span>
+<span class="nc" id="L264">              primitives += Bytes.SIZEOF_INT;</span>
+<span class="nc bnc" id="L265" title="All 4 branches missed.">            else if (name.equals(&quot;long&quot;) || name.equals(&quot;J&quot;))</span>
+<span class="nc" id="L266">              primitives += Bytes.SIZEOF_LONG;</span>
+<span class="nc bnc" id="L267" title="All 4 branches missed.">            else if (name.equals(&quot;boolean&quot;) || name.equals(&quot;Z&quot;))</span>
+<span class="nc" id="L268">              primitives += Bytes.SIZEOF_BOOLEAN;</span>
+<span class="nc bnc" id="L269" title="All 4 branches missed.">            else if (name.equals(&quot;short&quot;) || name.equals(&quot;S&quot;))</span>
+<span class="nc" id="L270">              primitives += Bytes.SIZEOF_SHORT;</span>
+<span class="nc bnc" id="L271" title="All 4 branches missed.">            else if (name.equals(&quot;byte&quot;) || name.equals(&quot;B&quot;))</span>
+<span class="nc" id="L272">              primitives += Bytes.SIZEOF_BYTE;</span>
+<span class="nc bnc" id="L273" title="All 4 branches missed.">            else if (name.equals(&quot;char&quot;) || name.equals(&quot;C&quot;))</span>
+<span class="nc" id="L274">              primitives += Bytes.SIZEOF_CHAR;</span>
+<span class="nc bnc" id="L275" title="All 4 branches missed.">            else if (name.equals(&quot;float&quot;) || name.equals(&quot;F&quot;))</span>
+<span class="nc" id="L276">              primitives += Bytes.SIZEOF_FLOAT;</span>
+<span class="nc bnc" id="L277" title="All 4 branches missed.">            else if (name.equals(&quot;double&quot;) || name.equals(&quot;D&quot;))</span>
+<span class="nc" id="L278">              primitives += Bytes.SIZEOF_DOUBLE;</span>
+          }
+<span class="nc bnc" id="L280" title="All 2 branches missed.">          if (debug) {</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">            if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L282">              LOG.debug(&quot;&quot; + index + &quot; &quot; + aField.getName() + &quot; &quot; + aField.getType());</span>
+            }
+          }
+<span class="nc" id="L285">          index++;</span>
+        }
+      }
+    }
+<span class="nc" id="L289">    return new int [] {primitives, arrays, references};</span>
+  }
+
+  /**
+   * Estimate the static space taken up by a class instance given the
+   * coefficients returned by getSizeCoefficients.
+   *
+   * @param coeff the coefficients
+   *
+   * @param debug debug flag
+   * @return the size estimate, in bytes
+   */
+  private static long estimateBaseFromCoefficients(int [] coeff, boolean debug) {
+<span class="nc" id="L302">    long prealign_size = coeff[0] + align(coeff[1] * ARRAY) + coeff[2] * REFERENCE;</span>
+
+    // Round up to a multiple of 8
+<span class="nc" id="L305">    long size = align(prealign_size);</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">    if(debug) {</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">      if (LOG.isDebugEnabled()) {</span>
+<span class="nc" id="L308">        LOG.debug(&quot;Primitives=&quot; + coeff[0] + &quot;, arrays=&quot; + coeff[1] +</span>
+            &quot;, references(includes &quot; + nrOfRefsPerObj +
+            &quot; for object overhead)=&quot; + coeff[2] + &quot;, refSize &quot; + REFERENCE +
+            &quot;, size=&quot; + size + &quot;, prealign_size=&quot; + prealign_size);
+      }
+    }
+<span class="nc" id="L314">    return size;</span>
+  }
+
+  /**
+   * Estimate the static space taken up by the fields of a class. This includes
+   * the space taken up by by references (the pointer) but not by the referenced
+   * object. So the estimated size of an array field does not depend on the size
+   * of the array. Similarly the size of an object (reference) field does not
+   * depend on the object.
+   *
+   * @param cl class
+   * @param debug debug flag
+   * @return the size estimate in bytes.
+   */
+  @SuppressWarnings(&quot;unchecked&quot;)
+  public static long estimateBase(Class cl, boolean debug) {
+<span class="nc" id="L330">    return estimateBaseFromCoefficients( getSizeCoefficients(cl, debug), debug);</span>
+  }
+
+  /**
+   * Aligns a number to 8.
+   * @param num number to align to 8
+   * @return smallest number &gt;= input that is a multiple of 8
+   */
+  public static int align(int num) {
+<span class="nc" id="L339">    return (int)(align((long)num));</span>
+  }
+
+  /**
+   * Aligns a number to 8.
+   * @param num number to align to 8
+   * @return smallest number &gt;= input that is a multiple of 8
+   */
+  public static long align(long num) {
+    //The 7 comes from that the alignSize is 8 which is the number of bytes
+    //stored and sent together
+<span class="nc" id="L350">    return  ((num + 7) &gt;&gt; 3) &lt;&lt; 3;</span>
+  }
+
+  /**
+   * Determines if we are running in a 32-bit JVM. Some unit tests need to
+   * know this too.
+   */
+  public static boolean is32BitJVM() {
+<span class="nc" id="L358">    return System.getProperty(&quot;sun.arch.data.model&quot;).equals(&quot;32&quot;);</span>
+  }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

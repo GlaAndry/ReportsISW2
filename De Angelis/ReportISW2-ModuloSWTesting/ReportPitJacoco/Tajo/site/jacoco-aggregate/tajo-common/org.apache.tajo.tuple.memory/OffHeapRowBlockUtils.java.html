@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>OffHeapRowBlockUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">OffHeapRowBlockUtils.java</span></div><h1>OffHeapRowBlockUtils.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import com.google.common.collect.Lists;
+import com.google.common.primitives.*;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueOutOfRangeException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.RowBlockReader;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+<span class="nc" id="L37">public class OffHeapRowBlockUtils {</span>
+  private static TupleConverter tupleConverter;
+
+  static {
+<span class="nc" id="L41">    tupleConverter = new TupleConverter();</span>
+<span class="nc" id="L42">  }</span>
+
+  public static List&lt;Tuple&gt; sort(MemoryRowBlock rowBlock, Comparator&lt;Tuple&gt; comparator) {
+<span class="nc" id="L45">    List&lt;Tuple&gt; tupleList = Lists.newArrayList();</span>
+
+    ZeroCopyTuple zcTuple;
+<span class="nc bnc" id="L48" title="All 2 branches missed.">    if(rowBlock.getMemory().hasAddress()) {</span>
+<span class="nc" id="L49">      zcTuple = new UnSafeTuple();</span>
+    } else {
+<span class="nc" id="L51">      zcTuple = new HeapTuple();</span>
+    }
+
+<span class="nc" id="L54">    RowBlockReader reader = rowBlock.getReader();</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">    while(reader.next(zcTuple)) {</span>
+<span class="nc" id="L56">      tupleList.add(zcTuple);</span>
+
+<span class="nc bnc" id="L58" title="All 2 branches missed.">      if(rowBlock.getMemory().hasAddress()) {</span>
+<span class="nc" id="L59">        zcTuple = new UnSafeTuple();</span>
+      } else {
+<span class="nc" id="L61">        zcTuple = new HeapTuple();</span>
+      }
+    }
+<span class="nc" id="L64">    Collections.sort(tupleList, comparator);</span>
+<span class="nc" id="L65">    return tupleList;</span>
+  }
+
+  public static List&lt;UnSafeTuple&gt; sort(UnSafeTupleList list, Comparator&lt;UnSafeTuple&gt; comparator) {
+<span class="nc" id="L69">    Collections.sort(list, comparator);</span>
+<span class="nc" id="L70">    return list;</span>
+  }
+
+  public static Tuple[] sortToArray(MemoryRowBlock rowBlock, Comparator&lt;Tuple&gt; comparator) {
+<span class="nc" id="L74">    Tuple[] tuples = new Tuple[rowBlock.rows()];</span>
+
+    ZeroCopyTuple zcTuple;
+<span class="nc bnc" id="L77" title="All 2 branches missed.">    if(rowBlock.getMemory().hasAddress()) {</span>
+<span class="nc" id="L78">      zcTuple = new UnSafeTuple();</span>
+    } else {
+<span class="nc" id="L80">      zcTuple = new HeapTuple();</span>
+    }
+
+<span class="nc" id="L83">    RowBlockReader reader = rowBlock.getReader();</span>
+<span class="nc bnc" id="L84" title="All 4 branches missed.">    for (int i = 0; i &lt; rowBlock.rows() &amp;&amp; reader.next(zcTuple); i++) {</span>
+<span class="nc" id="L85">      tuples[i] = zcTuple;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">      if(rowBlock.getMemory().hasAddress()) {</span>
+<span class="nc" id="L87">        zcTuple = new UnSafeTuple();</span>
+      } else {
+<span class="nc" id="L89">        zcTuple = new HeapTuple();</span>
+      }
+    }
+<span class="nc" id="L92">    Arrays.sort(tuples, comparator);</span>
+<span class="nc" id="L93">    return tuples;</span>
+  }
+
+  public static final int compareColumn(UnSafeTuple tuple1, UnSafeTuple tuple2, int index, TajoDataTypes.Type type,
+                                         boolean ascending, boolean nullFirst) {
+<span class="nc" id="L98">    final boolean n1 = tuple1.isBlankOrNull(index);</span>
+<span class="nc" id="L99">    final boolean n2 = tuple2.isBlankOrNull(index);</span>
+<span class="nc bnc" id="L100" title="All 4 branches missed.">    if (n1 &amp;&amp; n2) {</span>
+<span class="nc" id="L101">      return 0;</span>
+    }
+
+<span class="nc bnc" id="L104" title="All 2 branches missed.">    if (n1 ^ n2) {</span>
+<span class="nc bnc" id="L105" title="All 6 branches missed.">      return nullFirst ? (n1 ? -1 : 1) : (n1 ? 1 : -1);</span>
+    }
+
+    int compare;
+<span class="nc bnc" id="L109" title="All 9 branches missed.">    switch (type) {</span>
+    case BOOLEAN:
+<span class="nc" id="L111">      compare = Booleans.compare(tuple1.getBool(index), tuple2.getBool(index));</span>
+<span class="nc" id="L112">      break;</span>
+    case BIT:
+<span class="nc" id="L114">      compare = tuple1.getByte(index) - tuple2.getByte(index);</span>
+<span class="nc" id="L115">      break;</span>
+    case INT1:
+    case INT2:
+<span class="nc" id="L118">      compare = Shorts.compare(tuple1.getInt2(index), tuple2.getInt2(index));</span>
+<span class="nc" id="L119">      break;</span>
+    case DATE:
+    case INT4:
+<span class="nc" id="L122">      compare = Ints.compare(tuple1.getInt4(index), tuple2.getInt4(index));</span>
+<span class="nc" id="L123">      break;</span>
+    case TIME:
+    case TIMESTAMP:
+    case INT8:
+<span class="nc" id="L127">      compare = Longs.compare(tuple1.getInt8(index), tuple2.getInt8(index));</span>
+<span class="nc" id="L128">      break;</span>
+    case FLOAT4:
+<span class="nc" id="L130">      compare = Floats.compare(tuple1.getFloat4(index), tuple2.getFloat4(index));</span>
+<span class="nc" id="L131">      break;</span>
+    case FLOAT8:
+<span class="nc" id="L133">      compare = Doubles.compare(tuple1.getFloat8(index), tuple2.getFloat8(index));</span>
+<span class="nc" id="L134">      break;</span>
+    case CHAR:
+    case TEXT:
+    case BLOB:
+<span class="nc" id="L138">      compare = UnSafeTupleBytesComparator.compare(tuple1.getFieldAddr(index), tuple2.getFieldAddr(index));</span>
+<span class="nc" id="L139">      break;</span>
+    default:
+<span class="nc" id="L141">      throw new TajoRuntimeException(</span>
+<span class="nc" id="L142">          new UnsupportedException(&quot;unknown data type '&quot; + type.name() + &quot;'&quot;));</span>
+    }
+<span class="nc bnc" id="L144" title="All 2 branches missed.">    return ascending ? compare : -compare;</span>
+  }
+  /**
+   * This class is tuple converter to the RowBlock
+   */
+<span class="nc" id="L149">  public static class TupleConverter {</span>
+
+    public void convert(Tuple tuple, RowWriter writer) {
+      try {
+<span class="nc" id="L153">        writer.startRow();</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (int i = 0; i &lt; writer.dataTypes().length; i++) {</span>
+<span class="nc" id="L155">          writeField(i, tuple, writer);</span>
+        }
+<span class="nc" id="L157">      } catch (ValueOutOfRangeException e) {</span>
+<span class="nc" id="L158">        writer.cancelRow();</span>
+<span class="nc" id="L159">        throw e;</span>
+<span class="nc" id="L160">      }</span>
+<span class="nc" id="L161">      writer.endRow();</span>
+<span class="nc" id="L162">    }</span>
+
+    protected void writeField(int colIdx, Tuple tuple, RowWriter writer) {
+
+<span class="nc bnc" id="L166" title="All 2 branches missed.">      if (tuple.isBlankOrNull(colIdx)) {</span>
+<span class="nc" id="L167">        writer.skipField();</span>
+      } else {
+<span class="nc bnc" id="L169" title="All 16 branches missed.">        switch (writer.dataTypes()[colIdx].getType()) {</span>
+        case BOOLEAN:
+<span class="nc" id="L171">          writer.putBool(tuple.getBool(colIdx));</span>
+<span class="nc" id="L172">          break;</span>
+        case BIT:
+<span class="nc" id="L174">          writer.putByte(tuple.getByte(colIdx));</span>
+<span class="nc" id="L175">          break;</span>
+        case INT1:
+        case INT2:
+<span class="nc" id="L178">          writer.putInt2(tuple.getInt2(colIdx));</span>
+<span class="nc" id="L179">          break;</span>
+        case INT4:
+<span class="nc" id="L181">          writer.putInt4(tuple.getInt4(colIdx));</span>
+<span class="nc" id="L182">          break;</span>
+        case DATE:
+<span class="nc" id="L184">          writer.putDate(tuple.getInt4(colIdx));</span>
+<span class="nc" id="L185">          break;</span>
+        case INT8:
+<span class="nc" id="L187">          writer.putInt8(tuple.getInt8(colIdx));</span>
+<span class="nc" id="L188">          break;</span>
+        case TIMESTAMP:
+<span class="nc" id="L190">          writer.putTimestamp(tuple.getInt8(colIdx));</span>
+<span class="nc" id="L191">          break;</span>
+        case TIME:
+<span class="nc" id="L193">          writer.putTime(tuple.getInt8(colIdx));</span>
+<span class="nc" id="L194">          break;</span>
+        case FLOAT4:
+<span class="nc" id="L196">          writer.putFloat4(tuple.getFloat4(colIdx));</span>
+<span class="nc" id="L197">          break;</span>
+        case FLOAT8:
+<span class="nc" id="L199">          writer.putFloat8(tuple.getFloat8(colIdx));</span>
+<span class="nc" id="L200">          break;</span>
+        case CHAR:
+        case TEXT:
+<span class="nc" id="L203">          writer.putText(tuple.getBytes(colIdx));</span>
+<span class="nc" id="L204">          break;</span>
+        case BLOB:
+<span class="nc" id="L206">          writer.putBlob(tuple.getBytes(colIdx));</span>
+<span class="nc" id="L207">          break;</span>
+        case INTERVAL:
+<span class="nc" id="L209">          writer.putInterval((IntervalDatum) tuple.getInterval(colIdx));</span>
+<span class="nc" id="L210">          break;</span>
+        case PROTOBUF:
+<span class="nc" id="L212">          writer.putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(colIdx));</span>
+<span class="nc" id="L213">          break;</span>
+        case NULL_TYPE:
+<span class="nc" id="L215">          writer.skipField();</span>
+<span class="nc" id="L216">          break;</span>
+        default:
+<span class="nc" id="L218">          throw new TajoRuntimeException(</span>
+<span class="nc" id="L219">              new UnsupportedException(&quot;unknown data type '&quot; + writer.dataTypes()[colIdx].getType().name() + &quot;'&quot;));</span>
+        }
+      }
+<span class="nc" id="L222">    }</span>
+  }
+
+  public static void convert(Tuple tuple, RowWriter writer) {
+<span class="nc" id="L226">    tupleConverter.convert(tuple, writer);</span>
+<span class="nc" id="L227">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

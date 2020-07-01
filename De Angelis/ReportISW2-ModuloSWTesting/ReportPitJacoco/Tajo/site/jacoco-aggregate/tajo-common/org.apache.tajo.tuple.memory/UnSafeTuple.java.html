@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UnSafeTuple.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">UnSafeTuple.java</span></div><h1>UnSafeTuple.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import com.google.common.base.Preconditions;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import io.netty.util.internal.PlatformDependent;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.*;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.UnsafeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+import sun.misc.Unsafe;
+
+
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
+
+<span class="nc" id="L44">public class UnSafeTuple extends ZeroCopyTuple {</span>
+<span class="nc" id="L45">  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;</span>
+
+  private MemoryBlock memoryBlock;
+  private DataType[] types;
+
+  @Override
+  public void set(MemoryBlock memoryBlock, int relativePos, DataType[] types) {
+<span class="nc" id="L52">    Preconditions.checkArgument(memoryBlock.hasAddress());</span>
+
+<span class="nc" id="L54">    this.memoryBlock = memoryBlock;</span>
+<span class="nc" id="L55">    this.types = types;</span>
+<span class="nc" id="L56">    super.set(relativePos);</span>
+<span class="nc" id="L57">  }</span>
+
+  public void set(UnSafeTuple tuple) {
+<span class="nc" id="L60">    this.memoryBlock = tuple.memoryBlock;</span>
+<span class="nc" id="L61">    this.types = tuple.types;</span>
+<span class="nc" id="L62">    super.set(tuple.getRelativePos());</span>
+<span class="nc" id="L63">  }</span>
+
+  @Override
+  public int size() {
+<span class="nc" id="L67">    return types.length;</span>
+  }
+
+  @Override
+  public int getLength() {
+<span class="nc" id="L72">    return PlatformDependent.getInt(address());</span>
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+<span class="nc" id="L77">    return types[fieldId].getType();</span>
+  }
+
+  @Override
+  public int size(int fieldId) {
+<span class="nc" id="L82">    return PlatformDependent.getInt(getFieldAddr(fieldId));</span>
+  }
+
+  public void writeTo(ByteBuffer bb) {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">    if (bb.remaining() &lt; getLength()) {</span>
+<span class="nc" id="L87">      throw new IndexOutOfBoundsException(&quot;remaining length: &quot; + bb.remaining()</span>
+<span class="nc" id="L88">          + &quot;, tuple length: &quot; + getLength());</span>
+    }
+
+<span class="nc bnc" id="L91" title="All 2 branches missed.">    if (getLength() &gt; 0) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">      if (bb.isDirect()) {</span>
+<span class="nc" id="L93">        PlatformDependent.copyMemory(address(), PlatformDependent.directBufferAddress(bb) + bb.position(), getLength());</span>
+<span class="nc" id="L94">        bb.position(bb.position() + getLength());</span>
+      } else {
+<span class="nc" id="L96">        PlatformDependent.copyMemory(address(), bb.array(), bb.arrayOffset() + bb.position(), getLength());</span>
+<span class="nc" id="L97">        bb.position(bb.position() + getLength());</span>
+      }
+    }
+<span class="nc" id="L100">  }</span>
+
+  public long address() {
+<span class="nc" id="L103">    return memoryBlock.address() + getRelativePos();</span>
+  }
+
+  public HeapTuple toHeapTuple() {
+<span class="nc" id="L107">    HeapTuple heapTuple = new HeapTuple();</span>
+<span class="nc" id="L108">    byte [] bytes = new byte[getLength()];</span>
+<span class="nc" id="L109">    PlatformDependent.copyMemory(address(), bytes, 0, getLength());</span>
+<span class="nc" id="L110">    heapTuple.set(bytes, types);</span>
+<span class="nc" id="L111">    return heapTuple;</span>
+  }
+
+  private int getFieldOffset(int fieldId) {
+<span class="nc" id="L115">    return PlatformDependent.getInt(address()+ (long)(SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));</span>
+  }
+
+  public long getFieldAddr(int fieldId) {
+<span class="nc" id="L119">    int fieldOffset = getFieldOffset(fieldId);</span>
+<span class="nc bnc" id="L120" title="All 4 branches missed.">    if (fieldOffset &lt; 0 || fieldOffset &gt; getLength()) {</span>
+<span class="nc" id="L121">      throw new RuntimeException(&quot;Invalid Access. Field : &quot; + fieldId</span>
+<span class="nc" id="L122">          + &quot;, Offset:&quot; + fieldOffset + &quot;, Record length:&quot; + getLength());</span>
+    }
+<span class="nc" id="L124">    return address() + fieldOffset;</span>
+  }
+
+  @Override
+  public boolean contains(int fieldid) {
+<span class="nc bnc" id="L129" title="All 2 branches missed.">    return getFieldOffset(fieldid) &gt; MemoryRowBlock.NULL_FIELD_OFFSET;</span>
+  }
+
+  @Override
+  public boolean isBlank(int fieldid) {
+<span class="nc bnc" id="L134" title="All 2 branches missed.">    return getFieldOffset(fieldid) == MemoryRowBlock.NULL_FIELD_OFFSET;</span>
+  }
+
+  @Override
+  public boolean isBlankOrNull(int fieldid) {
+<span class="nc bnc" id="L139" title="All 2 branches missed.">    return getFieldOffset(fieldid) == MemoryRowBlock.NULL_FIELD_OFFSET;</span>
+  }
+
+  @Override
+  public void clear() {
+    // nothing to do
+<span class="nc" id="L145">  }</span>
+
+  @Override
+  public void put(int fieldId, Datum value) {
+<span class="nc" id="L149">    throw new TajoRuntimeException(new UnsupportedException());</span>
+  }
+
+  @Override
+  public void insertTuple(int fieldId, Tuple tuple) {
+<span class="nc" id="L154">    throw new TajoRuntimeException(new UnsupportedException());</span>
+  }
+
+  @Override
+  public void put(Datum[] values) {
+<span class="nc" id="L159">    throw new TajoRuntimeException(new UnsupportedException());</span>
+  }
+
+  @Override
+  public Datum asDatum(int fieldId) {
+<span class="nc bnc" id="L164" title="All 2 branches missed.">    if (isBlankOrNull(fieldId)) {</span>
+<span class="nc" id="L165">      return NullDatum.get();</span>
+    }
+
+<span class="nc bnc" id="L168" title="All 17 branches missed.">    switch (types[fieldId].getType()) {</span>
+    case BOOLEAN:
+<span class="nc" id="L170">      return DatumFactory.createBool(getBool(fieldId));</span>
+    case BIT:
+<span class="nc" id="L172">      return DatumFactory.createBit(getByte(fieldId));</span>
+    case INT1:
+    case INT2:
+<span class="nc" id="L175">      return DatumFactory.createInt2(getInt2(fieldId));</span>
+    case INT4:
+<span class="nc" id="L177">      return DatumFactory.createInt4(getInt4(fieldId));</span>
+    case INT8:
+<span class="nc" id="L179">      return DatumFactory.createInt8(getInt8(fieldId));</span>
+    case FLOAT4:
+<span class="nc" id="L181">      return DatumFactory.createFloat4(getFloat4(fieldId));</span>
+    case FLOAT8:
+<span class="nc" id="L183">      return DatumFactory.createFloat8(getFloat8(fieldId));</span>
+    case CHAR:
+<span class="nc" id="L185">      return DatumFactory.createChar(getBytes(fieldId));</span>
+    case TEXT:
+<span class="nc" id="L187">      return DatumFactory.createText(getBytes(fieldId));</span>
+    case BLOB:
+<span class="nc" id="L189">      return DatumFactory.createBlob(getBytes(fieldId));</span>
+    case TIMESTAMP:
+<span class="nc" id="L191">      return DatumFactory.createTimestamp(getInt8(fieldId));</span>
+    case DATE:
+<span class="nc" id="L193">      return DatumFactory.createDate(getInt4(fieldId));</span>
+    case TIME:
+<span class="nc" id="L195">      return DatumFactory.createTime(getInt8(fieldId));</span>
+    case INTERVAL:
+<span class="nc" id="L197">      return getInterval(fieldId);</span>
+    case PROTOBUF:
+<span class="nc" id="L199">      return getProtobufDatum(fieldId);</span>
+    case NULL_TYPE:
+<span class="nc" id="L201">      return NullDatum.get();</span>
+    default:
+<span class="nc" id="L203">      throw new TajoRuntimeException(new UnsupportedException(&quot;data type '&quot; + types[fieldId] + &quot;'&quot;));</span>
+    }
+  }
+
+  @Override
+  public void clearOffset() {
+<span class="nc" id="L209">  }</span>
+
+  @Override
+  public void setOffset(long offset) {
+<span class="nc" id="L213">  }</span>
+
+  @Override
+  public long getOffset() {
+<span class="nc" id="L217">    return 0;</span>
+  }
+
+  @Override
+  public boolean getBool(int fieldId) {
+<span class="nc bnc" id="L222" title="All 2 branches missed.">    return PlatformDependent.getByte(getFieldAddr(fieldId)) == 0x01;</span>
+  }
+
+  @Override
+  public byte getByte(int fieldId) {
+<span class="nc" id="L227">    return PlatformDependent.getByte(getFieldAddr(fieldId));</span>
+  }
+
+  @Override
+  public char getChar(int fieldId) {
+<span class="nc" id="L232">    return UNSAFE.getChar(getFieldAddr(fieldId));</span>
+  }
+
+  @Override
+  public byte[] getBytes(int fieldId) {
+<span class="nc" id="L237">    long pos = getFieldAddr(fieldId);</span>
+<span class="nc" id="L238">    int len = PlatformDependent.getInt(pos);</span>
+<span class="nc" id="L239">    pos += SizeOf.SIZE_OF_INT;</span>
+
+<span class="nc" id="L241">    byte [] bytes = new byte[len];</span>
+<span class="nc" id="L242">    PlatformDependent.copyMemory(pos, bytes, 0, len);</span>
+<span class="nc" id="L243">    return bytes;</span>
+  }
+
+  @Override
+  public byte[] getTextBytes(int fieldId) {
+<span class="nc" id="L248">    return asDatum(fieldId).asTextBytes();</span>
+  }
+
+  @Override
+  public short getInt2(int fieldId) {
+<span class="nc" id="L253">    long addr = getFieldAddr(fieldId);</span>
+<span class="nc" id="L254">    return PlatformDependent.getShort(addr);</span>
+  }
+
+  @Override
+  public int getInt4(int fieldId) {
+<span class="nc" id="L259">    return PlatformDependent.getInt(getFieldAddr(fieldId));</span>
+  }
+
+  @Override
+  public long getInt8(int fieldId) {
+<span class="nc" id="L264">    return PlatformDependent.getLong(getFieldAddr(fieldId));</span>
+  }
+
+  @Override
+  public float getFloat4(int fieldId) {
+<span class="nc" id="L269">    return Float.intBitsToFloat(PlatformDependent.getInt(getFieldAddr(fieldId)));</span>
+  }
+
+  @Override
+  public double getFloat8(int fieldId) {
+<span class="nc" id="L274">    return Double.longBitsToDouble(PlatformDependent.getLong(getFieldAddr(fieldId)));</span>
+  }
+
+  @Override
+  public String getText(int fieldId) {
+<span class="nc" id="L279">    return new String(getBytes(fieldId), TextDatum.DEFAULT_CHARSET);</span>
+  }
+
+  @Override
+  public IntervalDatum getInterval(int fieldId) {
+<span class="nc" id="L284">    long pos = getFieldAddr(fieldId);</span>
+<span class="nc" id="L285">    int months = PlatformDependent.getInt(pos);</span>
+<span class="nc" id="L286">    pos += SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L287">    long millisecs = PlatformDependent.getLong(pos);</span>
+<span class="nc" id="L288">    return new IntervalDatum(months, millisecs);</span>
+  }
+
+  @Override
+  public Datum getProtobufDatum(int fieldId) {
+<span class="nc" id="L293">    byte [] bytes = getBytes(fieldId);</span>
+
+<span class="nc" id="L295">    ProtobufDatumFactory factory = ProtobufDatumFactory.get(types[fieldId]);</span>
+<span class="nc" id="L296">    Message.Builder builder = factory.newBuilder();</span>
+    try {
+<span class="nc" id="L298">      builder.mergeFrom(bytes);</span>
+<span class="nc" id="L299">    } catch (InvalidProtocolBufferException e) {</span>
+<span class="nc" id="L300">      return NullDatum.get();</span>
+<span class="nc" id="L301">    }</span>
+
+<span class="nc" id="L303">    return new ProtobufDatum(builder.build());</span>
+  }
+
+  @Override
+  public char[] getUnicodeChars(int fieldId) {
+<span class="nc" id="L308">    long pos = getFieldAddr(fieldId);</span>
+<span class="nc" id="L309">    int len = PlatformDependent.getInt(pos);</span>
+<span class="nc" id="L310">    pos += SizeOf.SIZE_OF_INT;</span>
+
+<span class="nc" id="L312">    byte [] bytes = new byte[len];</span>
+<span class="nc" id="L313">    PlatformDependent.copyMemory(pos, bytes, 0, len);</span>
+<span class="nc" id="L314">    return StringUtils.convertBytesToChars(bytes, Charset.forName(&quot;UTF-8&quot;));</span>
+  }
+
+  @Override
+  public TimeMeta getTimeDate(int fieldId) {
+<span class="nc" id="L319">    return asDatum(fieldId).asTimeMeta();</span>
+  }
+
+  @Override
+  public Tuple clone() throws CloneNotSupportedException {
+<span class="nc" id="L324">    return toHeapTuple();</span>
+  }
+
+  @Override
+  public Datum[] getValues() {
+<span class="nc" id="L329">    Datum [] datums = new Datum[size()];</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">    for (int i = 0; i &lt; size(); i++) {</span>
+<span class="nc bnc" id="L331" title="All 2 branches missed.">      if (contains(i)) {</span>
+<span class="nc" id="L332">        datums[i] = asDatum(i);</span>
+      } else {
+<span class="nc" id="L334">        datums[i] = NullDatum.get();</span>
+      }
+    }
+<span class="nc" id="L337">    return datums;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L342">    return Arrays.hashCode(getValues());</span>
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L347" title="All 2 branches missed.">    if (obj instanceof Tuple) {</span>
+<span class="nc" id="L348">      Tuple other = (Tuple) obj;</span>
+<span class="nc" id="L349">      return Arrays.equals(getValues(), other.getValues());</span>
+    }
+<span class="nc" id="L351">    return false;</span>
+  }
+  @Override
+  public String toString() {
+<span class="nc" id="L355">    return VTuple.toDisplayString(getValues());</span>
+  }
+
+  public void release() {
+
+<span class="nc" id="L360">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

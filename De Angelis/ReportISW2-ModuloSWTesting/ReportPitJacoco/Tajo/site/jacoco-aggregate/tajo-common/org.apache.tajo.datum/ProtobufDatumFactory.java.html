@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProtobufDatumFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">ProtobufDatumFactory.java</span></div><h1>ProtobufDatumFactory.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
+import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Message;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+
+import java.lang.reflect.Method;
+import java.util.Map;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
+
+public class ProtobufDatumFactory {
+<span class="nc" id="L35">  private static Map&lt;String, ProtobufDatumFactory&gt; factories = Maps.newHashMap();</span>
+<span class="nc" id="L36">  private static ProtobufJsonFormat protobufFormatter = ProtobufJsonFormat.getInstance();</span>
+  private Method getDefaultInstance;
+  Class&lt;? extends GeneratedMessage&gt; messageClass;
+  private Message defaultInstance;
+
+<span class="nc" id="L41">  private ProtobufDatumFactory(String protobufClass) {</span>
+    try {
+<span class="nc" id="L43">      String messageClassName = protobufClass;</span>
+<span class="nc" id="L44">      this.messageClass = (Class&lt;? extends GeneratedMessage&gt;) Class.forName(messageClassName);</span>
+<span class="nc" id="L45">      this.getDefaultInstance = messageClass.getMethod(&quot;getDefaultInstance&quot;);</span>
+<span class="nc" id="L46">      defaultInstance = (Message) getDefaultInstance.invoke(null);</span>
+<span class="nc" id="L47">    } catch (Throwable t) {</span>
+<span class="nc" id="L48">      t.printStackTrace();</span>
+<span class="nc" id="L49">      throw new RuntimeException(t);</span>
+<span class="nc" id="L50">    }</span>
+<span class="nc" id="L51">  }</span>
+
+  public &lt;T extends Message.Builder&gt; T newBuilder() {
+    Message.Builder builder;
+    try {
+<span class="nc" id="L56">      builder = defaultInstance.newBuilderForType();</span>
+<span class="nc" id="L57">    } catch (Throwable t) {</span>
+<span class="nc" id="L58">      t.printStackTrace();</span>
+<span class="nc" id="L59">      throw new RuntimeException(t);</span>
+<span class="nc" id="L60">    }</span>
+<span class="nc" id="L61">    return (T) builder;</span>
+  }
+
+  public static ProtobufDatum createDatum(Message.Builder builder) {
+<span class="nc" id="L65">    return createDatum(builder.build());</span>
+  }
+
+  public static ProtobufDatum createDatum(Message message) {
+<span class="nc" id="L69">    return new ProtobufDatum(message);</span>
+  }
+
+  public static ProtobufDatum createDatum(String className, byte [] bytes, int offset, int length)
+      throws InvalidProtocolBufferException {
+<span class="nc" id="L74">    ProtobufDatumFactory factory = get(className);</span>
+<span class="nc" id="L75">    Message.Builder builder = factory.newBuilder();</span>
+<span class="nc" id="L76">    builder.mergeFrom(bytes, offset, length);</span>
+<span class="nc" id="L77">    return createDatum(builder);</span>
+  }
+
+  public static Datum createDatum(DataType type, byte[] bytes)
+      throws InvalidProtocolBufferException {
+<span class="nc" id="L82">    ProtobufDatumFactory factory = get(type);</span>
+<span class="nc" id="L83">    Message.Builder builder = factory.newBuilder();</span>
+<span class="nc" id="L84">    builder.mergeFrom(bytes);</span>
+<span class="nc" id="L85">    return createDatum(builder);</span>
+  }
+
+  public static ProtobufDatumFactory get(DataType dataType) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">    Preconditions.checkArgument(dataType.getType() == TajoDataTypes.Type.PROTOBUF,</span>
+        &quot;ProtobufDatumFactory only can accepts Protocol Buffer Datum Type.&quot;);
+<span class="nc" id="L91">    return get(dataType.getCode());</span>
+  }
+
+  public static ProtobufDatumFactory get(String className) {
+    ProtobufDatumFactory factory;
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    if (factories.containsKey(className)) {</span>
+<span class="nc" id="L97">      factory = factories.get(className);</span>
+    } else {
+<span class="nc" id="L99">      factory = new ProtobufDatumFactory(className);</span>
+<span class="nc" id="L100">      factories.put(className, factory);</span>
+    }
+<span class="nc" id="L102">    return factory;</span>
+  }
+
+  public static String toJson(Message message) {
+<span class="nc" id="L106">    return protobufFormatter.printToString(message);</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

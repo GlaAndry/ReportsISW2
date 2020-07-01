@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>QueryIdFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo</a> &gt; <span class="el_source">QueryIdFactory.java</span></div><h1>QueryIdFactory.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo;
+
+import org.apache.tajo.util.TajoIdUtils;
+
+import java.text.DecimalFormat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+<span class="nc" id="L28">public class QueryIdFactory {</span>
+<span class="nc" id="L29">  public static final QueryId NULL_QUERY_ID = newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0), 0);</span>
+
+<span class="nc" id="L31">  public static final DecimalFormat ID_FORMAT = new DecimalFormat(&quot;0000&quot;);</span>
+
+<span class="nc" id="L33">  public static final  DecimalFormat EB_ID_FORMAT = new DecimalFormat(&quot;000000&quot;);</span>
+
+<span class="nc" id="L35">  public static final  DecimalFormat QU_ID_FORMAT = new DecimalFormat(&quot;000000&quot;);</span>
+
+<span class="nc" id="L37">  public static final  DecimalFormat ATTEMPT_ID_FORMAT = new DecimalFormat(&quot;00&quot;);</span>
+
+<span class="nc" id="L39">  private static Map&lt;String, AtomicInteger&gt; queryNexIdMap = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L41">  private static AtomicInteger nextId = new AtomicInteger(0);</span>
+
+  /*
+   * &lt;ul&gt;
+   * &lt;li&gt;QueryId == q_{masterId}_{seq}&lt;/li&gt;
+   * &lt;li&gt;masterId == tajoMasterId or YarnResourceManagerId&lt;/li&gt;
+   * &lt;li&gt;seq = TajoSeq or YarnSeq&lt;/li&gt;
+   * &lt;/ul&gt;
+   */
+  public synchronized static QueryId newQueryId(String seedQueryId) {
+<span class="nc" id="L51">    AtomicInteger queryNextId = queryNexIdMap.get(seedQueryId);</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">    if(queryNextId == null) {</span>
+<span class="nc" id="L53">      queryNextId = new AtomicInteger(0);</span>
+<span class="nc" id="L54">      queryNexIdMap.put(seedQueryId, queryNextId);</span>
+    }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">    if(isYarnId(seedQueryId)) {</span>
+<span class="nc" id="L57">      String[] tokens = seedQueryId.split(&quot;_&quot;);</span>
+<span class="nc" id="L58">      return new QueryId(tokens[1], Integer.parseInt(tokens[2]));</span>
+    } else {
+<span class="nc" id="L60">      int seq = queryNextId.incrementAndGet();</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">      if(seq &gt;= 10000) {</span>
+<span class="nc" id="L62">        queryNextId.set(0);</span>
+<span class="nc" id="L63">        seq = queryNextId.incrementAndGet();</span>
+      }
+
+<span class="nc" id="L66">      return new QueryId(seedQueryId, seq);</span>
+    }
+  }
+
+  public synchronized static QueryId newQueryId(long timestamp, int seq) {
+<span class="nc" id="L71">    return new QueryId(String.valueOf(timestamp), seq);</span>
+  }
+
+  public synchronized static QueryId newQueryId(String seedQueryId, int seq) {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">    if(isYarnId(seedQueryId)) {</span>
+<span class="nc" id="L76">      String[] tokens = seedQueryId.split(&quot;_&quot;);</span>
+<span class="nc" id="L77">      return new QueryId(tokens[1], Integer.parseInt(tokens[2]));</span>
+    } else {
+<span class="nc" id="L79">      return new QueryId(seedQueryId, seq);</span>
+    }
+  }
+
+  private static boolean isYarnId(String id) {
+<span class="nc" id="L84">    return id.startsWith(&quot;application&quot;);</span>
+  }
+
+  public synchronized static ExecutionBlockId newExecutionBlockId(QueryId queryId) {
+<span class="nc" id="L88">    return new ExecutionBlockId(queryId, nextId.incrementAndGet());</span>
+  }
+
+  public synchronized static ExecutionBlockId newExecutionBlockId(QueryId queryId, int id) {
+<span class="nc" id="L92">    return new ExecutionBlockId(queryId, id);</span>
+  }
+
+  public synchronized static TaskId newTaskId(ExecutionBlockId executionBlockId) {
+<span class="nc" id="L96">    return new TaskId(executionBlockId, nextId.incrementAndGet());</span>
+  }
+
+  public synchronized static TaskId newTaskId(ExecutionBlockId executionBlockId, int id) {
+<span class="nc" id="L100">    return new TaskId(executionBlockId, id);</span>
+  }
+
+  public synchronized static TaskAttemptId newTaskAttemptId(TaskId taskId, final int attemptId) {
+<span class="nc" id="L104">    return new TaskAttemptId(taskId, attemptId);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

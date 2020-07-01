@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Int4Datum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">Int4Datum.java</span></div><h1>Int4Datum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.MurmurHash;
+import org.apache.tajo.util.NumberUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.nio.ByteBuffer;
+
+import static org.apache.tajo.type.Type.Int4;
+
+
+public class Int4Datum extends NumericDatum {
+  private static final int size = 4;
+  @Expose private final int val;
+
+	public Int4Datum(int val) {
+<span class="fc" id="L37">    super(Int4);</span>
+<span class="fc" id="L38">		this.val = val;</span>
+<span class="fc" id="L39">	}</span>
+
+  public Int4Datum(byte[] bytes) {
+<span class="nc" id="L42">    super(Int4);</span>
+<span class="nc" id="L43">    ByteBuffer bb = ByteBuffer.wrap(bytes);</span>
+<span class="nc" id="L44">    this.val = bb.getInt();</span>
+<span class="nc" id="L45">  }</span>
+
+  @Override
+  public char asChar() {
+<span class="fc" id="L49">    return asChars().charAt(0);</span>
+  }
+
+	@Override
+	public short asInt2() {
+<span class="fc" id="L54">		return (short) val;</span>
+	}
+
+  @Override
+	public int asInt4() {
+<span class="fc" id="L59">		return val;</span>
+	}
+
+  @Override
+	public long asInt8() {
+<span class="fc" id="L64">		return val;</span>
+	}
+
+  @Override
+	public byte asByte() {
+<span class="fc" id="L69">		return (byte) val;</span>
+	}
+
+  @Override
+	public byte[] asByteArray() {
+<span class="nc" id="L74">		ByteBuffer bb = ByteBuffer.allocate(4);</span>
+<span class="nc" id="L75">		bb.putInt(val);</span>
+<span class="nc" id="L76">		return bb.array();</span>
+	}
+
+  @Override
+	public float asFloat4() {
+<span class="fc" id="L81">		return val;</span>
+	}
+
+  @Override
+	public double asFloat8() {
+<span class="fc" id="L86">		return val;</span>
+	}
+
+  @Override
+	public String asChars() {
+<span class="fc" id="L91">		return &quot;&quot;+val;</span>
+	}
+
+  @Override
+  public byte[] asTextBytes() {
+<span class="nc" id="L96">    return NumberUtil.toAsciiBytes(val);</span>
+  }
+
+  @Override
+  public int size() {
+<span class="fc" id="L101">    return size;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L106">    return MurmurHash.hash(val);</span>
+  }
+
+  public boolean equals(Object obj) {
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">    if (obj instanceof Int4Datum) {</span>
+<span class="fc" id="L111">      Int4Datum other = (Int4Datum) obj;</span>
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">      return val == other.val;</span>
+    }
+
+<span class="nc" id="L115">    return false;</span>
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+<span class="pc bpc" id="L120" title="1 of 7 branches missed.">    switch (datum.kind()) {</span>
+    case INT2:
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">      return DatumFactory.createBool(val == datum.asInt2());</span>
+    case INT4:
+<span class="fc bfc" id="L124" title="All 2 branches covered.">      return DatumFactory.createBool(val == datum.asInt4());</span>
+    case INT8:
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">      return DatumFactory.createBool(val == datum.asInt8());</span>
+    case FLOAT4:
+<span class="fc bfc" id="L128" title="All 2 branches covered.">      return DatumFactory.createBool(val == datum.asFloat4());</span>
+    case FLOAT8:
+<span class="pc bpc" id="L130" title="1 of 2 branches missed.">      return DatumFactory.createBool(val == datum.asFloat8());</span>
+    case NULL_TYPE:
+<span class="fc" id="L132">      return datum;</span>
+    default:
+<span class="nc" id="L134">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+<span class="pc bpc" id="L140" title="2 of 7 branches missed.">    switch (datum.kind()) {</span>
+      case INT2: {
+<span class="fc" id="L142">        short another = datum.asInt2();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        if (val &lt; another) {</span>
+<span class="fc" id="L144">          return -1;</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        } else if (val &gt; another) {</span>
+<span class="fc" id="L146">          return 1;</span>
+        } else {
+<span class="fc" id="L148">          return 0;</span>
+        }
+      }
+      case INT4: {
+<span class="fc" id="L152">        int another = datum.asInt4();</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (val &lt; another) {</span>
+<span class="fc" id="L154">          return -1;</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        } else if (val &gt; another) {</span>
+<span class="fc" id="L156">          return 1;</span>
+        } else {
+<span class="fc" id="L158">          return 0;</span>
+        }
+      }
+      case INT8: {
+<span class="fc" id="L162">        long another = datum.asInt8();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (val &lt; another) {</span>
+<span class="fc" id="L164">          return -1;</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        } else if (val &gt; another) {</span>
+<span class="fc" id="L166">          return 1;</span>
+        } else {
+<span class="fc" id="L168">          return 0;</span>
+        }
+      }
+      case FLOAT4:{
+<span class="fc" id="L172">        float another = datum.asFloat4();</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (val &lt; another) {</span>
+<span class="fc" id="L174">          return -1;</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">        } else if (val &gt; another) {</span>
+<span class="fc" id="L176">          return 1;</span>
+        } else {
+<span class="fc" id="L178">          return 0;</span>
+        }
+      }
+      case FLOAT8: {
+<span class="fc" id="L182">        double another = datum.asFloat8();</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (val &lt; another) {</span>
+<span class="fc" id="L184">          return -1;</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        } else if (val &gt; another) {</span>
+<span class="fc" id="L186">          return 1;</span>
+        } else {
+<span class="fc" id="L188">          return 0;</span>
+        }
+      }
+      case NULL_TYPE:
+<span class="nc" id="L192">        return -1;</span>
+      default:
+<span class="nc" id="L194">        throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum plus(Datum datum) {
+<span class="pc bpc" id="L200" title="1 of 8 branches missed.">    switch (datum.kind()) {</span>
+    case INT2:
+<span class="fc" id="L202">      return DatumFactory.createInt4(val + datum.asInt2());</span>
+    case INT4:
+<span class="fc" id="L204">      return DatumFactory.createInt4(val + datum.asInt4());</span>
+    case INT8:
+<span class="fc" id="L206">      return DatumFactory.createInt8(val + datum.asInt8());</span>
+    case FLOAT4:
+<span class="fc" id="L208">      return DatumFactory.createFloat4(val + datum.asFloat4());</span>
+    case FLOAT8:
+<span class="fc" id="L210">      return DatumFactory.createFloat8(val + datum.asFloat8());</span>
+    case DATE:
+<span class="fc" id="L212">      TimeMeta tm = datum.asTimeMeta();</span>
+<span class="fc" id="L213">      tm.plusDays(asInt4());</span>
+<span class="fc" id="L214">      return new DateDatum(tm);</span>
+    case NULL_TYPE:
+<span class="nc" id="L216">      return datum;</span>
+    default:
+<span class="fc" id="L218">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum minus(Datum datum) {
+<span class="pc bpc" id="L224" title="1 of 8 branches missed.">    switch (datum.kind()) {</span>
+    case INT2:
+<span class="fc" id="L226">      return DatumFactory.createInt4(val - datum.asInt2());</span>
+    case INT4:
+<span class="fc" id="L228">      return DatumFactory.createInt4(val - datum.asInt4());</span>
+    case INT8:
+<span class="fc" id="L230">      return DatumFactory.createInt8(val - datum.asInt8());</span>
+    case FLOAT4:
+<span class="fc" id="L232">      return DatumFactory.createFloat4(val - datum.asFloat4());</span>
+    case FLOAT8:
+<span class="fc" id="L234">      return DatumFactory.createFloat8(val - datum.asFloat8());</span>
+    case DATE:
+<span class="fc" id="L236">      TimeMeta tm = datum.asTimeMeta();</span>
+<span class="fc" id="L237">      tm.plusDays(0 - asInt4());</span>
+<span class="fc" id="L238">      return new DateDatum(tm);</span>
+    case NULL_TYPE:
+<span class="nc" id="L240">      return datum;</span>
+    default:
+<span class="fc" id="L242">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum multiply(Datum datum) {
+<span class="pc bpc" id="L248" title="1 of 8 branches missed.">    switch (datum.kind()) {</span>
+    case INT2:
+<span class="fc" id="L250">      return DatumFactory.createInt4(val * datum.asInt2());</span>
+    case INT4:
+<span class="fc" id="L252">      return DatumFactory.createInt4(val * datum.asInt4());</span>
+    case INT8:
+<span class="fc" id="L254">      return DatumFactory.createInt8(val * datum.asInt8());</span>
+    case FLOAT4:
+<span class="fc" id="L256">      return DatumFactory.createFloat4(val * datum.asFloat4());</span>
+    case FLOAT8:
+<span class="fc" id="L258">      return DatumFactory.createFloat8(val * datum.asFloat8());</span>
+    case INTERVAL:
+<span class="fc" id="L260">      IntervalDatum interval = (IntervalDatum)datum;</span>
+<span class="fc" id="L261">      return new IntervalDatum(interval.getMonths() * val, interval.getMilliSeconds() * val);</span>
+    case NULL_TYPE:
+<span class="nc" id="L263">      return datum;</span>
+    default:
+<span class="fc" id="L265">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum divide(Datum datum) {
+<span class="pc bpc" id="L271" title="1 of 7 branches missed.">    switch (datum.kind()) {</span>
+      case INT2:
+<span class="fc" id="L273">        short paramValueI2 = datum.asInt2();</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (!validateDivideZero(paramValueI2)) {</span>
+<span class="fc" id="L275">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L277">        return DatumFactory.createInt4(val / paramValueI2);</span>
+      case INT4:
+<span class="fc" id="L279">        int paramValueI4 = datum.asInt4();</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        if (!validateDivideZero(paramValueI4)) {</span>
+<span class="fc" id="L281">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L283">        return DatumFactory.createInt4(val / paramValueI4);</span>
+      case INT8:
+<span class="fc" id="L285">        long paramValueI8 = datum.asInt8();</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        if (!validateDivideZero(paramValueI8)) {</span>
+<span class="fc" id="L287">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L289">        return DatumFactory.createInt8(val / paramValueI8);</span>
+      case FLOAT4:
+<span class="fc" id="L291">        float paramValueF4 = datum.asFloat4();</span>
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        if (!validateDivideZero(paramValueF4)) {</span>
+<span class="fc" id="L293">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L295">        return DatumFactory.createFloat4(val / paramValueF4);</span>
+      case FLOAT8:
+<span class="fc" id="L297">        double paramValueF8 = datum.asFloat8();</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (!validateDivideZero(paramValueF8)) {</span>
+<span class="fc" id="L299">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L301">        return DatumFactory.createFloat8(val / paramValueF8);</span>
+      case NULL_TYPE:
+<span class="nc" id="L303">        return datum;</span>
+      default:
+<span class="fc" id="L305">        throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum modular(Datum datum) {
+<span class="pc bpc" id="L311" title="1 of 7 branches missed.">    switch (datum.kind()) {</span>
+      case INT2:
+<span class="fc" id="L313">        short paramValueI2 = datum.asInt2();</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        if (!validateDivideZero(paramValueI2)) {</span>
+<span class="fc" id="L315">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L317">        return DatumFactory.createInt4(val % paramValueI2);</span>
+      case INT4:
+<span class="fc" id="L319">        int paramValueI4 = datum.asInt4();</span>
+<span class="fc bfc" id="L320" title="All 2 branches covered.">        if (!validateDivideZero(paramValueI4)) {</span>
+<span class="fc" id="L321">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L323">        return DatumFactory.createInt4(val % paramValueI4);</span>
+      case INT8:
+<span class="fc" id="L325">        long paramValueI8 = datum.asInt8();</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        if (!validateDivideZero(paramValueI8)) {</span>
+<span class="fc" id="L327">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L329">        return DatumFactory.createInt8(val % paramValueI8);</span>
+      case FLOAT4:
+<span class="fc" id="L331">        float paramValueF4 = datum.asFloat4();</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (!validateDivideZero(paramValueF4)) {</span>
+<span class="fc" id="L333">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L335">        return DatumFactory.createFloat4(val % paramValueF4);</span>
+      case FLOAT8:
+<span class="fc" id="L337">        double paramValueF8 = datum.asFloat8();</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (!validateDivideZero(paramValueF8)) {</span>
+<span class="fc" id="L339">          return NullDatum.get();</span>
+        }
+<span class="fc" id="L341">        return DatumFactory.createFloat8(val % paramValueF8);</span>
+      case NULL_TYPE:
+<span class="nc" id="L343">        return datum;</span>
+      default:
+<span class="fc" id="L345">        throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public NumericDatum inverseSign() {
+<span class="fc" id="L351">    return new Int4Datum(-val);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

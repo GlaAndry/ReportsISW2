@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompactRowBlockWriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">CompactRowBlockWriter.java</span></div><h1>CompactRowBlockWriter.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import io.netty.util.internal.PlatformDependent;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.BooleanDatum;
+import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.ValueOutOfRangeException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.BitArray;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
+
+/**
+ * This class represent serialization of RawFile
+ *
+ * Row Record Structure
+ *
+ * | row length | null flags length | null flags | field 1 | field 2| ... | field N |;
+ *
+ * |  (4 bytes)        (2 bytes)      (N bytes)  |                                  |;
+ *                Header                                         values
+ */
+public class CompactRowBlockWriter implements RowWriter {
+  private static final int RECORD_FIELD_SIZE = 4;
+  // Maximum variant int32 size is 5
+  private static final short MAXIMUM_VARIANT_INT32 = 5;
+  // Maximum variant int64 size is 10
+  private static final short MAXIMUM_VARIANT_INT64 = 10;
+
+  private final RowBlock rowBlock;
+  private final BitArray nullFlags;
+
+  /** record capacity + offset list */
+  private final int headerSize;
+
+  private final DataType[] dataTypes;
+
+  private int curFieldIdx;
+  private int curOffset;
+
+
+<span class="nc" id="L63">  public CompactRowBlockWriter(RowBlock rowBlock) {</span>
+<span class="nc" id="L64">    this.dataTypes = rowBlock.getDataTypes();</span>
+<span class="nc" id="L65">    this.rowBlock = rowBlock;</span>
+
+    // compute the number of bytes, representing the null flags
+<span class="nc" id="L68">    nullFlags = new BitArray(dataTypes.length);</span>
+<span class="nc" id="L69">    headerSize = RECORD_FIELD_SIZE + SizeOf.SIZE_OF_SHORT + nullFlags.bytesLength();</span>
+
+<span class="nc bnc" id="L71" title="All 2 branches missed.">    if (!rowBlock.getMemory().hasAddress()) {</span>
+<span class="nc" id="L72">      throw new TajoInternalError(rowBlock.getMemory().getClass().getSimpleName()</span>
+          + &quot; does not support to direct memory access&quot;);
+    }
+<span class="nc" id="L75">  }</span>
+
+
+  /**
+   * Encode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
+   * into values that can be efficiently encoded with varint.  (Otherwise,
+   * negative values must be sign-extended to 64 bits to be varint encoded,
+   * thus always taking 10 bytes on the wire.)
+   *
+   * @param n A signed 32-bit integer.
+   * @return An unsigned 32-bit integer, stored in a signed int because
+   *         Java has no explicit unsigned support.
+   */
+  public static int encodeZigZag32(final int n) {
+    // Note:  the right-shift must be arithmetic
+<span class="nc" id="L90">    return (n &lt;&lt; 1) ^ (n &gt;&gt; 31);</span>
+  }
+
+  /**
+   * Encode a ZigZag-encoded 64-bit value.  ZigZag encodes signed integers
+   * into values that can be efficiently encoded with varint.  (Otherwise,
+   * negative values must be sign-extended to 64 bits to be varint encoded,
+   * thus always taking 10 bytes on the wire.)
+   *
+   * @param n A signed 64-bit integer.
+   * @return An unsigned 64-bit integer, stored in a signed int because
+   *         Java has no explicit unsigned support.
+   */
+  public static long encodeZigZag64(final long n) {
+    // Note:  the right-shift must be arithmetic
+<span class="nc" id="L105">    return (n &lt;&lt; 1) ^ (n &gt;&gt; 63);</span>
+  }
+
+  /**
+   * Encode and write a varint.  {@code value} is treated as
+   * unsigned, so it won't be sign-extended if negative.
+   */
+  public static short writeRawVarint32(long address, int value) {
+<span class="nc" id="L113">    short length = 0;</span>
+    while (true) {
+<span class="nc bnc" id="L115" title="All 2 branches missed.">      if ((value &amp; ~0x7F) == 0) {</span>
+<span class="nc" id="L116">        PlatformDependent.putByte(address + length, (byte) value);</span>
+<span class="nc" id="L117">        length++;</span>
+<span class="nc" id="L118">        return length;</span>
+      } else {
+<span class="nc" id="L120">        PlatformDependent.putByte(address + length, (byte) ((value &amp; 0x7F) | 0x80));</span>
+<span class="nc" id="L121">        value &gt;&gt;&gt;= 7;</span>
+<span class="nc" id="L122">        length++;</span>
+      }
+    }
+  }
+
+  /**
+   * Encode and write a varint64.
+   */
+  public static short writeRawVarint64(long address, long value) {
+<span class="nc" id="L131">    short length = 0;</span>
+    while (true) {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">      if ((value &amp; ~0x7FL) == 0) {</span>
+<span class="nc" id="L134">        PlatformDependent.putByte(address + length, (byte) value);</span>
+<span class="nc" id="L135">        length++;</span>
+<span class="nc" id="L136">        return length;</span>
+      } else {
+<span class="nc" id="L138">        PlatformDependent.putByte(address + length, (byte) ((value &amp; 0x7F) | 0x80));</span>
+<span class="nc" id="L139">        value &gt;&gt;&gt;= 7;</span>
+<span class="nc" id="L140">        length++;</span>
+      }
+    }
+  }
+
+  /**
+   * Compute the number of bytes that would be needed to encode a varint.
+   * {@code value} is treated as unsigned, so it won't be sign-extended if
+   * negative.
+   */
+  public static int computeRawVarint32Size(final int value) {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    if ((value &amp; (0xffffffff &lt;&lt;  7)) == 0) return 1;</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">    if ((value &amp; (0xffffffff &lt;&lt; 14)) == 0) return 2;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">    if ((value &amp; (0xffffffff &lt;&lt; 21)) == 0) return 3;</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    if ((value &amp; (0xffffffff &lt;&lt; 28)) == 0) return 4;</span>
+<span class="nc" id="L155">    return 5;</span>
+  }
+
+  /**
+   * Current memory address of the buffer
+   *
+   * @return The memory address
+   */
+  public long address() {
+<span class="nc" id="L164">    return rowBlock.getMemory().address();</span>
+  }
+
+  /**
+   * Current position
+   *
+   * @return The position
+   */
+  public int position() {
+<span class="nc" id="L173">    return rowBlock.getMemory().writerPosition();</span>
+  }
+
+
+  /**
+   * Forward the address;
+   *
+   * @param length Length to be forwarded
+   */
+  public void forward(int length) {
+<span class="nc" id="L183">    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() + length);</span>
+<span class="nc" id="L184">  }</span>
+
+  /**
+   * Backward the address;
+   *
+   * @param length Length to be backwarded
+   */
+  public void backward(int length) {
+<span class="nc" id="L192">    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() - length);</span>
+<span class="nc" id="L193">  }</span>
+
+  public void ensureSize(int size) {
+<span class="nc" id="L196">    rowBlock.getMemory().ensureSize(size);</span>
+<span class="nc" id="L197">  }</span>
+
+  @Override
+  public DataType[] dataTypes() {
+<span class="nc" id="L201">    return rowBlock.getDataTypes();</span>
+  }
+
+  /**
+   * Current memory address of the row
+   *
+   * @return The memory address
+   */
+  public long recordStartAddr() {
+<span class="nc" id="L210">    return currentAddr() - curOffset;</span>
+  }
+
+  /**
+   * Memory address that point to the first byte of the buffer
+   *
+   * @return The memory address
+   */
+  private long currentAddr() {
+<span class="nc" id="L219">    return address() + position();</span>
+  }
+
+  public int offset() {
+<span class="nc" id="L223">    return position();</span>
+  }
+
+
+  @Override
+  public void clear() {
+<span class="nc" id="L229">    curOffset = 0;</span>
+<span class="nc" id="L230">    curFieldIdx = 0;</span>
+<span class="nc" id="L231">    nullFlags.clear();</span>
+<span class="nc" id="L232">  }</span>
+
+  @Override
+  public boolean startRow() {
+<span class="nc" id="L236">    ensureSize(headerSize);</span>
+<span class="nc" id="L237">    nullFlags.clear();</span>
+
+<span class="nc" id="L239">    curOffset = headerSize;</span>
+<span class="nc" id="L240">    curFieldIdx = 0;</span>
+<span class="nc" id="L241">    forward(headerSize);</span>
+<span class="nc" id="L242">    return true;</span>
+  }
+
+  @Override
+  public void endRow() {
+<span class="nc" id="L247">    long rowHeaderPos = recordStartAddr();</span>
+    // curOffset is equivalent to a byte length of this row.
+<span class="nc" id="L249">    PlatformDependent.putInt(rowHeaderPos, curOffset);</span>
+<span class="nc" id="L250">    rowHeaderPos += SizeOf.SIZE_OF_INT;</span>
+
+    //set null flags
+<span class="nc" id="L253">    byte [] flags = nullFlags.toArray();</span>
+<span class="nc" id="L254">    PlatformDependent.putShort(rowHeaderPos, (short) flags.length);</span>
+<span class="nc" id="L255">    rowHeaderPos += SizeOf.SIZE_OF_SHORT;</span>
+<span class="nc" id="L256">    PlatformDependent.copyMemory(flags, 0, rowHeaderPos, flags.length);</span>
+
+<span class="nc" id="L258">    rowBlock.setRows(rowBlock.rows() + 1);</span>
+<span class="nc" id="L259">  }</span>
+
+  @Override
+  public void cancelRow() {
+    // curOffset is equivalent to a byte length of current row.
+<span class="nc" id="L264">    backward(curOffset);</span>
+<span class="nc" id="L265">    curOffset = 0;</span>
+<span class="nc" id="L266">    nullFlags.clear();</span>
+<span class="nc" id="L267">    curFieldIdx = 0;</span>
+<span class="nc" id="L268">  }</span>
+
+  @Override
+  public void skipField() {
+    // set null flag
+<span class="nc" id="L273">    nullFlags.set(curFieldIdx);</span>
+<span class="nc" id="L274">    curFieldIdx++;</span>
+<span class="nc" id="L275">  }</span>
+
+  /**
+   * set current buffer position and forward field length
+   * @param fieldLength
+   */
+  private void forwardField(int fieldLength) {
+<span class="nc" id="L282">    forward(fieldLength);</span>
+<span class="nc" id="L283">    curOffset += fieldLength;</span>
+
+<span class="nc" id="L285">  }</span>
+
+  @Override
+  public void putByte(byte val) {
+<span class="nc" id="L289">    ensureSize(SizeOf.SIZE_OF_BYTE);</span>
+<span class="nc" id="L290">    long addr = currentAddr();</span>
+
+<span class="nc" id="L292">    PlatformDependent.putByte(addr, val);</span>
+<span class="nc" id="L293">    curFieldIdx++;</span>
+<span class="nc" id="L294">    forwardField(SizeOf.SIZE_OF_BYTE);</span>
+<span class="nc" id="L295">  }</span>
+
+  @Override
+  public void putBool(boolean val) {
+<span class="nc bnc" id="L299" title="All 2 branches missed.">    putByte(val ? BooleanDatum.TRUE_INT : BooleanDatum.FALSE_INT);</span>
+<span class="nc" id="L300">  }</span>
+
+  @Override
+  public void putInt2(short val) {
+<span class="nc" id="L304">    ensureSize(SizeOf.SIZE_OF_SHORT);</span>
+<span class="nc" id="L305">    long addr = currentAddr();</span>
+
+<span class="nc" id="L307">    PlatformDependent.putShort(addr, val);</span>
+<span class="nc" id="L308">    curFieldIdx++;</span>
+<span class="nc" id="L309">    forwardField(SizeOf.SIZE_OF_SHORT);</span>
+<span class="nc" id="L310">  }</span>
+
+  @Override
+  public void putInt4(int val) {
+<span class="nc" id="L314">    ensureSize(MAXIMUM_VARIANT_INT32);</span>
+
+<span class="nc" id="L316">    curFieldIdx++;</span>
+<span class="nc" id="L317">    forwardField(writeRawVarint32(currentAddr(), encodeZigZag32(val)));</span>
+<span class="nc" id="L318">  }</span>
+
+  @Override
+  public void putInt8(long val) {
+<span class="nc" id="L322">    ensureSize(MAXIMUM_VARIANT_INT64);</span>
+
+<span class="nc" id="L324">    curFieldIdx++;</span>
+<span class="nc" id="L325">    forwardField(writeRawVarint64(currentAddr(), encodeZigZag64(val)));</span>
+<span class="nc" id="L326">  }</span>
+
+  @Override
+  public void putFloat4(float val) {
+<span class="nc" id="L330">    ensureSize(SizeOf.SIZE_OF_FLOAT);</span>
+<span class="nc" id="L331">    long addr = currentAddr();</span>
+
+<span class="nc" id="L333">    UnsafeUtil.unsafe.putFloat(addr, val);</span>
+<span class="nc" id="L334">    curFieldIdx++;</span>
+<span class="nc" id="L335">    forwardField(SizeOf.SIZE_OF_FLOAT);</span>
+<span class="nc" id="L336">  }</span>
+
+  @Override
+  public void putFloat8(double val) {
+<span class="nc" id="L340">    ensureSize(SizeOf.SIZE_OF_DOUBLE);</span>
+<span class="nc" id="L341">    long addr = currentAddr();</span>
+
+<span class="nc" id="L343">    UnsafeUtil.unsafe.putDouble(addr, val);</span>
+<span class="nc" id="L344">    curFieldIdx++;</span>
+<span class="nc" id="L345">    forwardField(SizeOf.SIZE_OF_DOUBLE);</span>
+<span class="nc" id="L346">  }</span>
+
+  @Override
+  public void putText(String val) {
+<span class="nc" id="L350">    putText(val.getBytes(TextDatum.DEFAULT_CHARSET));</span>
+<span class="nc" id="L351">  }</span>
+
+  @Override
+  public void putText(byte[] val) {
+<span class="nc" id="L355">    putBlob(val);</span>
+<span class="nc" id="L356">  }</span>
+
+  @Override
+  public void putBlob(byte[] val) {
+<span class="nc" id="L360">    int bytesLen = val.length;</span>
+
+<span class="nc" id="L362">    ensureSize(MAXIMUM_VARIANT_INT32 + bytesLen);</span>
+<span class="nc" id="L363">    long addr = currentAddr();</span>
+
+<span class="nc" id="L365">    short length = writeRawVarint32(addr, bytesLen);</span>
+<span class="nc" id="L366">    PlatformDependent.copyMemory(val, 0, addr + length, bytesLen);</span>
+<span class="nc" id="L367">    curFieldIdx++;</span>
+<span class="nc" id="L368">    forwardField(length + bytesLen);</span>
+<span class="nc" id="L369">  }</span>
+
+  @Override
+  public void putDate(int val) {
+<span class="nc" id="L373">    ensureSize(SizeOf.SIZE_OF_INT);</span>
+<span class="nc" id="L374">    long addr = currentAddr();</span>
+
+<span class="nc" id="L376">    PlatformDependent.putInt(addr, val);</span>
+<span class="nc" id="L377">    curFieldIdx++;</span>
+<span class="nc" id="L378">    forwardField(SizeOf.SIZE_OF_INT);</span>
+<span class="nc" id="L379">  }</span>
+
+  @Override
+  public void putTime(long val) {
+<span class="nc" id="L383">    ensureSize(SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L384">    long addr = currentAddr();</span>
+
+<span class="nc" id="L386">    PlatformDependent.putLong(addr, val);</span>
+<span class="nc" id="L387">    curFieldIdx++;</span>
+<span class="nc" id="L388">    forwardField(SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L389">  }</span>
+
+  @Override
+  public void putTimestamp(long val) {
+<span class="nc" id="L393">    putTime(val);</span>
+<span class="nc" id="L394">  }</span>
+
+  @Override
+  public void putInterval(IntervalDatum val) {
+<span class="nc" id="L398">    ensureSize(MAXIMUM_VARIANT_INT32 + MAXIMUM_VARIANT_INT64);</span>
+<span class="nc" id="L399">    long addr = currentAddr();</span>
+
+<span class="nc" id="L401">    short length = writeRawVarint32(addr, encodeZigZag32(val.getMonths()));</span>
+<span class="nc" id="L402">    length += writeRawVarint64(addr, encodeZigZag64(val.getMilliSeconds()));</span>
+
+<span class="nc" id="L404">    curFieldIdx++;</span>
+<span class="nc" id="L405">    forwardField(length);</span>
+<span class="nc" id="L406">  }</span>
+
+  @Override
+  public void putProtoDatum(ProtobufDatum val) {
+<span class="nc" id="L410">    putBlob(val.asByteArray());</span>
+<span class="nc" id="L411">  }</span>
+
+  @Override
+  public boolean addTuple(Tuple tuple) {
+    try {
+<span class="nc" id="L416">      OffHeapRowBlockUtils.convert(tuple, this);</span>
+<span class="nc" id="L417">    } catch (ValueOutOfRangeException e) {</span>
+<span class="nc" id="L418">      return false;</span>
+<span class="nc" id="L419">    }</span>
+<span class="nc" id="L420">    return true;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

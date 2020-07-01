@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReturnStateUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.exception</a> &gt; <span class="el_source">ReturnStateUtil.java</span></div><h1>ReturnStateUtil.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.exception;
+
+import com.google.common.base.Preconditions;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
+import org.apache.tajo.util.StringUtils;
+
+import java.util.Collection;
+import java.util.List;
+
+<span class="nc" id="L32">public class ReturnStateUtil {</span>
+
+  public static final ReturnState OK;
+
+  static {
+<span class="nc" id="L37">    ReturnState.Builder builder = ReturnState.newBuilder();</span>
+<span class="nc" id="L38">    builder.setReturnCode(ResultCode.OK);</span>
+<span class="nc" id="L39">    OK = builder.build();</span>
+<span class="nc" id="L40">  }</span>
+
+  /**
+   * Throw a TajoRuntimeException. It is usually used for unexpected exceptions.
+   *
+   * @param state ReturnState
+   * @return True if no error.
+   */
+  public static boolean ensureOk(ReturnState state) {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">    if (isError(state)) {</span>
+<span class="nc" id="L50">      throw new TajoRuntimeException(state);</span>
+    }
+<span class="nc" id="L52">    return true;</span>
+  }
+
+  public static StringListResponse returnStringList(Collection&lt;String&gt; values) {
+<span class="nc" id="L56">    return StringListResponse.newBuilder()</span>
+<span class="nc" id="L57">        .setState(OK)</span>
+<span class="nc" id="L58">        .addAllValues(values)</span>
+<span class="nc" id="L59">        .build();</span>
+  }
+
+  public static StringListResponse returnFailedStringList(Throwable t) {
+<span class="nc" id="L63">    return StringListResponse.newBuilder()</span>
+<span class="nc" id="L64">        .setState(returnError(t))</span>
+<span class="nc" id="L65">        .build();</span>
+  }
+
+  public static ReturnState returnError(ResultCode code, String...args) {
+<span class="nc" id="L69">    Preconditions.checkNotNull(args);</span>
+
+<span class="nc" id="L71">    ReturnState.Builder builder = ReturnState.newBuilder();</span>
+<span class="nc" id="L72">    builder.setReturnCode(code);</span>
+<span class="nc" id="L73">    builder.setMessage(ErrorMessages.getMessage(code, args));</span>
+<span class="nc" id="L74">    return builder.build();</span>
+  }
+
+  public static ReturnState returnError(Throwable t) {
+<span class="nc" id="L78">    ReturnState.Builder builder = ReturnState.newBuilder();</span>
+
+<span class="nc bnc" id="L80" title="All 2 branches missed.">    if (ExceptionUtil.isExceptionWithResultCode(t)) {</span>
+<span class="nc" id="L81">      DefaultTajoException tajoException = (DefaultTajoException) t;</span>
+<span class="nc" id="L82">      builder.setReturnCode(tajoException.getErrorCode());</span>
+<span class="nc" id="L83">      builder.setMessage(tajoException.getMessage());</span>
+<span class="nc" id="L84">    } else {</span>
+<span class="nc" id="L85">      builder.setReturnCode(ResultCode.INTERNAL_ERROR);</span>
+<span class="nc" id="L86">      builder.setMessage(ErrorMessages.getInternalErrorMessage(t));</span>
+    }
+
+<span class="nc" id="L89">    builder.setStackTrace(ErrorUtil.convertStacktrace(t));</span>
+<span class="nc" id="L90">    return builder.build();</span>
+  }
+
+  public static ReturnState returnError(Errors.SerializedException e) {
+<span class="nc" id="L94">    ReturnState.Builder builder = ReturnState.newBuilder();</span>
+
+<span class="nc" id="L96">    builder.setReturnCode(e.getReturnCode());</span>
+<span class="nc" id="L97">    builder.setMessage(e.getMessage());</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">    if (e.hasStackTrace()) {</span>
+<span class="nc" id="L99">      builder.setStackTrace(e.getStackTrace());</span>
+    }
+<span class="nc" id="L101">    return builder.build();</span>
+  }
+
+  /**
+   * This method check if the state is successful.
+   *
+   * @param state ResponseState to be checked
+   * @return True if ResponseState is success.
+   */
+  public static boolean isSuccess(ReturnState state) {
+<span class="nc" id="L111">    return ErrorUtil.isOk(state.getReturnCode());</span>
+  }
+
+  /**
+   * This method check if the state is failed.
+   *
+   * @param state ResponseState to be checked
+   * @return True if ResponseState is failed.
+   */
+  public static boolean isError(ReturnState state) {
+<span class="nc" id="L121">    return ErrorUtil.isFailed(state.getReturnCode());</span>
+  }
+
+  public static boolean isThisError(ReturnState state, ResultCode code) {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">    return state.getReturnCode() == code;</span>
+  }
+
+  public static ReturnState errFeatureNotSupported(String feature) {
+<span class="nc" id="L129">    return returnError(ResultCode.FEATURE_NOT_SUPPORTED, feature);</span>
+  }
+
+  public static ReturnState errInvalidRpcCall(String message) {
+<span class="nc" id="L133">    return returnError(ResultCode.INVALID_RPC_CALL, message);</span>
+  }
+
+  public static ReturnState errNoSuchQueryId(QueryId queryId) {
+<span class="nc" id="L137">    return returnError(ResultCode.QUERY_NOT_FOUND, queryId.toString());</span>
+  }
+
+  public static ReturnState errNoData(QueryId queryId) {
+<span class="nc" id="L141">    return returnError(ResultCode.NO_DATA, queryId.toString());</span>
+  }
+
+  public static ReturnState errIncompleteQuery(QueryId queryId) {
+<span class="nc" id="L145">    return returnError(ResultCode.INCOMPLETE_QUERY, queryId.toString());</span>
+  }
+
+  public static ReturnState errInvalidSession(String sessionId) {
+<span class="nc" id="L149">    return returnError(ResultCode.INVALID_SESSION, sessionId);</span>
+  }
+
+  public static ReturnState errNoSessionVar(String varName) {
+<span class="nc" id="L153">    return returnError(ResultCode.QUERY_NOT_FOUND, varName);</span>
+  }
+
+  public static ReturnState errInsufficientPrivilege(String message) {
+<span class="nc" id="L157">    return returnError(ResultCode.INSUFFICIENT_PRIVILEGE, message);</span>
+  }
+
+  public static ReturnState errUndefinedTablespace(String spaceName) {
+<span class="nc" id="L161">    return returnError(ResultCode.UNDEFINED_TABLESPACE, spaceName);</span>
+  }
+
+  public static ReturnState errUndefinedDatabase(String dbName) {
+<span class="nc" id="L165">    return returnError(ResultCode.UNDEFINED_DATABASE, dbName);</span>
+  }
+
+  public static ReturnState errUndefinedTable(String tbName) {
+<span class="nc" id="L169">    return returnError(ResultCode.UNDEFINED_TABLE, tbName);</span>
+  }
+
+  public static ReturnState errUndefinedPartition(String partitionName) {
+<span class="nc" id="L173">    return returnError(ResultCode.UNDEFINED_PARTITION, partitionName);</span>
+  }
+
+  public static ReturnState errUndefinedPartitions(String tbName) {
+<span class="nc" id="L177">    return returnError(ResultCode.UNDEFINED_PARTITIONS, tbName);</span>
+  }
+
+  public static ReturnState errUndefinedPartitionMethod(String tbName) {
+<span class="nc" id="L181">    return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);</span>
+  }
+
+  public static ReturnState errUndefinedIndex(String tbName) {
+<span class="nc" id="L185">    return returnError(ResultCode.UNDEFINED_INDEX_FOR_TABLE, tbName);</span>
+  }
+
+  public static ReturnState errUndefinedIndex(String tbName, List&lt;String&gt; columnNameList) {
+<span class="nc" id="L189">    String columnNames = StringUtils.join(columnNameList, &quot;,&quot;);</span>
+<span class="nc" id="L190">    return returnError(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS, columnNames, tbName);</span>
+  }
+
+  public static ReturnState errUndefinedIndexName(String indexName) {
+<span class="nc" id="L194">    return returnError(ResultCode.UNDEFINED_INDEX_NAME, indexName);</span>
+  }
+
+  public static ReturnState errUndefinedFunction(String funcName) {
+<span class="nc" id="L198">    return returnError(ResultCode.UNDEFINED_FUNCTION, funcName);</span>
+  }
+
+  public static ReturnState errDuplicateDatabase(String dbName) {
+<span class="nc" id="L202">    return returnError(ResultCode.DUPLICATE_DATABASE, dbName);</span>
+  }
+
+  public static ReturnState errDuplicateTable(String tbName) {
+<span class="nc" id="L206">    return returnError(ResultCode.DUPLICATE_TABLE, tbName);</span>
+  }
+
+  public static ReturnState errDuplicateIndex(String indexName) {
+<span class="nc" id="L210">    return returnError(ResultCode.DUPLICATE_INDEX, indexName);</span>
+  }
+
+  public static ReturnState errDuplicateFunction(String signature) {
+<span class="nc" id="L214">    return returnError(ResultCode.DUPLICATE_FUNCTION, signature);</span>
+  }
+
+  public static ReturnState errFeatureNotImplemented(String feature) {
+<span class="nc" id="L218">    return returnError(ResultCode.NOT_IMPLEMENTED, feature);</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

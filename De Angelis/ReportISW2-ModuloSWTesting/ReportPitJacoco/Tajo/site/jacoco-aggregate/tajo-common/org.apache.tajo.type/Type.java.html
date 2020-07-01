@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Type.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.type</a> &gt; <span class="el_source">Type.java</span></div><h1>Type.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.type;
+
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.TypeProto;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.schema.Field;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * Represents Type
+ */
+public abstract class Type implements Cloneable, ProtoObject&lt;TypeProto&gt; {
+
+<span class="fc" id="L37">  public static int DEFAULT_PRECISION = 0;</span>
+<span class="fc" id="L38">  public static int DEFAULT_SCALE = 0;</span>
+
+  // No paramter types
+<span class="fc" id="L41">  public static final Any Any = new Any();</span>
+<span class="fc" id="L42">  public static final Bit Bit = new Bit();</span>
+<span class="fc" id="L43">  public static final Null Null = new Null();</span>
+<span class="fc" id="L44">  public static final Bool Bool = new Bool();</span>
+<span class="fc" id="L45">  public static final Int1 Int1 = new Int1();</span>
+<span class="fc" id="L46">  public static final Int2 Int2 = new Int2();</span>
+<span class="fc" id="L47">  public static final Int4 Int4 = new Int4();</span>
+<span class="fc" id="L48">  public static final Int8 Int8 = new Int8();</span>
+<span class="fc" id="L49">  public static final Float4 Float4 = new Float4();</span>
+<span class="fc" id="L50">  public static final Float8 Float8 = new Float8();</span>
+<span class="fc" id="L51">  public static final Numeric Numeric = new Numeric(DEFAULT_PRECISION, DEFAULT_SCALE);</span>
+<span class="fc" id="L52">  public static final Date Date = new Date();</span>
+<span class="fc" id="L53">  public static final Time Time = new Time();</span>
+<span class="fc" id="L54">  public static final Timestamp Timestamp = new Timestamp();</span>
+<span class="fc" id="L55">  public static final Interval Interval = new Interval();</span>
+<span class="fc" id="L56">  public static final Text Text = new Text();</span>
+<span class="fc" id="L57">  public static final Blob Blob = new Blob();</span>
+
+  protected TajoDataTypes.Type kind;
+
+<span class="fc" id="L61">  public Type(TajoDataTypes.Type kind) {</span>
+<span class="fc" id="L62">    this.kind = kind;</span>
+<span class="fc" id="L63">  }</span>
+
+  public TajoDataTypes.Type kind() {
+<span class="fc" id="L66">    return kind;</span>
+  }
+
+  public boolean isTypeParameterized() {
+<span class="fc" id="L70">    return false;</span>
+  }
+
+  public boolean isValueParameterized() {
+<span class="fc" id="L74">    return false;</span>
+  }
+
+  public List&lt;Type&gt; getTypeParameters() {
+<span class="nc" id="L78">    throw new TajoRuntimeException(new UnsupportedException());</span>
+  }
+
+  public List&lt;Integer&gt; getValueParameters() {
+<span class="nc" id="L82">    throw new TajoRuntimeException(new UnsupportedException());</span>
+  }
+
+  protected static String typeName(TajoDataTypes.Type type) {
+<span class="fc" id="L86">    return type.name().toUpperCase();</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L91">    return kind().hashCode();</span>
+  }
+
+  @Override
+  public boolean equals(Object t) {
+<span class="pc bpc" id="L96" title="2 of 4 branches missed.">    return t instanceof Type &amp;&amp; ((Type)t).kind() == kind();</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="fc" id="L101">    return typeName(kind());</span>
+  }
+
+  public boolean isAny() {
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    return this.kind() == TajoDataTypes.Type.ANY;</span>
+  }
+
+  public boolean isStruct() {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">    return this.kind() == TajoDataTypes.Type.RECORD;</span>
+  }
+
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">  public boolean isNull() { return this.kind() == TajoDataTypes.Type.NULL_TYPE; }</span>
+
+  public static Numeric Numeric(int precision) {
+<span class="nc" id="L115">    return new Numeric(precision, DEFAULT_SCALE);</span>
+  }
+
+  public static Numeric Numeric(int precision, int scale) {
+<span class="nc" id="L119">    return new Numeric(precision, scale);</span>
+  }
+
+  public static Char Char(int len) {
+<span class="fc" id="L123">    return new Char(len);</span>
+  }
+
+  public static Varchar Varchar(int len) {
+<span class="nc" id="L127">    return new Varchar(len);</span>
+  }
+
+  public static Record Record(Collection&lt;Field&gt; types) {
+<span class="nc" id="L131">    return new Record(types);</span>
+  }
+
+  public static Array Array(Type type) {
+<span class="nc" id="L135">    return new Array(type);</span>
+  }
+
+  public static Record Record(Field... types) {
+<span class="nc" id="L139">    return new Record(Arrays.asList(types));</span>
+  }
+
+  public static Map Map(Type keyType, Type valueType) {
+<span class="nc" id="L143">    return new Map(keyType, valueType);</span>
+  }
+
+  public static Null Null() {
+<span class="nc" id="L147">    return new Null();</span>
+  }
+
+  @Override
+  public TypeProto getProto() {
+<span class="nc" id="L152">    return TypeProtobufEncoder.encode(this);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

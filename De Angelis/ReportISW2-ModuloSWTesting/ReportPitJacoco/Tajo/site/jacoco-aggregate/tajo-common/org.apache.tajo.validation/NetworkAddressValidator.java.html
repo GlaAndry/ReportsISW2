@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NetworkAddressValidator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.validation</a> &gt; <span class="el_source">NetworkAddressValidator.java</span></div><h1>NetworkAddressValidator.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.validation;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.regex.Pattern;
+
+import org.apache.http.conn.util.InetAddressUtils;
+
+public class NetworkAddressValidator extends AbstractValidator {
+  
+  private final Pattern hostnamePattern;
+  private final Pattern portNumberPattern;
+  
+<span class="fc" id="L32">  public NetworkAddressValidator() {</span>
+<span class="fc" id="L33">    hostnamePattern = Pattern.compile(</span>
+        &quot;^\\w[\\w-]*(\\.\\w[\\w-]*)*\\.[a-zA-Z][\\w-]*.?$|[a-zA-Z][\\w-]*.?$&quot;);
+<span class="fc" id="L35">    portNumberPattern = Pattern.compile(&quot;^[1-6]?[0-9]{1,4}$&quot;);</span>
+<span class="fc" id="L36">  }</span>
+
+  @Override
+  protected &lt;T&gt; String getErrorMessage(T object) {
+<span class="nc" id="L40">    return object + &quot; is not a valid network address representation.&quot;;</span>
+  }
+
+  @Override
+  protected &lt;T&gt; boolean validateInternal(T object) {
+<span class="nc" id="L45">    boolean result = false;</span>
+    
+<span class="nc bnc" id="L47" title="All 2 branches missed.">    if (object != null) {</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">      if (object instanceof CharSequence) {</span>
+<span class="nc" id="L49">        String valueString = object.toString();</span>
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (valueString.isEmpty()) {</span>
+<span class="nc" id="L51">          result = true;</span>
+        } else {
+<span class="nc" id="L53">          int separatorIdx = valueString.indexOf(':');</span>
+<span class="nc" id="L54">          String hostOrIpAddress = null;</span>
+          
+<span class="nc bnc" id="L56" title="All 2 branches missed.">          if (separatorIdx &gt; -1) {</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">            if (valueString.indexOf(':', separatorIdx+1) &gt; -1) {</span>
+              // it is IPV6 representation.
+<span class="nc" id="L59">              int leftBracketsIdx = valueString.indexOf('[');</span>
+<span class="nc" id="L60">              int rightBracketsIdx = valueString.indexOf(']');</span>
+<span class="nc" id="L61">              int periodIdx = valueString.indexOf('.');</span>
+              
+<span class="nc bnc" id="L63" title="All 4 branches missed.">              if ((leftBracketsIdx &gt; -1) &amp;&amp; (rightBracketsIdx &gt; -1) &amp;&amp; </span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                  (valueString.length() &gt; (rightBracketsIdx+1)) &amp;&amp;</span>
+<span class="nc bnc" id="L65" title="All 2 branches missed.">                  valueString.charAt(rightBracketsIdx+1) == ':') {</span>
+<span class="nc" id="L66">                hostOrIpAddress = valueString.substring(leftBracketsIdx+1, rightBracketsIdx);</span>
+<span class="nc" id="L67">                separatorIdx = rightBracketsIdx+1;</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">              } else if ((periodIdx &gt; -1)) {</span>
+<span class="nc" id="L69">                hostOrIpAddress = valueString.substring(0, periodIdx);</span>
+<span class="nc" id="L70">                separatorIdx = periodIdx;</span>
+              } else {
+<span class="nc" id="L72">                separatorIdx = valueString.lastIndexOf(':');</span>
+<span class="nc" id="L73">                hostOrIpAddress = valueString.substring(0, separatorIdx);</span>
+              }
+<span class="nc" id="L75">            } else {            </span>
+<span class="nc" id="L76">              hostOrIpAddress = valueString.substring(0, separatorIdx);</span>
+            }
+          } else {
+<span class="nc" id="L79">            hostOrIpAddress = valueString;</span>
+          }
+          
+<span class="nc" id="L82">          result = ((hostnamePattern.matcher(hostOrIpAddress).find()) | </span>
+<span class="nc" id="L83">              InetAddressUtils.isIPv4Address(hostOrIpAddress) |</span>
+<span class="nc" id="L84">              InetAddressUtils.isIPv6Address(hostOrIpAddress));</span>
+          
+<span class="nc bnc" id="L86" title="All 2 branches missed.">          if (separatorIdx &gt; -1) {</span>
+<span class="nc" id="L87">            result &amp;= portNumberPattern.matcher(valueString.substring(separatorIdx + 1)).find();</span>
+          }
+        }
+<span class="nc" id="L90">      }</span>
+    } else {
+<span class="nc" id="L92">      result = true;</span>
+    }
+    
+<span class="nc" id="L95">    return result;</span>
+  }
+
+  @Override
+  protected Collection&lt;Validator&gt; getDependantValidators() {
+<span class="nc" id="L100">    return Collections.emptySet();</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

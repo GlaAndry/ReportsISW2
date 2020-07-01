@@ -1,0 +1,554 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedOperatorException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,ValueTooLongForTypeCharactersException,13,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicateTableException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedTablespaceException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedPartitionKeyException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,SQLExceptionUtil,414,0,12,0,88,0,16,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,MetadataConnectionException,16,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedColumnException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidValueForCastException,22,51,0,0,4,6,2,3,2,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,NotImplementedException,24,0,0,0,6,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedDatabaseException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UnavailableTableLocationException,18,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,ValueOutOfRangeException,4,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidInputsForCrossJoin,8,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,SQLSyntaxError,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicateColumnException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicatePartitionException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicateTablespaceException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,ErrorMessages,111,297,11,3,19,75,11,4,4,4
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,CannotDropCurrentDatabaseException,8,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UnknownDataFormatException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedPartitionException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,MissingTablePropertyException,18,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,TajoRuntimeException,27,8,0,0,12,3,3,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedPartitionMethodException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidDataTypeException,16,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UnsupportedException,24,0,0,0,6,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,LMDNoMatchedDatatypeException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedIndexException,28,0,0,0,6,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DataTypeMismatchException,26,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidSessionException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicateFunctionException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UnremovableTablePropertyException,15,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicateIndexException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,ReturnStateUtil,347,0,8,0,63,0,38,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidNameException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UnsupportedDataTypeException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,TooLargeInputForCrossJoinException,26,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DividedByZeroException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,AmbiguousColumnException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,AmbiguousTableException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,ErrorUtil,116,0,14,0,24,0,12,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,AmbiguousPartitionDirectoryExistException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,TajoException,38,12,0,0,12,4,4,2,4,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedTablespaceHandlerException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UnsupportedCatalogStore,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidURLException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,NoSuchSessionVariableException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,TajoInternalError,38,0,0,0,8,0,4,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,AmbiguousFunctionException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,TajoError,52,0,0,0,16,0,6,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,QueryFailedException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedFunctionException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,ExceptionUtil,343,0,28,0,91,0,28,0,14,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InsufficientPrivilegeException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,DuplicateDatabaseException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,QueryNotFoundException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidTablePropertyException,18,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidAddressException,3,0,0,0,1,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,UndefinedTableException,33,0,0,0,6,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidSessionVariableException,14,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,InvalidOperationException,3,17,0,0,2,4,1,2,1,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,CatalogUpgradeRequiredException,8,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.exception,QueryKilledException,8,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.ha,HAConstants,3,0,0,0,1,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueProto.Builder,414,0,42,0,129,0,49,0,28,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringResponse,577,0,74,0,148,0,76,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.ReturnState,677,0,93,0,168,0,88,0,40,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.LongProto,407,0,43,0,106,0,56,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringResponse.Builder,511,0,58,0,147,0,60,0,31,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.IntProto.Builder,195,0,18,0,62,0,29,0,20,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringProto.Builder,267,0,26,0,86,0,35,0,22,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueSetProto,446,0,41,0,112,0,58,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueSetProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueSetResponse.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueSetResponse.Builder,616,0,78,0,168,0,73,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.BoolProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringListProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringListResponse,574,0,64,0,141,0,72,0,39,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.ReturnState.Builder,587,0,64,0,165,0,67,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.IntProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos,32,0,0,0,9,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringListProto,434,0,37,0,110,0,55,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.ReturnState.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.LongProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.NullProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueSetProto.Builder,601,0,72,0,166,0,72,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringListResponse.Builder,550,0,58,0,154,0,64,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},256,0,0,0,51,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.LongProto.Builder,195,0,18,0,62,0,29,0,20,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.BoolProto,406,0,43,0,106,0,56,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringResponse.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringListProto.Builder,295,0,24,0,89,0,38,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.NullProto.Builder,111,0,10,0,40,0,21,0,16,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.NullProto,303,0,22,0,85,0,43,0,32,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringProto,445,0,49,0,120,0,60,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueProto,585,0,76,0,155,0,77,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.IntProto,405,0,43,0,106,0,56,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.KeyValueSetResponse,581,0,76,0,146,0,77,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.StringListResponse.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rpc.protocolrecords,PrimitiveProtos.BoolProto.Builder,195,0,18,0,62,0,29,0,20,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,TypeAdapter,20,3,0,0,5,1,2,1,2,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,DataTypeAdapter,72,0,8,0,19,0,7,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,TimeZoneGsonSerdeAdapter,14,0,0,0,3,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,ClassNameSerializer,18,0,0,0,6,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,CommonGsonHelper,34,57,4,4,8,14,4,6,1,5
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,GsonHelper,3,43,0,2,2,11,0,4,0,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,DatumAdapter,108,53,10,2,17,12,10,3,0,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.json,PathSerializer,16,0,0,0,3,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,Float4Datum,59,641,12,94,17,129,17,79,5,19
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,Float8Datum,650,25,104,2,135,7,91,3,19,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,Datum,334,86,45,15,51,33,56,18,31,13
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,BlobDatum,195,32,9,1,51,11,19,3,13,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,BooleanDatum,177,158,34,0,31,16,36,3,19,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,AnyDatum,67,0,6,0,19,0,11,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,TimeDatum,8,289,0,21,2,59,2,30,2,18
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,BitDatum,136,0,16,0,34,0,25,0,16,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,CharDatum,157,18,16,0,35,6,26,2,17,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,Int8Datum,678,25,104,2,140,7,93,3,21,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,IntervalDatum,880,472,111,32,156,64,86,17,13,9
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,Int4Datum,61,606,13,93,18,127,17,78,4,19
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,DateDatum,318,58,21,4,65,13,39,4,24,4
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,ProtobufDatum,60,0,6,0,15,0,11,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,DatumFactory,567,93,85,3,124,18,106,18,32,17
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,IntervalDatum.DATE_UNIT,0,114,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,NullDatum,64,40,1,1,27,12,27,7,26,7
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,TextDatum,9,178,0,12,2,32,2,25,2,18
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,NumericDatum,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,ProtobufDatumFactory,131,0,4,0,36,0,12,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,TimestampDatum,323,32,21,2,72,9,41,3,28,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum,Int2Datum,658,10,106,0,140,4,92,2,20,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.service,HAServiceTracker,62,0,2,0,21,0,7,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.service,BaseServiceTracker,139,0,2,0,37,0,16,0,15,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.service,TajoMasterInfo,52,0,0,0,22,0,15,0,15,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.service,ServiceTrackerException,8,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.service,ServiceTrackerFactory,27,0,2,0,7,0,3,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple,BaseTupleBuilder,102,0,2,0,31,0,14,0,13,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,IdentifierPolicy.IdentifierCase,34,0,0,0,4,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,IdentifierPolicy,11,0,0,0,3,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,Identifier,163,0,16,0,38,0,20,0,11,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,Field,117,0,8,0,22,0,18,0,14,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,QualifiedIdentifier,172,0,8,0,26,0,16,0,12,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,Schema,27,0,0,0,7,0,5,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,PgSQLIdentifierPolicy,15,0,0,0,7,0,7,0,7,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,IdentifierUtil,744,0,72,0,98,0,58,0,22,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,TajoIdentifierPolicy,5,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,QualifiedIdentifier.new Function() {...},9,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,QualifiedIdentifier.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,QualifiedIdentifier.new Function() {...},14,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,QualifiedIdentifier.new Function() {...},14,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.schema,ANSISQLIdentifierPolicy,15,0,0,0,7,0,7,0,7,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.KeySuffix,0,15,0,0,0,6,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.KeyWord,0,3,0,0,0,1,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.TmFromChar,0,6,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeConstants.TokenField,0,818,0,0,0,75,0,3,0,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.FromCharDateMode,0,34,0,0,0,4,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,TimeMeta,357,47,39,3,71,16,34,6,14,5
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat,3719,4003,581,72,690,240,374,30,22,15
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.DCH_poz,3,1035,0,0,1,97,1,2,1,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeUtil,3323,1468,487,191,572,312,358,71,47,29
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeConstants,8,6292,0,4,2,273,2,4,2,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeConstants.DateToken,12,3,0,0,4,1,4,1,4,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.FormatNode,0,3,0,0,0,1,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeConstants.DateStyle,0,34,0,0,0,4,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.datetime,DateTimeFormat.FORMAT_TYPE,0,24,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,QueryIdFactory,159,0,8,0,31,0,15,0,11,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.SessionIdProto.Builder,267,0,26,0,86,0,35,0,22,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.TaskIdProto,545,0,70,0,137,0,73,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,QueryVars,114,0,0,0,15,0,5,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.NodeResourceProto,489,0,60,0,121,0,67,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.TaskIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.ExecutionBlockIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos,20,0,0,0,7,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,Assert,21,0,4,0,7,0,5,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.QueryIdProto,545,0,70,0,141,0,73,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},74,0,0,0,11,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TaskAttemptId,122,0,10,0,29,0,16,0,11,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.ExecutionBlockIdProto.Builder,444,0,52,0,125,0,55,0,29,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.CodecType,73,0,4,0,19,0,11,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.SessionIdProto,445,0,49,0,120,0,60,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.TaskAttemptIdProto.Builder,444,0,52,0,125,0,55,0,29,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.SessionIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.NodeResourceProto.Builder,260,0,22,0,77,0,35,0,24,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.ExecutionBlockIdProto,545,0,70,0,137,0,73,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.NodeResourceProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,OverridableConf,461,0,52,0,90,0,56,0,27,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.QueryIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.CodecType.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,SessionVars,999,0,14,0,115,0,23,0,16,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoConstants,11,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,SessionVars.VariableMode,54,0,0,0,6,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.TaskAttemptState,185,0,12,0,35,0,19,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.FetcherState.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TaskId,118,0,10,0,27,0,15,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.TaskAttemptState.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,QueryId,115,0,10,0,27,0,16,0,11,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},119,0,0,0,23,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.TaskAttemptIdProto,545,0,70,0,137,0,73,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.QueryIdProto.Builder,342,0,34,0,105,0,43,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.QueryState.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos,28,0,0,0,7,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,ConfigKey.ConfigType,59,0,0,0,9,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.WorkerConnectionInfoProto,1037,0,173,0,243,0,137,0,47,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.WorkerConnectionInfoProto.Builder,712,0,72,0,198,0,82,0,46,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,ExecutionBlockId,116,0,10,0,26,0,15,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.QueryState,213,0,14,0,39,0,21,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.WorkerConnectionInfoProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.TaskAttemptIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoProtos.FetcherState,143,0,9,0,29,0,16,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,BuiltinStorages,3,0,0,0,1,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo,TajoIdProtos.TaskIdProto.Builder,444,0,52,0,125,0,55,0,29,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common.type,TimeRange,77,0,4,0,21,0,11,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common.type,TajoTypeUtil,321,0,53,0,75,0,49,0,13,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common.type,IPv4,316,0,32,0,70,0,32,0,16,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufFormatter,109,0,0,0,32,0,11,0,11,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,TextUtils,860,0,153,0,173,0,109,0,23,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufJsonFormat.InvalidEscapeSequence,4,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufJsonFormat.ParseException,4,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,AbstractCharBasedFormatter,48,0,0,0,14,0,5,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufJsonFormat.Tokenizer,680,0,88,0,142,0,68,0,24,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufJsonFormat,1853,0,284,0,459,0,193,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufFormatter.ParseException,4,0,0,0,2,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.datum.protobuf,ProtobufJsonFormat.JsonGenerator,106,0,10,0,28,0,10,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,SelfDiagnosisRuleSession,199,0,26,0,48,0,21,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,SelfDiagnosisRuleEngine,116,0,14,0,35,0,14,0,7,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,EvaluationContext,40,0,2,0,13,0,7,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,SelfDiagnosisRuleEngine.RuleWrapper,273,0,50,0,68,0,35,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,SelfDiagnosisRuleSession.RuleSessionSecurityManager,33,0,6,0,7,0,5,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,SelfDiagnosisRuleVisibility,3,0,0,0,1,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,EvaluationFailedException,13,0,0,0,6,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,EvaluationResult.EvaluationResultCode,24,0,0,0,3,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule,EvaluationResult,24,0,0,0,10,0,7,0,7,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Map,19,0,0,0,4,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Varchar,14,0,0,0,3,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Timestamp,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeStringEncoder.new Function() {...},7,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeStringEncoder.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeStringEncoder.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeStringEncoder.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeStringEncoder.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Array,12,0,0,0,3,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Any,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeFactory,297,7,67,1,71,2,59,1,2,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Int8,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Int4,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Int1,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Int2,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,ValueParamterizedType,76,7,8,0,15,3,9,1,5,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Bool,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeParamterizedType,83,0,8,0,18,0,10,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Time,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Char,7,7,0,0,1,2,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Numeric,14,9,0,0,2,2,2,1,2,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Bit,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Type,76,126,6,4,13,31,18,11,13,11
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeVisitor,60,0,6,0,20,0,10,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Blob,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Date,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeProtobufEncoder.Visitor.new Function() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeStringEncoder,631,47,98,6,109,13,57,3,5,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Interval,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeProtobufEncoder,249,0,37,0,40,0,27,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Record,74,0,2,0,13,0,9,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Protobuf,10,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,TypeProtobufEncoder.Visitor,88,0,4,0,31,0,7,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Null,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Float8,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Float4,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.type,Text,0,4,0,0,0,2,0,1,0,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.unit,StorageUnit,3,0,0,0,1,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.unit,TimeUnit,3,0,0,0,1,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,NetUtils,135,0,14,0,30,0,17,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,UnsafeComparer.new PrivilegedAction() {...},24,0,0,0,8,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,CommonTestingUtil,121,0,8,0,26,0,10,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,UnsafeComparer,157,0,18,0,36,0,13,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,BitArray,194,0,18,0,38,0,19,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,SizeOf,207,0,18,0,36,0,27,0,18,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.ByteArrayComparator,16,0,0,0,5,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.RowEndKeyComparator,42,0,10,0,9,0,8,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TUtil,418,0,62,0,79,0,50,0,19,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,UnsafeUtil,163,0,14,0,47,0,13,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TestProtos,20,0,0,0,7,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TestProtos.TestMessageProto.Builder,489,0,50,0,148,0,57,0,32,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.LexicographicalComparerHolder.UnsafeComparer,201,0,28,0,41,0,17,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes,2749,0,320,0,528,0,267,0,107,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ShutdownHookManager.new Thread() {...},42,0,2,0,10,0,3,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ShutdownHookManager.new Comparator() {...},12,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,JarUtil,71,0,6,0,18,0,5,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,NumberUtil,2604,0,380,0,518,0,260,0,70,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,CompressionUtil,72,0,6,0,10,0,7,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.LexicographicalComparerHolder,30,0,0,0,10,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ReflectionUtil,88,0,4,0,20,0,6,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.LexicographicalComparerHolder.UnsafeComparer.new PrivilegedAction() {...},24,0,0,0,8,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.new Iterator() {...},93,0,8,0,13,0,8,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.new Iterable() {...},9,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,StringUtils.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,StringUtils.new Function() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,StringUtils.new Runnable() {...},37,0,0,0,3,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,UnsafeUtil.AddressMode,44,0,0,0,5,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ClassSize,527,0,64,0,93,0,41,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ClassUtil,419,0,82,0,106,0,52,0,11,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,VersionInfo,280,0,2,0,51,0,23,0,22,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ProtoUtil,86,0,4,0,17,0,10,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,KeyValueSet,561,0,64,0,125,0,69,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TestProtos.TestMessageProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,PlatformUtil.OsType,54,0,0,0,6,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TestProtos.TestMessageProto,685,0,97,0,176,0,90,0,40,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TajoIdUtils,82,0,0,0,10,0,5,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,JavaResourceUtil,19,0,2,0,6,0,4,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,CompressionUtil.SnappyCodec,15,0,0,0,4,0,4,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ShutdownHookManager,129,0,8,0,30,0,12,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,StringUtils,1131,0,102,0,181,0,88,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,FileUtil,262,0,30,0,52,0,23,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Bytes.LexicographicalComparerHolder.PureJavaComparer,69,0,12,0,12,0,8,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,BytesUtils,772,0,82,0,131,0,57,0,16,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,Pair,66,15,6,0,13,6,9,3,6,3
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,UriUtil,39,0,2,0,5,0,5,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,PlatformUtil,87,0,22,0,16,0,18,0,7,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,TestProtos.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},35,0,0,0,7,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,ShutdownHookManager.HookEntry,32,0,6,0,10,0,6,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,MurmurHash,603,0,40,0,100,0,32,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util,BasicFuture,113,0,16,0,34,0,16,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeIdProto.Builder,332,0,30,0,101,0,41,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionResourceRequestProto,429,0,45,0,111,0,58,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionResourceRequestProto.Builder,358,0,40,0,102,0,45,0,25,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceBlacklistRequestProto,563,0,52,0,135,0,67,0,40,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.FinalApplicationStatusProto,115,0,7,0,25,0,14,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringBytesMapProto,531,0,66,0,135,0,71,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationAccessTypeProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringLocalResourceMapProto.Builder,500,0,54,0,143,0,58,0,31,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.URLProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationIdProto.Builder,260,0,22,0,77,0,35,0,24,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionContractProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.YarnClusterMetricsProto.Builder,190,0,16,0,60,0,28,0,20,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StrictPreemptionContractProto,428,0,37,0,108,0,56,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.YarnClusterMetricsProto,397,0,41,0,103,0,55,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos,80,0,0,0,8,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionContainerProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionMessageProto.Builder,596,0,70,0,161,0,69,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.SerializedExceptionProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceRequestProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationReportProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerStateProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationResourceUsageReportProto.Builder,974,0,112,0,254,0,107,0,51,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueUserACLInfoProto,626,0,71,0,160,0,75,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringLocalResourceMapProto,561,0,70,0,143,0,74,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationSubmissionContextProto,1471,0,246,0,335,0,187,0,59,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringBytesMapProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceVisibilityProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceRequestProto.Builder,884,0,96,0,237,0,96,0,48,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationAttemptIdProto,520,0,64,0,128,0,70,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeReportProto,1364,0,225,0,314,0,173,0,56,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PriorityProto.Builder,190,0,16,0,60,0,28,0,20,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueUserACLInfoProto.Builder,420,0,36,0,126,0,48,0,30,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceProto.Builder,260,0,22,0,77,0,35,0,24,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueInfoProto.Builder,1528,0,174,0,405,0,165,0,78,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.YarnClusterMetricsProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringBytesMapProto.Builder,345,0,32,0,104,0,42,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationReportProto,2592,0,463,0,591,0,324,0,83,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceTypeProto,101,0,6,0,23,0,13,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StrictPreemptionContractProto.Builder,586,0,68,0,163,0,70,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationReportProto.Builder,2908,0,320,0,780,0,293,0,133,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerLaunchContextProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringLocalResourceMapProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceVisibilityProto,101,0,6,0,23,0,13,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeReportProto.Builder,1482,0,162,0,397,0,154,0,73,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.URLProto.Builder,758,0,72,0,224,0,80,0,44,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueInfoProto,1112,0,163,0,247,0,138,0,53,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationSubmissionContextProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceProto,964,0,150,0,222,0,124,0,46,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.YarnApplicationStateProto,171,0,11,0,33,0,18,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceBlacklistRequestProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueUserACLInfoProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerStatusProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerIdProto,643,0,87,0,153,0,85,0,40,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationIdProto,491,0,60,0,121,0,67,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.FinalApplicationStatusProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueACLProto,87,0,5,0,21,0,12,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerLaunchContextProto,1020,0,116,0,220,0,119,0,58,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueInfoProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StrictPreemptionContractProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringStringMapProto.Builder,404,0,38,0,125,0,47,0,28,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},930,0,0,0,123,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerProto.Builder,1461,0,178,0,382,0,156,0,67,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.YarnApplicationStateProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.URLProto,925,0,141,0,231,0,119,0,46,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.AMCommandProto,87,0,5,0,21,0,12,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueStateProto,87,0,5,0,21,0,12,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationAttemptIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceBlacklistRequestProto.Builder,476,0,38,0,137,0,55,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerStatusProto,760,0,110,0,182,0,99,0,42,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerStateProto,101,0,6,0,23,0,13,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeStateProto,143,0,9,0,29,0,16,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.SerializedExceptionProto,825,0,120,0,207,0,106,0,44,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeStateProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionMessageProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PriorityProto,397,0,41,0,103,0,55,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerExitStatusProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionMessageProto,552,0,68,0,136,0,73,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceProto,489,0,60,0,121,0,67,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueACLProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceProto.Builder,804,0,82,0,217,0,88,0,47,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerProto,1065,0,166,0,247,0,136,0,50,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.QueueStateProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerLaunchContextProto.Builder,2272,0,264,0,599,0,242,0,110,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationACLMapProto.Builder,344,0,32,0,104,0,42,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringStringMapProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.AMCommandProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.SerializedExceptionProto.Builder,784,0,82,0,225,0,84,0,43,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionResourceRequestProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerIdProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.StringStringMapProto,569,0,72,0,149,0,75,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeIdProto,529,0,66,0,135,0,71,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PriorityProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ResourceRequestProto,868,0,131,0,203,0,113,0,45,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationResourceUsageReportProto,859,0,129,0,197,0,112,0,45,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationACLMapProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.LocalResourceTypeProto.new Internal.EnumLiteMap() {...},6,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerIdProto.Builder,666,0,76,0,178,0,76,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationAccessTypeProto,87,0,5,0,21,0,12,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionContainerProto,429,0,45,0,111,0,58,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionContractProto.Builder,1058,0,126,0,285,0,119,0,56,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.NodeReportProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerStatusProto.Builder,658,0,68,0,181,0,73,0,39,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionContractProto,551,0,52,0,131,0,69,0,42,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationSubmissionContextProto.Builder,1714,0,190,0,454,0,177,0,82,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationAttemptIdProto.Builder,428,0,46,0,119,0,52,0,29,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationACLMapProto,545,0,68,0,139,0,72,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.PreemptionContainerProto.Builder,358,0,40,0,102,0,45,0,25,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ApplicationResourceUsageReportProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.yarn.proto,YarnProtos.ContainerExitStatusProto,115,0,7,0,25,0,14,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule.base,BaseRuleProvider,54,0,2,0,13,0,4,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule.base,TajoConfValidationRule,156,0,20,0,31,0,13,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.rule.base,CheckHadoopRuntimeVersionRule,177,0,14,0,41,0,12,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.auth,UserRoleInfo,103,0,4,0,27,0,7,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,OffHeapRowBlockWriter,109,0,4,0,27,0,11,0,9,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,ResizableLimitSpec,298,0,34,0,52,0,29,0,12,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,UnSafeTuple,582,0,43,0,118,0,74,0,45,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,FixedSizeLimitSpec,11,0,0,0,4,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,OffHeapRowBlockReader,90,0,4,0,21,0,7,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,DirectBufTuple,25,0,0,0,7,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,UnSafeTupleBytesComparator,122,0,10,0,24,0,8,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,OffHeapRowBlockUtils,251,0,37,0,57,0,29,0,7,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,CompactRowBlockWriter,590,0,16,0,147,0,45,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,MemoryRowBlock,331,0,31,0,75,0,39,0,23,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,HeapRowBlockReader,74,0,2,0,19,0,6,0,5,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,OffHeapRowBlockUtils.TupleConverter,157,0,20,0,46,0,20,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,ZeroCopyTuple,14,0,0,0,5,0,4,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,OffHeapRowWriter,400,0,4,0,118,0,30,0,28,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,ResizableMemoryBlock,360,0,22,0,76,0,41,0,30,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,HeapTuple,493,0,35,0,97,0,65,0,40,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.tuple.memory,UnSafeTupleList,156,0,4,0,32,0,10,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars.VarType.new TajoConf.ConfVars.VarType() {...},4,6,0,0,0,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars.VarType.new TajoConf.ConfVars.VarType() {...},4,6,0,0,0,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars.VarType.new TajoConf.ConfVars.VarType() {...},4,6,0,0,0,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars.VarType.new TajoConf.ConfVars.VarType() {...},4,6,0,0,0,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars.VarType.new TajoConf.ConfVars.VarType() {...},1,6,0,0,0,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars.VarType,13,54,0,0,3,6,2,1,2,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf,885,66,135,5,181,17,126,5,54,4
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.conf,TajoConf.ConfVars,8,2039,0,0,3,229,3,12,3,12
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,ConstraintViolationException,58,0,6,0,16,0,6,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,MinValidator,169,9,33,1,32,4,20,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,AbstractValidator,60,3,8,0,15,1,6,1,2,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,JavaStringValidator,9,4,0,0,1,2,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,PathListValidator,65,3,8,0,15,1,7,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,ConstraintViolation,34,0,0,0,8,0,6,0,6,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,GroupValidator,12,9,1,1,4,4,4,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,NotNullValidator,12,3,2,0,6,1,4,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,MaxValidator,145,9,29,1,28,4,18,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,ClassValidator,37,3,4,0,14,1,5,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,RangeValidator,33,21,4,0,3,6,5,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,PatternValidator,43,7,6,0,12,3,6,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,LengthValidator,44,0,6,0,11,0,7,0,4,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,BooleanValidator,44,3,10,0,14,1,8,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,Validators,22,48,0,0,5,10,5,10,5,10
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,NetworkAddressValidator,148,11,22,0,36,4,14,1,3,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,ShellVariableValidator,13,0,0,0,3,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.validation,PathValidator,9,4,0,0,1,2,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.storage,BufferPool,192,0,28,0,48,0,29,0,15,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.storage,EmptyTuple,87,0,0,0,34,0,31,0,31,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.storage,NullTuple,107,0,2,0,38,0,35,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.storage,StorageConstants,19,0,0,0,8,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.storage,VTuple,326,0,18,0,67,0,48,0,39,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.graph,SimpleUndirectedGraph,99,0,10,0,27,0,15,0,10,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.graph,SimpleDirectedGraph.DepthString,12,0,0,0,4,0,1,0,1,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.graph,DirectedGraphCursor,87,0,6,0,19,0,11,0,8,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.graph,SimpleDirectedGraph.QueryGraphTopologyStringBuilder,28,0,0,0,5,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.util.graph,SimpleDirectedGraph,573,0,62,0,108,0,57,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.GetDelegationTokenResponseProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.GetDelegationTokenRequestProto,445,0,49,0,120,0,60,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.GetDelegationTokenResponseProto,441,0,49,0,115,0,60,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.RenewDelegationTokenResponseProto,407,0,43,0,106,0,56,0,34,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.CancelDelegationTokenResponseProto,303,0,22,0,85,0,43,0,32,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.CancelDelegationTokenRequestProto.Builder,369,0,44,0,106,0,47,0,25,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.RenewDelegationTokenRequestProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.TokenProto,789,0,118,0,197,0,103,0,42,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.RenewDelegationTokenResponseProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.CancelDelegationTokenResponseProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.GetDelegationTokenRequestProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.TokenProto.Builder,590,0,62,0,173,0,67,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.GetDelegationTokenRequestProto.Builder,267,0,26,0,86,0,35,0,22,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.CancelDelegationTokenResponseProto.Builder,111,0,10,0,40,0,21,0,16,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos,24,0,0,0,7,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.GetDelegationTokenResponseProto.Builder,367,0,44,0,105,0,47,0,25,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.RenewDelegationTokenRequestProto.Builder,369,0,44,0,106,0,47,0,25,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.RenewDelegationTokenResponseProto.Builder,195,0,18,0,62,0,29,0,20,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.TokenProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.RenewDelegationTokenRequestProto,446,0,49,0,117,0,60,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},149,0,0,0,31,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.CancelDelegationTokenRequestProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.hadoop.security.proto,SecurityProtos.CancelDelegationTokenRequestProto,446,0,49,0,117,0,60,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.QualifiedIdentifierProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.TypeElement,951,0,120,0,213,0,111,0,48,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.QualifiedIdentifierProto,446,0,41,0,112,0,58,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.TypeElement.Builder,1094,0,110,0,292,0,117,0,62,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.QualifiedIdentifierProto.Builder,601,0,72,0,166,0,72,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.Type.new Internal.EnumLiteMap() {...},3,3,0,0,1,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.Type,154,717,61,0,68,65,66,2,7,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes,32,0,0,0,7,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.TypeElement.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.DataType.new AbstractParser() {...},7,3,0,0,1,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.IdentifierProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.TypeProto,446,0,41,0,112,0,58,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.IdentifierProto,546,0,70,0,141,0,73,0,37,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.TypeProto.Builder,601,0,72,0,166,0,72,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,Sleeper,35,0,4,0,11,0,4,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.DataType,655,82,105,3,155,23,90,7,34,7
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},135,0,0,0,23,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.TypeProto.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.IdentifierProto.Builder,342,0,34,0,105,0,43,0,26,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.common,TajoDataTypes.DataType.Builder,385,104,39,7,109,31,51,6,28,6
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.StackTrace.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.StackTrace.Element,554,0,58,0,154,0,72,0,41,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors.SerializedException.Builder,667,0,74,0,186,0,76,0,39,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.StackTrace.Builder,586,0,68,0,163,0,70,0,36,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.StackTrace,330,0,21,0,86,0,46,0,35,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors.SerializedException.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},39,0,0,0,7,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors.ResultCode,484,2697,226,0,233,230,231,2,7,2
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors.ResultCode.new Internal.EnumLiteMap() {...},3,3,0,0,1,1,1,1,1,1
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors.SerializedException,547,0,58,0,147,0,71,0,40,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Errors,72,0,0,0,8,0,3,0,3,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.StackTrace.Element.new AbstractParser() {...},10,0,0,0,2,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.new Descriptors.FileDescriptor.InternalDescriptorAssigner() {...},58,0,0,0,11,0,2,0,2,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace.StackTrace.Element.Builder,622,0,58,0,184,0,67,0,38,0
+Apache Tajo :: Tests Coverage/tajo-common,org.apache.tajo.error,Stacktrace,20,0,0,0,7,0,3,0,3,0

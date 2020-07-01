@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompressionUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">CompressionUtil.java</span></div><h1>CompressionUtil.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import org.apache.tajo.TajoProtos.CodecType;
+import org.apache.tajo.exception.UnsupportedException;
+import org.iq80.snappy.Snappy;
+
+import java.io.IOException;
+
+<span class="nc" id="L27">public class CompressionUtil {</span>
+
+  public static byte[] compress(CodecType type, byte[] uncompressed) throws IOException {
+<span class="nc bnc" id="L30" title="All 2 branches missed.">    switch (type) {</span>
+    case SNAPPY:
+<span class="nc" id="L32">      return SnappyCodec.compress(uncompressed);</span>
+    default:
+<span class="nc" id="L34">      throw new IOException(new UnsupportedException(&quot;Cannot support &quot; + type));</span>
+    }
+  }
+
+  public static byte[] decompress(CodecType type, byte[] compressed) throws IOException {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    switch (type) {</span>
+    case SNAPPY:
+<span class="nc" id="L41">      return SnappyCodec.uncompress(compressed);</span>
+    default:
+<span class="nc" id="L43">      throw new IOException(new UnsupportedException(&quot;Cannot support &quot; + type));</span>
+    }
+  }
+
+  public static int maxCompressedLength(CodecType type, int byteSize) throws IOException {
+<span class="nc bnc" id="L48" title="All 2 branches missed.">    switch (type) {</span>
+    case SNAPPY:
+<span class="nc" id="L50">      return SnappyCodec.maxCompressedLength(byteSize);</span>
+    default:
+<span class="nc" id="L52">      throw new IOException(new UnsupportedException(&quot;Cannot support &quot; + type));</span>
+    }
+  }
+
+  /**
+   * Java snappy codec
+   */
+<span class="nc" id="L59">  static class SnappyCodec {</span>
+
+    static byte[] compress(byte[] uncompressed) throws IOException {
+<span class="nc" id="L62">      return Snappy.compress(uncompressed);</span>
+    }
+
+    static byte[] uncompress(byte[] compressed) throws IOException {
+<span class="nc" id="L66">      return Snappy.uncompress(compressed, 0, compressed.length);</span>
+    }
+
+    static int maxCompressedLength(int byteSize) throws IOException {
+<span class="nc" id="L70">      return Snappy.maxCompressedLength(byteSize);</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

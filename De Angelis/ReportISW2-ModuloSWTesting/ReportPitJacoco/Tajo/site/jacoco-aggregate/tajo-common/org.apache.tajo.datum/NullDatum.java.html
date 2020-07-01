@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>NullDatum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">NullDatum.java</span></div><h1>NullDatum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.InvalidValueForCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
+
+import static org.apache.tajo.type.Type.Bool;
+import static org.apache.tajo.type.Type.Null;
+
+public class NullDatum extends Datum {
+  private static NullDatum instance;
+  public static final String DEFAULT_TEXT = &quot;\\\\N&quot;;
+<span class="fc" id="L32">  private static final byte [] EMPTY_BYTES = new byte[0];</span>
+  private static final DataType NULL_DATA_TYPE;
+
+  static {
+<span class="fc" id="L36">    instance = new NullDatum();</span>
+<span class="fc" id="L37">    NULL_DATA_TYPE = DataType.newBuilder().setType(TajoDataTypes.Type.NULL_TYPE).build();</span>
+<span class="fc" id="L38">  }</span>
+
+  private NullDatum() {
+<span class="fc" id="L41">    super(Null);</span>
+<span class="fc" id="L42">  }</span>
+
+  public static NullDatum get() {
+<span class="fc" id="L45">    return instance;</span>
+  }
+
+  public static DataType getDataType() {
+<span class="nc" id="L49">    return NULL_DATA_TYPE;</span>
+  }
+
+  @Override
+  public boolean isNull() {
+<span class="fc" id="L54">    return true;</span>
+  }
+
+  @Override
+  public boolean isNotNull() {
+<span class="nc" id="L59">    return false;</span>
+  }
+
+  @Override
+  public boolean asBool() {
+<span class="fc" id="L64">    throw new TajoRuntimeException(new InvalidValueForCastException(type, Bool));</span>
+  }
+
+  @Override
+  public byte asByte() {
+<span class="nc" id="L69">    return 0;</span>
+  }
+
+  @Override
+  public short asInt2() {
+<span class="nc" id="L74">    return 0;</span>
+  }
+
+  @Override
+  public int asInt4() {
+<span class="nc" id="L79">    return 0;</span>
+  }
+
+  @Override
+  public long asInt8() {
+<span class="nc" id="L84">    return 0;</span>
+  }
+
+  @Override
+  public byte[] asByteArray() {
+<span class="nc" id="L89">    return EMPTY_BYTES;</span>
+  }
+
+  @Override
+  public float asFloat4() {
+<span class="nc" id="L94">    return 0f;</span>
+  }
+
+  @Override
+  public double asFloat8() {
+<span class="nc" id="L99">    return 0d;</span>
+  }
+
+  @Override
+  public String asChars() {
+<span class="nc" id="L104">    return &quot;&quot;;</span>
+  }
+
+  @Override
+  public byte[] asTextBytes() {
+<span class="nc" id="L109">    return EMPTY_BYTES;</span>
+  }
+
+  @Override
+  public int size() {
+<span class="nc" id="L114">    return 0;</span>
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="fc" id="L119">    return obj instanceof NullDatum;</span>
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">    if (datum.type().isNull()) {</span>
+<span class="fc" id="L125">      return 0;</span>
+    } else {
+<span class="nc" id="L127">      return 1;</span>
+    }
+  }
+
+  @Override
+  public Datum and(Datum datum) {
+<span class="nc" id="L133">    return BooleanDatum.AND_LOGIC[BooleanDatum.UNKNOWN_INT][datum.asInt4()];</span>
+  }
+
+  @Override
+  public Datum or(Datum datum) {
+<span class="nc" id="L138">    return BooleanDatum.OR_LOGIC[BooleanDatum.UNKNOWN_INT][datum.asInt4()];</span>
+  }
+
+  public NullDatum plus(Datum datum) {
+<span class="nc" id="L142">    return this;</span>
+  }
+
+  public NullDatum minus(Datum datum) {
+<span class="nc" id="L146">    return this;</span>
+  }
+
+  public NullDatum multiply(Datum datum) {
+<span class="nc" id="L150">    return this;</span>
+  }
+
+  public NullDatum divide(Datum datum) {
+<span class="nc" id="L154">    return this;</span>
+  }
+
+  public NullDatum modular(Datum datum) {
+<span class="nc" id="L158">    return this;</span>
+  }
+
+  public NullDatum equalsTo(Datum datum) {
+<span class="nc" id="L162">    return this;</span>
+  }
+
+  public NullDatum lessThan(Datum datum) {
+<span class="nc" id="L166">    return this;</span>
+  }
+
+  public NullDatum lessThanEqual(Datum datum) {
+<span class="nc" id="L170">    return this;</span>
+  }
+
+  public NullDatum greaterThan(Datum datum) {
+<span class="nc" id="L174">    return this;</span>
+  }
+
+  public NullDatum greaterThanEqual(Datum datum) {
+<span class="nc" id="L178">    return this;</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L183">    return 0;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L188">    return &quot;NULL&quot;;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

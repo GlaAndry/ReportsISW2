@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TypeStringEncoder.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.type</a> &gt; <span class="el_source">TypeStringEncoder.java</span></div><h1>TypeStringEncoder.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.type;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import org.apache.tajo.Assert;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.schema.Field;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.schema.QualifiedIdentifier;
+import org.apache.tajo.util.StringUtils;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.Stack;
+
+import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
+
+/**
+ * This class enables to serialize a type into a string representation and vice versa.
+ */
+<span class="nc" id="L41">public class TypeStringEncoder {</span>
+
+  /**
+   * Encode a type into a string representation
+   * @param type A type
+   * @return A type string representation
+   */
+  public static String encode(Type type) {
+<span class="fc" id="L49">    StringBuilder sb = new StringBuilder(type.kind().name());</span>
+
+<span class="pc bpc" id="L51" title="1 of 2 branches missed.">    if (type.isTypeParameterized()) {</span>
+<span class="nc" id="L52">      sb.append(&quot;&lt;&quot;);</span>
+<span class="nc" id="L53">      sb.append(StringUtils.join(type.getTypeParameters(), &quot;,&quot;, new Function&lt;Type, String&gt;() {</span>
+        @Override
+        public String apply(@Nullable Type type) {
+<span class="nc" id="L56">          return TypeStringEncoder.encode(type);</span>
+        }
+      }));
+<span class="nc" id="L59">      sb.append(&quot;&gt;&quot;);</span>
+    }
+
+    // Assume all parameter values are integers.
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">    if (type.isValueParameterized()) {</span>
+<span class="nc" id="L64">      sb.append(&quot;(&quot;);</span>
+<span class="nc" id="L65">      sb.append(StringUtils.join(type.getValueParameters(), &quot;,&quot;));</span>
+<span class="nc" id="L66">      sb.append(&quot;)&quot;);</span>
+    }
+
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">    if (type.isStruct()) {</span>
+<span class="nc" id="L70">      Record record = (Record) type;</span>
+<span class="nc" id="L71">      sb.append(&quot;[&quot;);</span>
+<span class="nc" id="L72">      sb.append(StringUtils.join(record.fields(), &quot;,&quot;, new Function&lt;Field, String&gt;() {</span>
+        @Override
+        public String apply(@Nullable Field field) {
+<span class="nc" id="L75">          return serializeField(field);</span>
+        }
+      }));
+<span class="nc" id="L78">      sb.append(&quot;]&quot;);</span>
+    }
+
+<span class="fc" id="L81">    return sb.toString();</span>
+  }
+
+  /**
+   * Make a string from a field
+   * @param field A field
+   * @return String representation for a field
+   */
+  static String serializeField(Field field) {
+<span class="nc" id="L90">    return field.name().raw(DefaultPolicy()) + &quot; &quot; + encode(field.type());</span>
+  }
+
+  /**
+   * Decode a string representation to a Type.
+   * @param signature Type string representation
+   * @return Type
+   */
+  public static Type decode(String signature) {
+
+    // termination condition in this recursion
+<span class="pc bpc" id="L101" title="3 of 6 branches missed.">    if (!(signature.contains(&quot;&lt;&quot;) || signature.contains(&quot;(&quot;) || signature.contains(&quot;[&quot;))) {</span>
+<span class="fc" id="L102">      return createType(signature,</span>
+<span class="fc" id="L103">          ImmutableList.&lt;Type&gt;of(),</span>
+<span class="fc" id="L104">          ImmutableList.&lt;Integer&gt;of(),</span>
+<span class="fc" id="L105">          ImmutableList.&lt;Field&gt;of());</span>
+    }
+
+<span class="nc" id="L108">    final Stack&lt;Character&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L109">    final Stack&lt;Integer&gt; spanStack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L110">    String baseType = null;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    for (int i = 0; i &lt; signature.length(); i++) {</span>
+<span class="nc" id="L112">      char c = signature.charAt(i);</span>
+
+<span class="nc bnc" id="L114" title="All 2 branches missed.">      if (c == '&lt;') {</span>
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (stack.isEmpty()) {</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">          Assert.assertCondition(baseType == null, &quot;Expected baseName to be null&quot;);</span>
+<span class="nc" id="L117">          baseType = signature.substring(0, i);</span>
+        }
+<span class="nc" id="L119">        stack.push('&lt;');</span>
+<span class="nc" id="L120">        spanStack.push(i + 1);</span>
+
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      } else if (c == '&gt;') {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '&lt;', &quot;Bad signature: '%s'&quot;, signature);</span>
+<span class="nc" id="L124">        int paramStartIdx = spanStack.pop();</span>
+
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (stack.isEmpty()) { // ensure outermost parameters</span>
+<span class="nc" id="L127">          return createType(baseType,</span>
+<span class="nc" id="L128">              parseList(signature.substring(paramStartIdx, i), new Function&lt;String, Type&gt;() {</span>
+                @Override
+                public Type apply(@Nullable String s) {
+<span class="nc" id="L131">                  return decode(s);</span>
+                }
+              }),
+<span class="nc" id="L134">              ImmutableList.&lt;Integer&gt;of(),</span>
+<span class="nc" id="L135">              ImmutableList.&lt;Field&gt;of());</span>
+        }
+
+<span class="nc bnc" id="L138" title="All 2 branches missed.">      } else if (c == '[') {</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (stack.isEmpty()) {</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">          Assert.assertCondition(baseType == null, &quot;Expected baseName to be null&quot;);</span>
+<span class="nc" id="L141">          baseType = signature.substring(0, i);</span>
+        }
+
+<span class="nc" id="L144">        stack.push('[');</span>
+<span class="nc" id="L145">        spanStack.push(i + 1);</span>
+
+<span class="nc bnc" id="L147" title="All 2 branches missed.">      } else if (c == ']') {</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '[', &quot;Bad signature: '%s'&quot;, signature);</span>
+
+<span class="nc" id="L150">        int paramStartIdx = spanStack.pop();</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (stack.isEmpty()) { // ensure outermost parameters</span>
+<span class="nc" id="L152">          return createType(baseType,</span>
+<span class="nc" id="L153">              ImmutableList.&lt;Type&gt;of(),</span>
+<span class="nc" id="L154">              ImmutableList.&lt;Integer&gt;of(),</span>
+<span class="nc" id="L155">              parseList(signature.substring(paramStartIdx, i), new Function&lt;String, Field&gt;() {</span>
+                @Override
+                public Field apply(@Nullable String s) {
+<span class="nc" id="L158">                  return parseField(s);</span>
+                }
+              }));
+        }
+
+<span class="nc bnc" id="L163" title="All 2 branches missed.">      } else if (c == '(') {</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (stack.isEmpty()) {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">          Assert.assertCondition(baseType == null, &quot;Expected baseName to be null&quot;);</span>
+<span class="nc" id="L166">          baseType = signature.substring(0, i);</span>
+        }
+<span class="nc" id="L168">        stack.push('(');</span>
+<span class="nc" id="L169">        spanStack.push(i + 1);</span>
+
+<span class="nc bnc" id="L171" title="All 2 branches missed.">      } else if (c == ')') {</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '(', &quot;Bad signature: '%s'&quot;, signature);</span>
+<span class="nc" id="L173">        int paramStartIdx = spanStack.pop();</span>
+
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        if (stack.isEmpty()) { // ensure outermost parameters</span>
+<span class="nc" id="L176">          return createType(baseType,</span>
+<span class="nc" id="L177">              ImmutableList.&lt;Type&gt;of(),</span>
+<span class="nc" id="L178">              parseList(signature.substring(paramStartIdx, i), new Function&lt;String, Integer&gt;() {</span>
+                @Override
+                public Integer apply(@Nullable String s) {
+<span class="nc" id="L181">                  return parseValue(s);</span>
+                }
+              }),
+<span class="nc" id="L184">              ImmutableList.&lt;Field&gt;of());</span>
+        }
+      }
+    }
+
+<span class="nc" id="L189">    return null;</span>
+  }
+
+  public static int parseValue(String literal) {
+    try {
+<span class="nc" id="L194">      return Integer.parseInt(literal);</span>
+<span class="nc" id="L195">    } catch (NumberFormatException e) {</span>
+<span class="nc" id="L196">      throw new TajoInternalError(e);</span>
+    }
+  }
+
+  /**
+   * Parse a string delimited by comma into a list of object instances depending on &lt;pre&gt;itemParser&lt;/pre&gt;.
+   * @param str String delimited by comma
+   * @param itemParser A function to transform a string to an object.
+   * @param &lt;T&gt; Type to be transformed from a string
+   * @return List of object instances
+   */
+  static &lt;T&gt; List&lt;T&gt; parseList(String str, Function&lt;String, T&gt; itemParser) {
+<span class="nc bnc" id="L208" title="All 2 branches missed.">    if (!str.contains(&quot;,&quot;)) { // if just one item</span>
+<span class="nc" id="L209">      return ImmutableList.of(itemParser.apply(str));</span>
+    }
+
+<span class="nc" id="L212">    final ImmutableList.Builder&lt;T&gt; fields = ImmutableList.builder();</span>
+<span class="nc" id="L213">    final Stack&lt;Character&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L214">    int paramStartIdx = 0;</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">    for (int i = 0; i &lt; str.length(); i++) {</span>
+<span class="nc" id="L216">      char c = str.charAt(i);</span>
+
+<span class="nc bnc" id="L218" title="All 6 branches missed.">      if (c == '&lt;' || c == '[' || c == '(') {</span>
+<span class="nc" id="L219">        stack.push(c);</span>
+<span class="nc bnc" id="L220" title="All 2 branches missed.">      } else if (c == '&gt;') {</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '&lt;', &quot;Bad signature: '%s'&quot;, str);</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">      } else if (c == ']') {</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '[', &quot;Bad signature: '%s'&quot;, str);</span>
+<span class="nc bnc" id="L224" title="All 2 branches missed.">      } else if (c == ')') {</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '(', &quot;Bad signature: '%s'&quot;, str);</span>
+<span class="nc bnc" id="L226" title="All 2 branches missed.">      } else if (c == ',') {</span>
+<span class="nc bnc" id="L227" title="All 2 branches missed.">        if (stack.isEmpty()) { // ensure outermost type parameters</span>
+<span class="nc" id="L228">          fields.add(itemParser.apply(str.substring(paramStartIdx, i)));</span>
+<span class="nc" id="L229">          paramStartIdx = i + 1;</span>
+        }
+      }
+    }
+
+<span class="nc" id="L234">    Assert.assertCondition(stack.empty(), &quot;Bad signature: '%s'&quot;, str);</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">    if (paramStartIdx &lt; str.length()) {</span>
+<span class="nc" id="L236">      fields.add(itemParser.apply(str.substring(paramStartIdx, str.length())));</span>
+    }
+
+<span class="nc" id="L239">    return fields.build();</span>
+  }
+
+  /**
+   * Make a field from a string representation
+   * @param str String
+   * @return Field
+   */
+  static Field parseField(String str) {
+    // A field consists of an identifier and a type, and they are delimited by space.
+<span class="nc bnc" id="L249" title="All 2 branches missed.">    if (!str.contains(&quot; &quot;)) {</span>
+<span class="nc" id="L250">      Assert.assertCondition(false, &quot;Bad field signature: '%s'&quot;, str);</span>
+    }
+
+    // Stack to track the nested bracket depth
+<span class="nc" id="L254">    Stack&lt;Character&gt; stack = new Stack&lt;&gt;();</span>
+<span class="nc" id="L255">    int paramStartIdx = 0;</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">    for (int i = 0; i &lt; str.length(); i++) {</span>
+<span class="nc" id="L257">      char c = str.charAt(i);</span>
+
+<span class="nc bnc" id="L259" title="All 6 branches missed.">      if (c == '&lt;' || c == '[' || c == '(') {</span>
+<span class="nc" id="L260">        stack.push(c);</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">      } else if (c == '&gt;') { // for validation</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '&lt;', &quot;Bad field signature: '%s'&quot;, str);</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">      } else if (c == ']') { // for validation</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '[', &quot;Bad field signature: '%s'&quot;, str);</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">      } else if (c == ')') { // for validation</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        Assert.assertCondition(stack.pop() == '(', &quot;Bad field signature: '%s'&quot;, str);</span>
+
+<span class="nc bnc" id="L268" title="All 2 branches missed.">      } else if (c == ' ') {</span>
+<span class="nc bnc" id="L269" title="All 2 branches missed.">        if (stack.isEmpty()) { // ensure outermost type parameters</span>
+<span class="nc" id="L270">          QualifiedIdentifier identifier =</span>
+<span class="nc" id="L271">              IdentifierUtil.makeIdentifier(str.substring(paramStartIdx, i), DefaultPolicy());</span>
+<span class="nc" id="L272">          String typePart = str.substring(i + 1, str.length());</span>
+<span class="nc" id="L273">          return new Field(identifier, decode(typePart));</span>
+        }
+      }
+    }
+
+<span class="nc" id="L278">    return null;</span>
+  }
+
+  public static Type createType(String baseTypeStr,
+                                List&lt;Type&gt; typeParams,
+                                List&lt;Integer&gt; valueParams,
+                                List&lt;Field&gt; fieldParams) {
+    final TajoDataTypes.Type baseType;
+
+    try {
+<span class="fc" id="L288">      baseType = TajoDataTypes.Type.valueOf(baseTypeStr);</span>
+<span class="nc" id="L289">    } catch (Throwable t) {</span>
+<span class="nc" id="L290">      throw new TajoInternalError(new UnsupportedException(baseTypeStr));</span>
+<span class="fc" id="L291">    }</span>
+
+<span class="fc" id="L293">    return TypeFactory.create(baseType, typeParams, valueParams, fieldParams);</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

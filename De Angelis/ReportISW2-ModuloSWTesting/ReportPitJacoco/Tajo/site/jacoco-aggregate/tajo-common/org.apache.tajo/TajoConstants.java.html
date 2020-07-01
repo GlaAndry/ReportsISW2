@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TajoConstants.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo</a> &gt; <span class="el_source">TajoConstants.java</span></div><h1>TajoConstants.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo;
+
+public class TajoConstants {
+  public static final String SYSTEM_CONF_FILENAME = &quot;system_conf.xml&quot;;
+
+  public static final String SYSTEM_DIR_NAME = &quot;system&quot;;
+  public static final String WAREHOUSE_DIR_NAME = &quot;warehouse&quot;;
+  public static final String SYSTEM_RESOURCE_DIR_NAME = &quot;resource&quot;;
+  public static final String RESULT_DIR_NAME=&quot;RESULT&quot;;
+  public static final String INSERT_OVERWIRTE_OLD_TABLE_NAME =&quot;OLD_TABLE&quot;;
+
+  public static final String DEFAULT_TABLESPACE_NAME = &quot;default&quot;;
+  public static final String DEFAULT_DATABASE_NAME = &quot;default&quot;;
+  public static final String DEFAULT_SCHEMA_NAME = &quot;&quot;;
+
+  public static final String EMPTY_STRING = &quot;&quot;;
+
+  public static final String SYSTEM_HA_DIR_NAME = &quot;ha&quot;;
+  public static final String SYSTEM_HA_ACTIVE_DIR_NAME = &quot;active&quot;;
+  public static final String SYSTEM_HA_BACKUP_DIR_NAME = &quot;backup&quot;;
+
+  public static final int UNKNOWN_ROW_NUMBER = -1;
+  public static final int UNKNOWN_LENGTH = -1;
+
+  public static final String TEST_KEY = &quot;tajo.test.enabled&quot;;
+  public static final String DEBUG_KEY = &quot;tajo.debug.enabled&quot;;
+
+<span class="nc" id="L46">  public static final boolean IS_TEST_MODE = Boolean.parseBoolean(System.getProperty(TEST_KEY, &quot;false&quot;));</span>
+<span class="nc" id="L47">  public static final boolean IS_DEBUG_MODE = Boolean.parseBoolean(System.getProperty(DEBUG_KEY, &quot;false&quot;));</span>
+
+  private TajoConstants() {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

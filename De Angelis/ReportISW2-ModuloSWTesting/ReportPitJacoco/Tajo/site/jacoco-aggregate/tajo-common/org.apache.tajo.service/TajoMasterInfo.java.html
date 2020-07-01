@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TajoMasterInfo.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.service</a> &gt; <span class="el_source">TajoMasterInfo.java</span></div><h1>TajoMasterInfo.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.service;
+
+import java.net.InetSocketAddress;
+
+<span class="nc" id="L23">public class TajoMasterInfo {</span>
+
+  private boolean available;
+  private boolean isActive;
+
+  private InetSocketAddress tajoMasterAddress;
+  private InetSocketAddress tajoClientAddress;
+  private InetSocketAddress workerResourceTrackerAddr;
+  private InetSocketAddress catalogAddress;
+  private InetSocketAddress webServerAddress;
+
+  public InetSocketAddress getTajoMasterAddress() {
+<span class="nc" id="L35">    return tajoMasterAddress;</span>
+  }
+
+  public void setTajoMasterAddress(InetSocketAddress tajoMasterAddress) {
+<span class="nc" id="L39">    this.tajoMasterAddress = tajoMasterAddress;</span>
+<span class="nc" id="L40">  }</span>
+
+  public InetSocketAddress getTajoClientAddress() {
+<span class="nc" id="L43">    return tajoClientAddress;</span>
+  }
+
+  public void setTajoClientAddress(InetSocketAddress tajoClientAddress) {
+<span class="nc" id="L47">    this.tajoClientAddress = tajoClientAddress;</span>
+<span class="nc" id="L48">  }</span>
+
+  public InetSocketAddress getWorkerResourceTrackerAddr() {
+<span class="nc" id="L51">    return workerResourceTrackerAddr;</span>
+  }
+
+  public void setWorkerResourceTrackerAddr(InetSocketAddress workerResourceTrackerAddr) {
+<span class="nc" id="L55">    this.workerResourceTrackerAddr = workerResourceTrackerAddr;</span>
+<span class="nc" id="L56">  }</span>
+
+  public InetSocketAddress getCatalogAddress() {
+<span class="nc" id="L59">    return catalogAddress;</span>
+  }
+
+  public void setCatalogAddress(InetSocketAddress catalogAddress) {
+<span class="nc" id="L63">    this.catalogAddress = catalogAddress;</span>
+<span class="nc" id="L64">  }</span>
+
+  public InetSocketAddress getWebServerAddress() {
+<span class="nc" id="L67">    return webServerAddress;</span>
+  }
+
+  public void setWebServerAddress(InetSocketAddress webServerAddress) {
+<span class="nc" id="L71">    this.webServerAddress = webServerAddress;</span>
+<span class="nc" id="L72">  }</span>
+
+  public boolean isAvailable() {
+<span class="nc" id="L75">    return available;</span>
+  }
+
+  public void setAvailable(boolean available) {
+<span class="nc" id="L79">    this.available = available;</span>
+<span class="nc" id="L80">  }</span>
+
+  public boolean isActive() {
+<span class="nc" id="L83">    return isActive;</span>
+  }
+
+  public void setActive(boolean active) {
+<span class="nc" id="L87">    isActive = active;</span>
+<span class="nc" id="L88">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

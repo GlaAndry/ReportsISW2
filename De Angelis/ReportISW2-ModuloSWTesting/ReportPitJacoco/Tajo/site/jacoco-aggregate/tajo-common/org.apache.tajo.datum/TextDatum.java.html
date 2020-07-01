@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TextDatum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">TextDatum.java</span></div><h1>TextDatum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.common.primitives.UnsignedBytes;
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.util.MurmurHash;
+import org.apache.tajo.util.StringUtils;
+
+import java.nio.charset.Charset;
+import java.util.Comparator;
+
+import static org.apache.tajo.type.Type.Text;
+
+public class TextDatum extends Datum {
+<span class="fc" id="L36">  public static final Charset DEFAULT_CHARSET = Charset.forName(&quot;UTF-8&quot;);</span>
+
+  /* encoded in UTF-8 */
+  @Expose private final byte[] bytes;
+
+  public static final int UNICODE_CHAR_BITS_NUM = Character.MAX_VALUE; // bits number for 2 bytes
+<span class="fc" id="L42">  public static final TextDatum EMPTY_TEXT = new TextDatum(&quot;&quot;);</span>
+<span class="fc" id="L43">  public static final Comparator&lt;byte[]&gt; COMPARATOR = UnsignedBytes.lexicographicalComparator();</span>
+
+  public TextDatum(byte[] bytes) {
+<span class="fc" id="L46">    super(Text);</span>
+<span class="fc" id="L47">    this.bytes = bytes;</span>
+<span class="fc" id="L48">  }</span>
+
+  public TextDatum(String string) {
+<span class="fc" id="L51">    this(string.getBytes(DEFAULT_CHARSET));</span>
+<span class="fc" id="L52">  }</span>
+
+  @Override
+  public boolean asBool() {
+<span class="fc" id="L56">    throw new TajoRuntimeException(new InvalidValueForCastException(TajoDataTypes.Type.TEXT, TajoDataTypes.Type.BOOLEAN));</span>
+  }
+
+  @Override
+  public byte asByte() {
+<span class="fc" id="L61">    throw new TajoRuntimeException(new InvalidValueForCastException(TajoDataTypes.Type.TEXT, TajoDataTypes.Type.BIT));</span>
+  }
+
+  @Override
+  public short asInt2() {
+<span class="fc" id="L66">    return Short.valueOf(new String(bytes));</span>
+  }
+
+  @Override
+  public int asInt4() {
+<span class="fc" id="L71">    return Integer.parseInt(new String(bytes));</span>
+  }
+
+  @Override
+  public long asInt8() {
+<span class="fc" id="L76">    return Long.parseLong(new String(bytes));</span>
+  }
+
+  @Override
+  public float asFloat4() {
+<span class="fc" id="L81">    return Float.valueOf(new String(bytes));</span>
+  }
+
+  @Override
+  public double asFloat8() {
+<span class="fc" id="L86">    return Double.valueOf(new String(bytes));</span>
+  }
+
+  @Override
+  public byte[] asByteArray() {
+<span class="fc" id="L91">    return this.bytes;</span>
+  }
+
+  @Override
+  public String asChars() {
+<span class="fc" id="L96">    return new String(this.bytes, DEFAULT_CHARSET);</span>
+  }
+
+  @Override
+  public char[] asUnicodeChars() {
+<span class="nc" id="L101">    return StringUtils.convertBytesToChars(bytes, DEFAULT_CHARSET);</span>
+  }
+
+  @Override
+  public byte[] asTextBytes() {
+<span class="fc" id="L106">    return this.bytes;</span>
+  }
+
+  @Override
+  public int size() {
+<span class="fc" id="L111">    return bytes.length;</span>
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+<span class="fc bfc" id="L116" title="All 3 branches covered.">    switch (datum.kind()) {</span>
+      case TEXT:
+      case CHAR:
+      case BLOB:
+<span class="fc" id="L120">        return COMPARATOR.compare(bytes, datum.asByteArray());</span>
+
+      case NULL_TYPE:
+<span class="fc" id="L123">        return -1;</span>
+
+      default:
+<span class="fc" id="L126">        throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="fc bfc" id="L132" title="All 2 branches covered.">    if (obj instanceof TextDatum) {</span>
+<span class="fc" id="L133">      TextDatum o = (TextDatum) obj;</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">      return COMPARATOR.compare(this.bytes, o.bytes) == 0;</span>
+    }
+
+<span class="fc" id="L137">    return false;</span>
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+<span class="fc bfc" id="L142" title="All 3 branches covered.">    switch (datum.kind()) {</span>
+      case TEXT:
+      case CHAR:
+      case BLOB:
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        return DatumFactory.createBool(COMPARATOR.compare(bytes, datum.asByteArray()) == 0);</span>
+      case NULL_TYPE:
+<span class="fc" id="L148">        return datum;</span>
+      default:
+<span class="fc" id="L150">        throw new InvalidOperationException(&quot;Cannot equivalent check: &quot; + this.type() + &quot; and &quot; + datum.type());</span>
+    }
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L156">    return MurmurHash.hash(bytes);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="fc" id="L161">    return asChars();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

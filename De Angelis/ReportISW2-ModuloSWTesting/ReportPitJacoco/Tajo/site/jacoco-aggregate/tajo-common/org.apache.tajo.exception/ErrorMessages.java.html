@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ErrorMessages.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.exception</a> &gt; <span class="el_source">ErrorMessages.java</span></div><h1>ErrorMessages.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.exception;
+
+import com.google.common.collect.Maps;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
+
+import java.util.Map;
+
+import static org.apache.tajo.error.Errors.ResultCode.*;
+
+<span class="nc" id="L31">public class ErrorMessages {</span>
+  public static final Map&lt;ResultCode, Pair&lt;String, Integer&gt;&gt; MESSAGES;
+
+  static {
+<span class="fc" id="L35">    MESSAGES = Maps.newHashMap();</span>
+
+    // Warnings
+
+    // General Errors
+<span class="fc" id="L40">    ADD_MESSAGE(INTERNAL_ERROR, &quot;internal error: %s&quot;, 1);</span>
+<span class="fc" id="L41">    ADD_MESSAGE(NOT_IMPLEMENTED, &quot;not implemented feature: %s&quot;, 1);</span>
+<span class="fc" id="L42">    ADD_MESSAGE(FEATURE_NOT_SUPPORTED, &quot;unsupported feature: %s&quot;, 1);</span>
+<span class="fc" id="L43">    ADD_MESSAGE(INVALID_RPC_CALL, &quot;invalid RPC Call: %s&quot;, 1);</span>
+
+    // Query Management and Scheduler
+<span class="fc" id="L46">    ADD_MESSAGE(QUERY_FAILED, &quot;query has been failed due to %s&quot;, 1);</span>
+<span class="fc" id="L47">    ADD_MESSAGE(QUERY_KILLED, &quot;query has been killed&quot;);</span>
+<span class="fc" id="L48">    ADD_MESSAGE(QUERY_NOT_FOUND, &quot;query %s does not exist&quot;, 1);</span>
+<span class="fc" id="L49">    ADD_MESSAGE(NO_DATA, &quot;no data for %s due to query failure or error&quot;, 1);</span>
+<span class="fc" id="L50">    ADD_MESSAGE(INCOMPLETE_QUERY, &quot;query %s is stilling running&quot;, 1);</span>
+
+    // Session
+<span class="fc" id="L53">    ADD_MESSAGE(INVALID_SESSION, &quot;invalid Session '%s'&quot;, 1);</span>
+<span class="fc" id="L54">    ADD_MESSAGE(NO_SUCH_SESSION_VARIABLE, &quot;no such session variable '%s&quot;, 1);</span>
+<span class="fc" id="L55">    ADD_MESSAGE(INVALID_SESSION_VARIABLE, &quot;invalid session variable '%s': %s&quot;, 2);</span>
+
+    // Syntax Error or Access Rule Violation
+<span class="fc" id="L58">    ADD_MESSAGE(SYNTAX_ERROR, &quot;%s&quot;, 1);</span>
+<span class="fc" id="L59">    ADD_MESSAGE(INSUFFICIENT_PRIVILEGE, &quot;Insufficient privilege to %s&quot;, 1);</span>
+<span class="fc" id="L60">    ADD_MESSAGE(CANNOT_DROP_CURRENT_DATABASE, &quot;Cannot drop the current database&quot;, 1);</span>
+
+<span class="fc" id="L62">    ADD_MESSAGE(UNDEFINED_TABLESPACE, &quot;tablespace '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L63">    ADD_MESSAGE(UNDEFINED_DATABASE, &quot;database '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L64">    ADD_MESSAGE(UNDEFINED_SCHEMA, &quot;schema '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L65">    ADD_MESSAGE(UNDEFINED_TABLE, &quot;relation '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L66">    ADD_MESSAGE(UNDEFINED_COLUMN, &quot;column '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L67">    ADD_MESSAGE(UNDEFINED_FUNCTION, &quot;function does not exist: %s&quot;, 1);</span>
+<span class="fc" id="L68">    ADD_MESSAGE(UNDEFINED_PARTITION_METHOD, &quot;table '%s' is not a partitioned table&quot;, 1);</span>
+<span class="fc" id="L69">    ADD_MESSAGE(UNDEFINED_PARTITION, &quot;partition '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L70">    ADD_MESSAGE(UNDEFINED_PARTITIONS, &quot;No partitions for table '%s'&quot;, 1);</span>
+<span class="fc" id="L71">    ADD_MESSAGE(UNDEFINED_PARTITION_KEY, &quot;'%s' column is not a partition key&quot;, 1);</span>
+<span class="fc" id="L72">    ADD_MESSAGE(UNDEFINED_OPERATOR, &quot;operator does not exist: '%s'&quot;, 1);</span>
+<span class="fc" id="L73">    ADD_MESSAGE(UNDEFINED_INDEX_FOR_TABLE, &quot;index ''%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L74">    ADD_MESSAGE(UNDEFINED_INDEX_FOR_COLUMNS, &quot;index does not exist for '%s' columns of '%s' table&quot;, 2);</span>
+<span class="fc" id="L75">    ADD_MESSAGE(UNDEFINED_INDEX_NAME, &quot;index name '%s' does not exist&quot;, 1);</span>
+<span class="fc" id="L76">    ADD_MESSAGE(UNDEFINED_TABLESPACE_HANDLER, &quot;No tablespace handler for URI scheme '%s'&quot;, 1);</span>
+
+<span class="fc" id="L78">    ADD_MESSAGE(DUPLICATE_TABLESPACE, &quot;tablespace '%s' already exists&quot;, 1);</span>
+<span class="fc" id="L79">    ADD_MESSAGE(DUPLICATE_DATABASE, &quot;database '%s' already exists&quot;, 1);</span>
+<span class="fc" id="L80">    ADD_MESSAGE(DUPLICATE_SCHEMA, &quot;schema '%s' already exists&quot;, 1);</span>
+<span class="fc" id="L81">    ADD_MESSAGE(DUPLICATE_TABLE, &quot;table '%s' already exists&quot;, 1);</span>
+<span class="fc" id="L82">    ADD_MESSAGE(DUPLICATE_COLUMN, &quot;column '%s' already exists&quot;, 1);</span>
+<span class="fc" id="L83">    ADD_MESSAGE(DUPLICATE_ALIAS, &quot;table name '%s' specified more than once&quot;, 1);</span>
+<span class="fc" id="L84">    ADD_MESSAGE(DUPLICATE_INDEX, &quot;index '%s' already exists&quot;, 1);</span>
+<span class="fc" id="L85">    ADD_MESSAGE(DUPLICATE_PARTITION, &quot;partition for '%s' already exists&quot;, 1);</span>
+
+<span class="fc" id="L87">    ADD_MESSAGE(AMBIGUOUS_TABLE, &quot;table name '%s' is ambiguous&quot;, 1);</span>
+<span class="fc" id="L88">    ADD_MESSAGE(AMBIGUOUS_COLUMN, &quot;column name '%s' is ambiguous&quot;, 1);</span>
+<span class="fc" id="L89">    ADD_MESSAGE(AMBIGUOUS_FUNCTION, &quot;function '%s' is ambiguous&quot;, 1);</span>
+
+<span class="fc" id="L91">    ADD_MESSAGE(INVALID_NAME, &quot;Invalid name '%s'&quot;);</span>
+<span class="fc" id="L92">    ADD_MESSAGE(INVALID_VALUE_FOR_CAST, &quot;%s value cannot be casted to %s&quot;, 2);</span>
+
+<span class="fc" id="L94">    ADD_MESSAGE(DIVISION_BY_ZERO, &quot;Division by zero: %s&quot;, 1);</span>
+
+<span class="fc" id="L96">    ADD_MESSAGE(DATATYPE_MISMATCH,</span>
+        &quot;column '%s' is of type %s but expression %s is of type %s&quot;, 4);
+
+<span class="fc" id="L99">    ADD_MESSAGE(SET_OPERATION_SCHEMA_MISMATCH, &quot;each %s query must have the same number of columns&quot;, 1);</span>
+<span class="fc" id="L100">    ADD_MESSAGE(SET_OPERATION_DATATYPE_MISMATCH, &quot;%s types %s and %s cannot be matched&quot;);</span>
+
+<span class="fc" id="L102">    ADD_MESSAGE(CAT_UPGRADE_REQUIRED, &quot;catalog must be upgraded&quot;);</span>
+<span class="fc" id="L103">    ADD_MESSAGE(CAT_CANNOT_CONNECT, &quot;cannot connect metadata store '%s': %s&quot;, 2);</span>
+
+<span class="fc" id="L105">    ADD_MESSAGE(CAT_UNSUPPORTED_CATALOG_STORE, &quot;unsupported catalog store: %s&quot;, 1);</span>
+
+<span class="fc" id="L107">    ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, &quot;no matched type for %s&quot;, 1);</span>
+
+    // Storage and Data Format
+<span class="fc" id="L110">    ADD_MESSAGE(UNAVAILABLE_TABLE_LOCATION, &quot;unavailable table location '%s', cause: %s&quot;, 2);</span>
+<span class="fc" id="L111">    ADD_MESSAGE(UNKNOWN_DATAFORMAT, &quot;unknown data format: '%s'&quot;, 1);</span>
+<span class="fc" id="L112">    ADD_MESSAGE(UNSUPPORTED_DATATYPE, &quot;unsupported data type: '%s'&quot;, 1);</span>
+<span class="fc" id="L113">    ADD_MESSAGE(INVALID_TABLE_PROPERTY, &quot;invalid table property '%s': '%s'&quot;, 2);</span>
+<span class="fc" id="L114">    ADD_MESSAGE(MISSING_TABLE_PROPERTY, &quot;table property '%s' required for '%s'&quot;, 2);</span>
+<span class="fc" id="L115">    ADD_MESSAGE(INVALID_TABLESPACE_URI, &quot;Invalid tablespace '%s' for table '%s'&quot;, 2);</span>
+<span class="fc" id="L116">    ADD_MESSAGE(UNREMOVABLE_TABLE_PROPERTY, &quot;Removing following properties is disabled: %s&quot;, 1);</span>
+
+<span class="fc" id="L118">    ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, &quot;There is a directory which is assumed to be a partitioned directory&quot; +</span>
+      &quot; : '%s'&quot;, 1);
+
+<span class="fc" id="L121">    ADD_MESSAGE(TOO_LARGE_INPUT_FOR_CROSS_JOIN, &quot;Cross join of large tables is not allowed: (%s). &quot; +</span>
+        &quot;To execute cross join, please increase BROADCAST_CROSS_JOIN_THRESHOLD &quot; +
+        &quot;which is currently set to %s.&quot;, 2);
+<span class="fc" id="L124">    ADD_MESSAGE(INVALID_INPUTS_FOR_CROSS_JOIN, &quot;At least one of both inputs for the cross join must be a simple &quot; +</span>
+        &quot;relation.&quot;);
+
+<span class="fc" id="L127">    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, &quot;%s&quot;, 1);</span>
+<span class="fc" id="L128">    ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, &quot;Client is unable to establish connection to '%s'&quot;, 1);</span>
+<span class="fc" id="L129">    ADD_MESSAGE(CLIENT_CONNECTION_DOES_NOT_EXIST, &quot;This connection has been closed.&quot;);</span>
+<span class="fc" id="L130">  }</span>
+
+  private static void ADD_MESSAGE(ResultCode code, String msgFormat) {
+<span class="fc" id="L133">    ADD_MESSAGE(code, msgFormat, 0);</span>
+<span class="fc" id="L134">  }</span>
+
+  private static void ADD_MESSAGE(ResultCode code, String msgFormat, int argNum) {
+<span class="fc" id="L137">    MESSAGES.put(code, new Pair&lt;&gt;(msgFormat, argNum));</span>
+<span class="fc" id="L138">  }</span>
+
+  public static String getInternalErrorMessage() {
+<span class="nc" id="L141">    return MESSAGES.get(INTERNAL_ERROR).getFirst();</span>
+  }
+
+  public static String getInternalErrorMessage(Throwable t) {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">    if (t != null) {</span>
+<span class="nc" id="L146">      String message = t.getMessage();</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">      if (StringUtils.isEmpty(message)) {</span>
+<span class="nc" id="L148">        message = ExceptionUtils.getMessage(t);</span>
+      }
+
+<span class="nc" id="L151">      return String.format(MESSAGES.get(INTERNAL_ERROR).getFirst(), message);</span>
+    } else {
+<span class="nc" id="L153">      return getInternalErrorMessage();</span>
+    }
+  }
+
+  public static String concat(String[] args) {
+<span class="nc" id="L158">    StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L159">    boolean first = true;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">    for (String s : args) {</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">      if (!first) {</span>
+<span class="nc" id="L162">        sb.append(&quot;,&quot;);</span>
+      }
+<span class="nc" id="L164">      sb.append(s);</span>
+    }
+<span class="nc" id="L166">    return sb.toString();</span>
+  }
+
+  public static String getMessage(ResultCode code, String...args) {
+<span class="pc bpc" id="L170" title="1 of 2 branches missed.">    if (!MESSAGES.containsKey(code)) {</span>
+<span class="nc" id="L171">      throw new TajoInternalError(&quot;no error message for &quot; + code);</span>
+    } else {
+
+<span class="fc" id="L174">      Pair&lt;String, Integer&gt; messageFormat = MESSAGES.get(code);</span>
+
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">      if (messageFormat.getSecond() == args.length) { // if arguments are matched</span>
+
+<span class="pc bpc" id="L178" title="1 of 2 branches missed.">        if (args.length == 0) { // no argument</span>
+<span class="nc" id="L179">          return MESSAGES.get(code).getFirst();</span>
+        } else {
+<span class="fc" id="L181">          return String.format(MESSAGES.get(code).getFirst(), args);</span>
+        }
+
+      } else {
+<span class="nc" id="L185">        throw new TajoInternalError(</span>
+<span class="nc" id="L186">            &quot;Error message arguments are invalid: code=&quot; + code.name() + &quot;, args=&quot; + concat(args) +</span>
+                &quot;. Please report this bug to https://issues.apache.org/jira/browse/TAJO.&quot;);
+      }
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

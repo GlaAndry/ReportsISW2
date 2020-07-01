@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DatumAdapter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.json</a> &gt; <span class="el_source">DatumAdapter.java</span></div><h1>DatumAdapter.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.json;
+
+import com.google.gson.*;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.*;
+import org.apache.tajo.type.TypeStringEncoder;
+
+import java.lang.reflect.Type;
+
+<span class="fc" id="L28">public class DatumAdapter implements GsonSerDerAdapter&lt;Datum&gt; {</span>
+
+	@Override
+	public Datum deserialize(JsonElement json, Type typeOfT,
+			JsonDeserializationContext context) throws JsonParseException {
+<span class="fc" id="L33">		JsonObject jsonObject = json.getAsJsonObject();</span>
+<span class="fc" id="L34">		String typeStr = CommonGsonHelper.getOrDie(jsonObject, &quot;type&quot;).getAsString();</span>
+<span class="fc" id="L35">    org.apache.tajo.type.Type type = TypeStringEncoder.decode(typeStr);</span>
+<span class="pc bpc" id="L36" title="5 of 6 branches missed.">    switch (type.kind()) {</span>
+    case DATE:
+<span class="nc" id="L38">      return new DateDatum(CommonGsonHelper.getOrDie(jsonObject, &quot;value&quot;).getAsInt());</span>
+    case TIME:
+<span class="fc" id="L40">      return new TimeDatum(CommonGsonHelper.getOrDie(jsonObject, &quot;value&quot;).getAsLong());</span>
+    case TIMESTAMP:
+<span class="nc" id="L42">      return new TimestampDatum(CommonGsonHelper.getOrDie(jsonObject, &quot;value&quot;).getAsLong());</span>
+    case INTERVAL:
+<span class="nc" id="L44">      String[] values = CommonGsonHelper.getOrDie(jsonObject, &quot;value&quot;).getAsString().split(&quot;,&quot;);</span>
+<span class="nc" id="L45">      return new IntervalDatum(Integer.parseInt(values[0]), Long.parseLong(values[1]));</span>
+    case ANY:
+<span class="nc" id="L47">      return new AnyDatum(deserialize(CommonGsonHelper.getOrDie(jsonObject, &quot;actual&quot;), typeOfT, context));</span>
+    default:
+<span class="nc" id="L49">      return context.deserialize(CommonGsonHelper.getOrDie(jsonObject, &quot;body&quot;),</span>
+<span class="nc" id="L50">          DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(type.kind().name())));</span>
+    }
+	}
+
+	@Override
+	public JsonElement serialize(Datum src, Type typeOfSrc, JsonSerializationContext context) {
+<span class="fc" id="L56">		JsonObject jsonObj = new JsonObject();</span>
+<span class="fc" id="L57">		jsonObj.addProperty(&quot;type&quot;, TypeStringEncoder.encode(src.type()));</span>
+<span class="pc bpc" id="L58" title="5 of 6 branches missed.">    switch (src.kind()) {</span>
+    case DATE:
+<span class="nc" id="L60">      jsonObj.addProperty(&quot;value&quot;, src.asInt4());</span>
+<span class="nc" id="L61">      break;</span>
+    case TIME:
+<span class="fc" id="L63">      jsonObj.addProperty(&quot;value&quot;, src.asInt8());</span>
+<span class="fc" id="L64">      break;</span>
+    case TIMESTAMP:
+<span class="nc" id="L66">      jsonObj.addProperty(&quot;value&quot;, src.asInt8());</span>
+<span class="nc" id="L67">      break;</span>
+    case INTERVAL:
+<span class="nc" id="L69">      IntervalDatum interval = (IntervalDatum)src;</span>
+<span class="nc" id="L70">      jsonObj.addProperty(&quot;value&quot;, interval.getMonths() + &quot;,&quot; + interval.getMilliSeconds());</span>
+<span class="nc" id="L71">      break;</span>
+    case ANY:
+<span class="nc" id="L73">      jsonObj.add(&quot;actual&quot;, serialize(((AnyDatum) src).getActual(), typeOfSrc, context));</span>
+<span class="nc" id="L74">      break;</span>
+    default:
+<span class="nc" id="L76">      jsonObj.add(&quot;body&quot;, context.serialize(src));</span>
+    }
+
+<span class="fc" id="L79">		return jsonObj;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

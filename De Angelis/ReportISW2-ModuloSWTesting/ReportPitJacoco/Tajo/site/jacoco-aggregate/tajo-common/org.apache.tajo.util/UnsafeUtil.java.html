@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UnsafeUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">UnsafeUtil.java</span></div><h1>UnsafeUtil.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.tajo.util;
+
+import com.google.common.base.Preconditions;
+import io.netty.util.internal.PlatformDependent;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
+
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+
+<span class="nc" id="L28">public class UnsafeUtil {</span>
+  public static final Unsafe unsafe;
+
+  // copied from
+  // http://stackoverflow.com/questions/52353/in-java-what-is-the-best-way-to-determine-the-size-of-an-object
+<span class="nc" id="L33">  public static enum AddressMode {</span>
+    /** Unknown address mode. Size calculations may be unreliable. */
+<span class="nc" id="L35">    UNKNOWN,</span>
+    /** 32-bit address mode using 32-bit references. */
+<span class="nc" id="L37">    MEM_32BIT,</span>
+    /** 64-bit address mode using 64-bit references. */
+<span class="nc" id="L39">    MEM_64BIT,</span>
+    /** 64-bit address mode using 32-bit compressed references. */
+<span class="nc" id="L41">    MEM_64BIT_COMPRESSED_OOPS</span>
+  }
+
+  public static final AddressMode ADDRESS_MODE;
+
+  // offsets
+  public static final int ARRAY_BOOLEAN_BASE_OFFSET;
+  public static final int ARRAY_BYTE_BASE_OFFSET;
+  public static final int ARRAY_SHORT_BASE_OFFSET;
+  public static final int ARRAY_CHAR_BASE_OFFSET;
+  public static final int ARRAY_INT_BASE_OFFSET;
+  public static final int ARRAY_LONG_BASE_OFFSET;
+  public static final int ARRAY_FLOAT_BASE_OFFSET;
+  public static final int ARRAY_DOUBLE_BASE_OFFSET;
+  public static final int ARRAY_OBJECT_BASE_OFFSET;
+
+  // scale
+  public static final int ARRAY_BOOLEAN_INDEX_SCALE;
+  public static final int ARRAY_BYTE_INDEX_SCALE;
+  public static final int ARRAY_SHORT_INDEX_SCALE;
+  public static final int ARRAY_CHAR_INDEX_SCALE;
+  public static final int ARRAY_INT_INDEX_SCALE;
+  public static final int ARRAY_LONG_INDEX_SCALE;
+  public static final int ARRAY_FLOAT_INDEX_SCALE;
+  public static final int ARRAY_DOUBLE_INDEX_SCALE;
+  public static final int ARRAY_OBJECT_INDEX_SCALE;
+
+  static {
+    Field field;
+    try {
+<span class="nc" id="L71">      field = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</span>
+
+<span class="nc" id="L73">      field.setAccessible(true);</span>
+<span class="nc" id="L74">      unsafe = (Unsafe) field.get(null);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">      if (unsafe == null) {</span>
+<span class="nc" id="L76">        throw new RuntimeException(&quot;Unsafe access not available&quot;);</span>
+      }
+<span class="nc" id="L78">    } catch (Exception e) {</span>
+<span class="nc" id="L79">      throw new RuntimeException(e);</span>
+<span class="nc" id="L80">    }</span>
+
+<span class="nc" id="L82">    ARRAY_BOOLEAN_BASE_OFFSET = unsafe.arrayBaseOffset(boolean[].class);</span>
+<span class="nc" id="L83">    ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);</span>
+<span class="nc" id="L84">    ARRAY_SHORT_BASE_OFFSET = unsafe.arrayBaseOffset(short[].class);</span>
+<span class="nc" id="L85">    ARRAY_CHAR_BASE_OFFSET = unsafe.arrayBaseOffset(char[].class);</span>
+<span class="nc" id="L86">    ARRAY_INT_BASE_OFFSET = unsafe.arrayBaseOffset(int[].class);</span>
+<span class="nc" id="L87">    ARRAY_LONG_BASE_OFFSET = unsafe.arrayBaseOffset(long[].class);</span>
+<span class="nc" id="L88">    ARRAY_FLOAT_BASE_OFFSET = unsafe.arrayBaseOffset(float[].class);</span>
+<span class="nc" id="L89">    ARRAY_DOUBLE_BASE_OFFSET = unsafe.arrayBaseOffset(double[].class);</span>
+<span class="nc" id="L90">    ARRAY_OBJECT_BASE_OFFSET = unsafe.arrayBaseOffset(Object[].class);</span>
+
+<span class="nc" id="L92">    ARRAY_BOOLEAN_INDEX_SCALE = unsafe.arrayIndexScale(boolean[].class);</span>
+<span class="nc" id="L93">    ARRAY_BYTE_INDEX_SCALE = unsafe.arrayIndexScale(byte[].class);</span>
+<span class="nc" id="L94">    ARRAY_SHORT_INDEX_SCALE = unsafe.arrayIndexScale(short[].class);</span>
+<span class="nc" id="L95">    ARRAY_CHAR_INDEX_SCALE = unsafe.arrayIndexScale(char[].class);</span>
+<span class="nc" id="L96">    ARRAY_INT_INDEX_SCALE = unsafe.arrayIndexScale(int[].class);</span>
+<span class="nc" id="L97">    ARRAY_LONG_INDEX_SCALE = unsafe.arrayIndexScale(long[].class);</span>
+<span class="nc" id="L98">    ARRAY_FLOAT_INDEX_SCALE = unsafe.arrayIndexScale(float[].class);</span>
+<span class="nc" id="L99">    ARRAY_DOUBLE_INDEX_SCALE = unsafe.arrayIndexScale(double[].class);</span>
+<span class="nc" id="L100">    ARRAY_OBJECT_INDEX_SCALE = unsafe.arrayIndexScale(Object[].class);</span>
+
+<span class="nc" id="L102">    int addressSize = unsafe.addressSize();</span>
+<span class="nc" id="L103">    int referenceSize = unsafe.arrayIndexScale(Object[].class);</span>
+
+<span class="nc bnc" id="L105" title="All 2 branches missed.">    if (addressSize == 4) {</span>
+<span class="nc" id="L106">      ADDRESS_MODE = AddressMode.MEM_32BIT;</span>
+<span class="nc bnc" id="L107" title="All 4 branches missed.">    } else if (addressSize == 8 &amp;&amp; referenceSize == 8) {</span>
+<span class="nc" id="L108">      ADDRESS_MODE = AddressMode.MEM_64BIT;</span>
+<span class="nc bnc" id="L109" title="All 4 branches missed.">    } else if (addressSize == 8 &amp;&amp; referenceSize == 4) {</span>
+<span class="nc" id="L110">      ADDRESS_MODE = AddressMode.MEM_64BIT_COMPRESSED_OOPS;</span>
+    } else {
+<span class="nc" id="L112">      ADDRESS_MODE = AddressMode.UNKNOWN;</span>
+    }
+<span class="nc" id="L114">  }</span>
+
+  public static int alignedSize(int size) {
+<span class="nc" id="L117">    int remain = size % SizeOf.BYTES_PER_WORD;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">    if (remain &gt; 0) {</span>
+<span class="nc" id="L119">      return size + (SizeOf.BYTES_PER_WORD - remain);</span>
+    } else {
+<span class="nc" id="L121">      return size;</span>
+    }
+  }
+
+  public static long getAddress(ByteBuffer buffer) {
+<span class="nc" id="L126">    Preconditions.checkArgument(buffer.isDirect(), &quot;ByteBuffer must be DirectBuffer&quot;);</span>
+<span class="nc" id="L127">    return ((DirectBuffer)buffer).address();</span>
+  }
+
+  public static void free(Deallocatable obj) {
+<span class="nc" id="L131">    obj.release();</span>
+<span class="nc" id="L132">  }</span>
+
+  public static void free(ByteBuffer bb) {
+<span class="nc" id="L135">    PlatformDependent.freeDirectBuffer(bb);</span>
+<span class="nc" id="L136">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

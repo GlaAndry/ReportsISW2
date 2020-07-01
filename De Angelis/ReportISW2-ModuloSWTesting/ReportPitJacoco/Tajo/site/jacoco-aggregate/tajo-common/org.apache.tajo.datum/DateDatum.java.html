@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DateDatum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">DateDatum.java</span></div><h1>DateDatum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.common.primitives.Ints;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
+
+import static org.apache.tajo.type.Type.Date;
+
+public class DateDatum extends Datum {
+  public static final int SIZE = 4;
+
+  // Dates are stored by local time.
+  private int jdate;
+
+  public DateDatum(int value) {
+<span class="fc" id="L42">    super(Date);</span>
+
+<span class="fc" id="L44">    jdate = value;</span>
+<span class="fc" id="L45">  }</span>
+
+  public DateDatum(TimeMeta tm) {
+<span class="fc" id="L48">    super(Date);</span>
+<span class="fc" id="L49">    jdate = DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth);</span>
+<span class="fc" id="L50">  }</span>
+
+  public TimeMeta asTimeMeta() {
+<span class="fc" id="L53">    TimeMeta tm = new TimeMeta();</span>
+<span class="fc" id="L54">    DateTimeUtil.j2date(jdate, tm);</span>
+
+<span class="fc" id="L56">    return tm;</span>
+  }
+
+  @Override
+  public byte[] asTextBytes() {
+<span class="nc" id="L61">    return asChars().getBytes(TextDatum.DEFAULT_CHARSET);</span>
+  }
+
+  public int getCenturyOfEra() {
+<span class="nc" id="L65">    return asTimeMeta().getCenturyOfEra();</span>
+  }
+
+  public int getYear() {
+<span class="nc" id="L69">    return asTimeMeta().years;</span>
+  }
+
+  public int getWeekyear() {
+<span class="nc" id="L73">    return asTimeMeta().getWeekyear();</span>
+  }
+
+  public int getMonthOfYear() {
+<span class="nc" id="L77">    return asTimeMeta().monthOfYear;</span>
+  }
+
+  public int getDayOfYear() {
+<span class="nc" id="L81">    return asTimeMeta().getDayOfYear();</span>
+  }
+
+  public int getDayOfWeek() {
+<span class="nc" id="L85">    return asTimeMeta().getDayOfWeek();</span>
+  }
+
+  public int getISODayOfWeek() {
+<span class="nc" id="L89">    return asTimeMeta().getISODayOfWeek();</span>
+  }
+
+  public int getWeekOfYear() {
+<span class="nc" id="L93">    return asTimeMeta().getWeekOfYear();</span>
+  }
+
+  public int getDayOfMonth() {
+<span class="nc" id="L97">    return asTimeMeta().dayOfMonth;</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="nc" id="L102">    return asChars();</span>
+  }
+
+  @Override
+  public Datum plus(Datum datum) {
+<span class="nc bnc" id="L107" title="All 4 branches missed.">    switch (datum.kind()) {</span>
+    case INT2:
+    case INT4:
+    case INT8: {
+<span class="nc" id="L111">      TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L112">      tm.plusDays(datum.asInt4());</span>
+<span class="nc" id="L113">      return new DateDatum(tm);</span>
+    }
+    case INTERVAL:
+<span class="nc" id="L116">      IntervalDatum interval = (IntervalDatum) datum;</span>
+<span class="nc" id="L117">      TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L118">      tm.plusInterval(interval.months, interval.milliseconds);</span>
+<span class="nc" id="L119">      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));</span>
+    case TIME: {
+<span class="nc" id="L121">      TimeMeta tm1 = asTimeMeta();</span>
+<span class="nc" id="L122">      TimeMeta tm2 = datum.asTimeMeta();</span>
+<span class="nc" id="L123">      tm1.plusTime(DateTimeUtil.toTime(tm2));</span>
+<span class="nc" id="L124">      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));</span>
+    }
+    default:
+<span class="nc" id="L127">      throw new InvalidOperationException(&quot;operator does not exist: &quot; + type() + &quot; + &quot; + datum.type());</span>
+    }
+  }
+
+  @Override
+  public Datum minus(Datum datum) {
+<span class="nc bnc" id="L133" title="All 5 branches missed.">    switch(datum.kind()) {</span>
+      case INT2:
+      case INT4:
+      case INT8: {
+<span class="nc" id="L137">        TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L138">        tm.plusDays(0 - datum.asInt4());</span>
+<span class="nc" id="L139">        return new DateDatum(tm);</span>
+      }
+      case INTERVAL: {
+<span class="nc" id="L142">        IntervalDatum interval = (IntervalDatum) datum;</span>
+<span class="nc" id="L143">        TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L144">        tm.plusInterval(-interval.months, -interval.milliseconds);</span>
+<span class="nc" id="L145">        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));</span>
+      }
+      case TIME: {
+<span class="nc" id="L148">        TimeMeta tm1 = asTimeMeta();</span>
+<span class="nc" id="L149">        TimeMeta tm2 = datum.asTimeMeta();</span>
+<span class="nc" id="L150">        tm1.plusTime(0 - DateTimeUtil.toTime(tm2));</span>
+<span class="nc" id="L151">        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));</span>
+      }
+      case DATE: {
+<span class="nc" id="L154">        DateDatum d = (DateDatum) datum;</span>
+<span class="nc" id="L155">        return new Int4Datum(jdate - d.jdate);</span>
+      }
+      default:
+<span class="nc" id="L158">        throw new InvalidOperationException(&quot;operator does not exist: &quot; + type() + &quot; - &quot; + datum.type());</span>
+    }
+  }
+
+  @Override
+  public int asInt4() {
+<span class="nc" id="L164">    return jdate;</span>
+  }
+
+  @Override
+  public long asInt8() {
+<span class="nc" id="L169">    return jdate;</span>
+  }
+
+  @Override
+  public float asFloat4() {
+<span class="nc" id="L174">    throw new TajoRuntimeException(new InvalidValueForCastException(Type.DATE, Type.FLOAT4));</span>
+  }
+
+  @Override
+  public double asFloat8() {
+<span class="nc" id="L179">    throw new TajoRuntimeException(new InvalidValueForCastException(Type.DATE, Type.FLOAT8));</span>
+  }
+
+  @Override
+  public String asChars() {
+<span class="nc" id="L184">    return DateTimeUtil.encodeDate(asTimeMeta(), DateStyle.ISO_DATES);</span>
+  }
+
+  public String toChars(String format) {
+<span class="nc" id="L188">    return DateTimeFormat.to_char(asTimeMeta(), format);</span>
+  }
+
+  @Override
+  public int size() {
+<span class="nc" id="L193">    return SIZE;</span>
+  }
+
+  @Override
+  public byte [] asByteArray() {
+<span class="nc" id="L198">    return Bytes.toBytes(jdate);</span>
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+<span class="nc bnc" id="L203" title="All 2 branches missed.">    if (datum.kind() == Type.DATE) {</span>
+<span class="nc" id="L204">      return DatumFactory.createBool(equals(datum));</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">    } else if (datum.isNull()) {</span>
+<span class="nc" id="L206">      return datum;</span>
+    } else {
+<span class="nc" id="L208">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public int compareTo(Datum datum) {
+<span class="nc bnc" id="L214" title="All 2 branches missed.">    if (datum.kind() == TajoDataTypes.Type.DATE) {</span>
+<span class="nc" id="L215">      DateDatum another = (DateDatum) datum;</span>
+<span class="nc" id="L216">      return Ints.compare(jdate, another.jdate);</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">    } else if (datum.isNull()) {</span>
+<span class="nc" id="L218">      return -1;</span>
+    } else {
+<span class="nc" id="L220">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="fc" id="L226">    TimeMeta tm = asTimeMeta();</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">    if (obj instanceof DateDatum) {</span>
+<span class="fc" id="L228">      TimeMeta another = ((DateDatum) obj).asTimeMeta();</span>
+<span class="pc bpc" id="L229" title="3 of 6 branches missed.">      return tm.years == another.years &amp;&amp; tm.monthOfYear == another.monthOfYear &amp;&amp; tm.dayOfMonth == another.dayOfMonth;</span>
+    } else {
+<span class="nc" id="L231">      return false;</span>
+    }
+  }
+
+  @Override
+  public int hashCode() {
+<span class="nc" id="L237">    TimeMeta tm = asTimeMeta();</span>
+<span class="nc" id="L238">    int total = 157;</span>
+<span class="nc" id="L239">    total = 23 * total + tm.years;</span>
+<span class="nc" id="L240">    total = 23 * total + tm.monthOfYear;</span>
+<span class="nc" id="L241">    total = 23 * total + tm.dayOfMonth;</span>
+
+<span class="nc" id="L243">    return total;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

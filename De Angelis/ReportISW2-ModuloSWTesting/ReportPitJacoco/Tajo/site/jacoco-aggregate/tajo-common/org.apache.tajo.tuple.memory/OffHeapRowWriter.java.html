@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>OffHeapRowWriter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">OffHeapRowWriter.java</span></div><h1>OffHeapRowWriter.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import io.netty.util.internal.PlatformDependent;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.util.SizeOf;
+
+/**
+ *
+ * Row Record Structure
+ *
+ * | row length (4 bytes) | field 1 offset | field 2 offset | ... | field N offset| field 1 | field 2| ... | field N |
+ *                              4 bytes          4 bytes               4 bytes
+ *
+ */
+public abstract class OffHeapRowWriter implements RowWriter {
+  /** record capacity + offset list */
+  private final int headerSize;
+
+  private final DataType[] dataTypes;
+
+  private int curFieldIdx;
+  private int curFieldOffset;
+  private int curOffset;
+
+<span class="nc" id="L46">  public OffHeapRowWriter(final DataType[] dataTypes) {</span>
+<span class="nc" id="L47">    this.dataTypes = dataTypes;</span>
+<span class="nc" id="L48">    this.headerSize = SizeOf.SIZE_OF_INT * (dataTypes.length + 1);</span>
+<span class="nc" id="L49">    this.curFieldOffset = SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L50">  }</span>
+
+  /**
+   * Current memory address of the row
+   *
+   * @return The memory address
+   */
+  public long recordStartAddr() {
+<span class="nc" id="L58">    return currentAddr() - curOffset;</span>
+  }
+
+  /**
+   * Memory address that point to the first byte of the buffer
+   *
+   * @return The memory address
+   */
+  private long currentAddr() {
+<span class="nc" id="L67">    return address() + position();</span>
+  }
+
+  /**
+   * Current memory address of the buffer
+   *
+   * @return The memory address
+   */
+  public abstract long address();
+
+  public abstract void ensureSize(int size);
+
+  public int offset() {
+<span class="nc" id="L80">    return position();</span>
+  }
+
+  /**
+   * Current position
+   *
+   * @return The position
+   */
+  public abstract int position();
+
+  /**
+   * Forward the address;
+   *
+   * @param length Length to be forwarded
+   */
+  public abstract void forward(int length);
+
+  /**
+   * Backward the address;
+   *
+   * @param length Length to be backwarded
+   */
+  public abstract void backward(int length);
+
+  @Override
+  public void clear() {
+<span class="nc" id="L106">    curOffset = 0;</span>
+<span class="nc" id="L107">    curFieldIdx = 0;</span>
+<span class="nc" id="L108">    curFieldOffset = SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L109">  }</span>
+
+  @Override
+  public DataType[] dataTypes() {
+<span class="nc" id="L113">    return dataTypes;</span>
+  }
+
+  @Override
+  public boolean startRow() {
+<span class="nc" id="L118">    ensureSize(headerSize);</span>
+<span class="nc" id="L119">    curOffset = headerSize;</span>
+<span class="nc" id="L120">    curFieldOffset = SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L121">    curFieldIdx = 0;</span>
+<span class="nc" id="L122">    forward(headerSize);</span>
+<span class="nc" id="L123">    return true;</span>
+  }
+
+  @Override
+  public void endRow() {
+<span class="nc" id="L128">    long rowHeaderPos = recordStartAddr();</span>
+    // curOffset is equivalent to a byte length of this row.
+<span class="nc" id="L130">    PlatformDependent.putInt(rowHeaderPos, curOffset);</span>
+
+    //forward (record offset + fields offset)
+<span class="nc" id="L133">    rowHeaderPos += SizeOf.SIZE_OF_INT + curFieldOffset;</span>
+    // set remain header field length
+<span class="nc bnc" id="L135" title="All 2 branches missed.">    for (int i = curFieldIdx; i &lt; dataTypes.length; i++) {</span>
+<span class="nc" id="L136">      PlatformDependent.putInt(rowHeaderPos, MemoryRowBlock.NULL_FIELD_OFFSET);</span>
+<span class="nc" id="L137">      rowHeaderPos += SizeOf.SIZE_OF_INT;</span>
+    }
+<span class="nc" id="L139">    curOffset = 0;</span>
+<span class="nc" id="L140">  }</span>
+
+  @Override
+  public void cancelRow() {
+    // curOffset is equivalent to a byte length of current row.
+<span class="nc" id="L145">    backward(curOffset);</span>
+<span class="nc" id="L146">    curOffset = 0;</span>
+<span class="nc" id="L147">    curFieldOffset = SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L148">    curFieldIdx = 0;</span>
+<span class="nc" id="L149">  }</span>
+
+  @Override
+  public void skipField() {
+    // set header field length
+<span class="nc" id="L154">    putFieldHeader(currentAddr(), MemoryRowBlock.NULL_FIELD_OFFSET);</span>
+<span class="nc" id="L155">  }</span>
+
+  /**
+   * set current buffer position and forward field length
+   * @param fieldLength
+   */
+  private void forwardField(int fieldLength) {
+<span class="nc" id="L162">    forward(fieldLength);</span>
+<span class="nc" id="L163">    curOffset += fieldLength;</span>
+
+<span class="nc" id="L165">  }</span>
+
+  private void putFieldHeader(long currentAddr, int length) {
+<span class="nc" id="L168">    long currentHeaderAddr = currentAddr - curOffset + curFieldOffset;</span>
+
+    // set header field length
+<span class="nc" id="L171">    PlatformDependent.putInt(currentHeaderAddr, length);</span>
+<span class="nc" id="L172">    curFieldOffset += SizeOf.SIZE_OF_INT;</span>
+<span class="nc" id="L173">    curFieldIdx++;</span>
+<span class="nc" id="L174">  }</span>
+
+  @Override
+  public void putByte(byte val) {
+<span class="nc" id="L178">    ensureSize(SizeOf.SIZE_OF_BYTE);</span>
+<span class="nc" id="L179">    long addr = currentAddr();</span>
+
+<span class="nc" id="L181">    PlatformDependent.putByte(addr, val);</span>
+<span class="nc" id="L182">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L183">    forwardField(SizeOf.SIZE_OF_BYTE);</span>
+<span class="nc" id="L184">  }</span>
+
+  @Override
+  public void putBool(boolean val) {
+<span class="nc" id="L188">    ensureSize(SizeOf.SIZE_OF_BOOL);</span>
+<span class="nc" id="L189">    long addr = currentAddr();</span>
+
+<span class="nc bnc" id="L191" title="All 2 branches missed.">    PlatformDependent.putByte(addr, (byte) (val ? 0x01 : 0x00));</span>
+<span class="nc" id="L192">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L193">    forwardField(SizeOf.SIZE_OF_BOOL);</span>
+<span class="nc" id="L194">  }</span>
+
+  @Override
+  public void putInt2(short val) {
+<span class="nc" id="L198">    ensureSize(SizeOf.SIZE_OF_SHORT);</span>
+<span class="nc" id="L199">    long addr = currentAddr();</span>
+
+<span class="nc" id="L201">    PlatformDependent.putShort(addr, val);</span>
+<span class="nc" id="L202">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L203">    forwardField(SizeOf.SIZE_OF_SHORT);</span>
+<span class="nc" id="L204">  }</span>
+
+  @Override
+  public void putInt4(int val) {
+<span class="nc" id="L208">    ensureSize(SizeOf.SIZE_OF_INT);</span>
+<span class="nc" id="L209">    long addr = currentAddr();</span>
+
+<span class="nc" id="L211">    PlatformDependent.putInt(addr, val);</span>
+<span class="nc" id="L212">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L213">    forwardField(SizeOf.SIZE_OF_INT);</span>
+<span class="nc" id="L214">  }</span>
+
+  @Override
+  public void putInt8(long val) {
+<span class="nc" id="L218">    ensureSize(SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L219">    long addr = currentAddr();</span>
+
+<span class="nc" id="L221">    PlatformDependent.putLong(addr, val);</span>
+<span class="nc" id="L222">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L223">    forwardField(SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L224">  }</span>
+
+  @Override
+  public void putFloat4(float val) {
+<span class="nc" id="L228">    ensureSize(SizeOf.SIZE_OF_INT);</span>
+<span class="nc" id="L229">    long addr = currentAddr();</span>
+
+<span class="nc" id="L231">    PlatformDependent.putInt(addr, Float.floatToRawIntBits(val));</span>
+<span class="nc" id="L232">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L233">    forwardField(SizeOf.SIZE_OF_INT);</span>
+<span class="nc" id="L234">  }</span>
+
+  @Override
+  public void putFloat8(double val) {
+<span class="nc" id="L238">    ensureSize(SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L239">    long addr = currentAddr();</span>
+
+<span class="nc" id="L241">    PlatformDependent.putLong(addr, Double.doubleToRawLongBits(val));</span>
+<span class="nc" id="L242">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L243">    forwardField(SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L244">  }</span>
+
+  @Override
+  public void putText(String val) {
+<span class="nc" id="L248">    byte[] bytes = val.getBytes(TextDatum.DEFAULT_CHARSET);</span>
+<span class="nc" id="L249">    putText(bytes);</span>
+<span class="nc" id="L250">  }</span>
+
+  @Override
+  public void putText(byte[] val) {
+<span class="nc" id="L254">    putBlob(val);</span>
+<span class="nc" id="L255">  }</span>
+
+  @Override
+  public void putBlob(byte[] val) {
+<span class="nc" id="L259">    int bytesLen = val.length;</span>
+<span class="nc" id="L260">    int fieldLen = SizeOf.SIZE_OF_INT + bytesLen;</span>
+
+<span class="nc" id="L262">    ensureSize(fieldLen);</span>
+<span class="nc" id="L263">    long addr = currentAddr();</span>
+
+<span class="nc" id="L265">    PlatformDependent.putInt(addr, bytesLen);</span>
+<span class="nc" id="L266">    PlatformDependent.copyMemory(val, 0, addr + SizeOf.SIZE_OF_INT, bytesLen);</span>
+<span class="nc" id="L267">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L268">    forwardField(fieldLen);</span>
+<span class="nc" id="L269">  }</span>
+
+  @Override
+  public void putTimestamp(long val) {
+<span class="nc" id="L273">    putInt8(val);</span>
+<span class="nc" id="L274">  }</span>
+
+  @Override
+  public void putDate(int val) {
+<span class="nc" id="L278">    putInt4(val);</span>
+<span class="nc" id="L279">  }</span>
+
+  @Override
+  public void putTime(long val) {
+<span class="nc" id="L283">    putInt8(val);</span>
+<span class="nc" id="L284">  }</span>
+
+  @Override
+  public void putInterval(IntervalDatum val) {
+<span class="nc" id="L288">    ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L289">    long addr = currentAddr();</span>
+
+<span class="nc" id="L291">    PlatformDependent.putInt(addr, val.getMonths());</span>
+<span class="nc" id="L292">    PlatformDependent.putLong(addr + SizeOf.SIZE_OF_INT, val.getMilliSeconds());</span>
+<span class="nc" id="L293">    putFieldHeader(addr, curOffset);</span>
+<span class="nc" id="L294">    forwardField(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);</span>
+<span class="nc" id="L295">  }</span>
+
+  @Override
+  public void putProtoDatum(ProtobufDatum val) {
+<span class="nc" id="L299">    putBlob(val.asByteArray());</span>
+<span class="nc" id="L300">  }</span>
+
+
+  protected void addTuple(UnSafeTuple tuple) {
+<span class="nc" id="L304">    int length = tuple.getLength();</span>
+<span class="nc" id="L305">    ensureSize(length);</span>
+<span class="nc" id="L306">    PlatformDependent.copyMemory(tuple.address(), address() + position(), length);</span>
+<span class="nc" id="L307">    forward(length);</span>
+<span class="nc" id="L308">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BitArray.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">BitArray.java</span></div><h1>BitArray.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+
+public class BitArray {
+  private byte [] data;
+  private int length;
+
+<span class="nc" id="L28">  public BitArray(int numBits) {</span>
+<span class="nc" id="L29">    data = new byte[(int) Math.ceil((double) numBits / 8)];</span>
+<span class="nc" id="L30">    this.length = numBits;</span>
+<span class="nc" id="L31">  }</span>
+
+<span class="nc" id="L33">  public BitArray(byte [] bytes) {</span>
+<span class="nc" id="L34">    this.data = bytes;</span>
+<span class="nc" id="L35">    length = bytes.length * 8;</span>
+<span class="nc" id="L36">  }</span>
+
+  public void set(int idx) {
+    int offset;
+    byte dummy;
+
+<span class="nc bnc" id="L42" title="All 2 branches missed.">    if (idx &gt;= length)</span>
+<span class="nc" id="L43">      throw new IllegalArgumentException(&quot;length is &quot; + length</span>
+          + &quot;, but a given index is &quot; + idx + &quot;.&quot;);
+
+<span class="nc" id="L46">    offset = idx % 8;</span>
+<span class="nc" id="L47">    dummy = 1;</span>
+<span class="nc" id="L48">    dummy &lt;&lt;= 7-offset;</span>
+<span class="nc" id="L49">    data[idx / 8] |= dummy;</span>
+<span class="nc" id="L50">  }</span>
+
+  public boolean get(int idx) {
+    int offset;
+
+<span class="nc bnc" id="L55" title="All 2 branches missed.">    if(idx &gt;= length)</span>
+<span class="nc" id="L56">      throw new IllegalArgumentException(&quot;length is &quot; + length</span>
+          + &quot;, but a given index is &quot; + idx + &quot;.&quot;);
+
+<span class="nc" id="L59">    offset = idx % 8;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">    return (((data[idx / 8] &gt;&gt;&gt; 7 - offset) &amp; 1) == 1);</span>
+  }
+
+  public void clear() {
+<span class="nc" id="L64">    Arrays.fill(data, (byte) 0);</span>
+<span class="nc" id="L65">  }</span>
+
+  public int bytesLength() {
+<span class="nc" id="L68">    return data.length;</span>
+  }
+
+  public int bitsLength() {
+<span class="nc" id="L72">    return length;</span>
+  }
+
+  public byte [] toArray() {
+<span class="nc" id="L76">    return data;</span>
+  }
+
+  public void fromByteBuffer(ByteBuffer byteBuffer) {
+<span class="nc" id="L80">    clear();</span>
+<span class="nc" id="L81">    int i = 0;</span>
+<span class="nc bnc" id="L82" title="All 4 branches missed.">    while(i &lt; data.length &amp;&amp; byteBuffer.hasRemaining()) {</span>
+<span class="nc" id="L83">      data[i] = byteBuffer.get();</span>
+<span class="nc" id="L84">      i++;</span>
+    }
+<span class="nc" id="L86">  }</span>
+
+  public String toString() {
+<span class="nc" id="L89">    StringBuilder sb = new StringBuilder();</span>
+
+<span class="nc bnc" id="L91" title="All 2 branches missed.">    for(int i = 0;i &lt; length;i++) {</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">      if(this.get(i))</span>
+<span class="nc" id="L93">        sb.append(&quot;1&quot;);</span>
+      else
+<span class="nc" id="L95">        sb.append(&quot;0&quot;);</span>
+
+<span class="nc bnc" id="L97" title="All 4 branches missed.">      if (i &gt; 0 &amp;&amp; i % 8 == 0) {</span>
+<span class="nc" id="L98">        sb.append(&quot; &quot;);</span>
+      }
+    }
+
+<span class="nc" id="L102">    return sb.toString();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

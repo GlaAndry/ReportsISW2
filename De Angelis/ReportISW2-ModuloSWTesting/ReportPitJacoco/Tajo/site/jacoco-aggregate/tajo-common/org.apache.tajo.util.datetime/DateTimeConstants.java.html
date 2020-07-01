@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>DateTimeConstants.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util.datetime</a> &gt; <span class="el_source">DateTimeConstants.java</span></div><h1>DateTimeConstants.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util.datetime;
+
+import java.util.HashMap;
+import java.util.Map;
+
+<span class="nc" id="L24">public class DateTimeConstants {</span>
+<span class="fc" id="L25">  public enum DateStyle {</span>
+<span class="fc" id="L26">    XSO_DATES,</span>
+<span class="fc" id="L27">    ISO_DATES,</span>
+<span class="fc" id="L28">    SQL_DATES</span>
+  };
+
+<span class="fc" id="L31">  public static final int[][]	DAY_OF_MONTH = {</span>
+    {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0},
+    {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31, 0}
+  };
+
+  /** assumes leap year every four years */
+  public static final double DAYS_PER_YEAR = 365.25;
+  public static final int MONTHS_PER_YEAR = 12;
+
+
+  // DAYS_PER_MONTH is very imprecise.  The more accurate value is
+  // 365.2425/12 = 30.436875, or '30 days_full 10:29:06'.  Right now we only
+  // return an integral number of days_full, but someday perhaps we should
+  // also return a 'time' value to be used as well.	ISO 8601 suggests
+  // 0 days_full.
+
+  /** assumes exactly 30 days_full per month */
+  public static final int DAYS_PER_MONTH	= 30;
+  /** assume no daylight savings time changes */
+  public static final int HOURS_PER_DAY = 24;
+
+  // This doesn't adjust for uneven daylight savings time intervals or leap
+  // seconds, and it crudely estimates leap years.  A more accurate value
+  // for days_full per years is 365.2422.
+
+  /** avoid floating-point computation */
+  public static final int SECS_PER_YEAR	= 36525 * 864;
+  public static final int SECS_PER_DAY = 86_400;
+  public static final int SECS_PER_HOUR	= 3600;
+  public static final int SECS_PER_MINUTE = 60;
+  public static final int MINS_PER_HOUR	= 60;
+
+  public static final long MSECS_PER_DAY = 86_400_000L;
+  public static final long MSECS_PER_SEC = 1000L;
+
+  public static final long USECS_PER_DAY = 86_400_000_000L;
+  public static final long USECS_PER_HOUR	= 3_600_000_000L;
+  public static final long USECS_PER_MINUTE = 60_000_000L;
+  public static final long USECS_PER_SEC = 1_000_000L;
+  public static final long USECS_PER_MSEC = 1000L;
+
+  public static final int JULIAN_MINYEAR = -4713;
+  public static final int JULIAN_MINMONTH = 11;
+  public static final int JULIAN_MINDAY = 24;
+  public static final int JULIAN_MAXYEAR = 5874898;
+
+  /** == DateTimeUtil.toJulianDate(JULIAN_MAXYEAR, 1, 1) */
+  public static final int JULIAN_MAX = 2147483494;
+
+  // This is an implementation copied from PGStatement in pgsql jdbc
+  // We can't use Long.MAX_VALUE or Long.MIN_VALUE for java.sql.date
+  // because this would break the 'normalization contract' of the
+  // java.sql.Date API.
+  // The follow values are the nearest MAX/MIN values with hour,
+  // minute, second, millisecond set to 0 - this is used for
+  // -infinity / infinity representation in Java
+  public static final long DATE_POSITIVE_INFINITY = 9223372036825200000l;
+  public static final long DATE_NEGATIVE_INFINITY = -9223372036832400000l;
+  
+  /** the first ISO day of week */
+  public static final int MONDAY = 1;
+  
+  /** the second ISO day of week */
+  public static final int TUESDAY = 2;
+
+  /** the third ISO day of week */
+  public static final int WEDNESDAY = 3;
+
+  /** the fourth ISO day of week */
+  public static final int THURSDAY = 4;
+
+  /** the fifth ISO day of week */
+  public static final int FRIDAY = 5;
+
+  /** the sixth ISO day of week */
+  public static final int SATURDAY = 6;
+
+  /** the seventh ISO day of week */
+  public static final int SUNDAY = 7;
+
+  // Julian-date equivalents of Day 0 in Unix and Postgres reckoning
+  /** == DateTimeUtil.toJulianDate(1970, 1, 1) */
+  public static final int UNIX_EPOCH_JDATE =     2_440_588;
+  /** == DateTimeUtil.toJulianDate(2000, 1, 1) */
+  public static final int POSTGRES_EPOCH_JDATE = 2_451_545;
+  /** == (POSTGRES_EPOCH_JDATE * SECS_PER_DAY) - (UNIX_EPOCH_JDATE * SECS_PER_DAY); */
+  public static final long SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME = 946_684_800;
+
+  public static final int MAX_TZDISP_HOUR	=	15;	/* maximum allowed hour part */
+  public static final int TZDISP_LIMIT =	((MAX_TZDISP_HOUR + 1) * SECS_PER_HOUR);
+
+  public static final int INTERVAL_FULL_RANGE = 0x7FFF;
+
+  public static final String DAGO =			&quot;ago&quot;;
+  public static final String DCURRENT =		&quot;current&quot;;
+  public static final String EPOCH =			&quot;epoch&quot;;
+  public static final String INVALID =			&quot;invalid&quot;;
+  public static final String EARLY =			&quot;-infinity&quot;;
+  public static final String LATE	=		&quot;infinity&quot;;
+  public static final String NOW =				&quot;now&quot;;
+  public static final String TODAY	=		&quot;today&quot;;
+  public static final String TOMORROW	=	&quot;tomorrow&quot;;
+  public static final String YESTERDAY =		&quot;yesterday&quot;;
+  public static final String ZULU	 =		&quot;zulu&quot;;
+
+  public static final String DMICROSEC	=	&quot;usecond&quot;;
+  public static final String DMILLISEC =		&quot;msecond&quot;;
+  public static final String DSECOND	=		&quot;second&quot;;
+  public static final String DMINUTE =			&quot;minute&quot;;
+  public static final String DHOUR	=		&quot;hour&quot;;
+  public static final String DDAY	 =		&quot;day&quot;;
+  public static final String DWEEK	=		&quot;week&quot;;
+  public static final String DMONTH	=		&quot;month&quot;;
+  public static final String DQUARTER	=	&quot;quarter&quot;;
+  public static final String DYEAR		=	&quot;year&quot;;
+  public static final String DDECADE	=		&quot;decade&quot;;
+  public static final String DCENTURY	=	&quot;century&quot;;
+  public static final String DMILLENNIUM	=	&quot;millennium&quot;;
+  public static final String DA_D		=	&quot;ad&quot;;
+  public static final String DB_C		=	&quot;bc&quot;;
+  public static final String DTIMEZONE	=	&quot;timezone&quot;;
+
+  public static final int DATEORDER_YMD = 0;
+  public static final int DATEORDER_DMY = 1;
+  public static final int DATEORDER_MDY = 2;
+
+<span class="fc" id="L157">  public static enum TokenField {</span>
+<span class="fc" id="L158">    DECIMAL(0),</span>
+
+<span class="fc" id="L160">    AM(0), PM(1), HR24(2),</span>
+
+<span class="fc" id="L162">    AD(0), BC(1),</span>
+
+<span class="fc" id="L164">    DTK_NUMBER(0),</span>
+<span class="fc" id="L165">    DTK_STRING(1),</span>
+
+<span class="fc" id="L167">    DTK_DATE(2),</span>
+<span class="fc" id="L168">    DTK_TIME(3),</span>
+<span class="fc" id="L169">    DTK_TZ(4),</span>
+<span class="fc" id="L170">    DTK_AGO(5),</span>
+
+<span class="fc" id="L172">    DTK_SPECIAL(6),</span>
+<span class="fc" id="L173">    DTK_INVALID(7),</span>
+<span class="fc" id="L174">    DTK_CURRENT(8),</span>
+<span class="fc" id="L175">    DTK_EARLY(9),</span>
+<span class="fc" id="L176">    DTK_LATE(10),</span>
+<span class="fc" id="L177">    DTK_EPOCH(11),</span>
+<span class="fc" id="L178">    DTK_NOW(12),</span>
+<span class="fc" id="L179">    DTK_YESTERDAY(13),</span>
+<span class="fc" id="L180">    DTK_TODAY(14),</span>
+<span class="fc" id="L181">    DTK_TOMORROW(15),</span>
+<span class="fc" id="L182">    DTK_ZULU(16),</span>
+
+<span class="fc" id="L184">    DTK_DELTA(17),</span>
+<span class="fc" id="L185">    DTK_SECOND(18),</span>
+<span class="fc" id="L186">    DTK_MINUTE(19),</span>
+<span class="fc" id="L187">    DTK_HOUR(20),</span>
+<span class="fc" id="L188">    DTK_DAY(21),</span>
+<span class="fc" id="L189">    DTK_WEEK(22),</span>
+<span class="fc" id="L190">    DTK_MONTH(23),</span>
+<span class="fc" id="L191">    DTK_QUARTER(24),</span>
+<span class="fc" id="L192">    DTK_YEAR(25),</span>
+<span class="fc" id="L193">    DTK_DECADE(26),</span>
+<span class="fc" id="L194">    DTK_CENTURY(27),</span>
+<span class="fc" id="L195">    DTK_MILLENNIUM(28),</span>
+<span class="fc" id="L196">    DTK_MILLISEC(29),</span>
+<span class="fc" id="L197">    DTK_MICROSEC(30),</span>
+<span class="fc" id="L198">    DTK_JULIAN(31),</span>
+
+<span class="fc" id="L200">    DTK_DOW(32),</span>
+<span class="fc" id="L201">    DTK_DOY(33),</span>
+<span class="fc" id="L202">    DTK_TZ_HOUR(34),</span>
+<span class="fc" id="L203">    DTK_TZ_MINUTE(35),</span>
+<span class="fc" id="L204">    DTK_ISOYEAR(36),</span>
+<span class="fc" id="L205">    DTK_ISODOW(37),</span>
+
+<span class="fc" id="L207">    RESERV(0),</span>
+<span class="fc" id="L208">    MONTH(1),</span>
+<span class="fc" id="L209">    YEAR(2),</span>
+<span class="fc" id="L210">    DAY(3),</span>
+<span class="fc" id="L211">    JULIAN(4),</span>
+<span class="fc" id="L212">    TZ(5),</span>
+<span class="fc" id="L213">    DTZ(6),</span>
+<span class="fc" id="L214">    DTZMOD(7),</span>
+<span class="fc" id="L215">    IGNORE_DTF(8),</span>
+<span class="fc" id="L216">    AMPM(9),</span>
+<span class="fc" id="L217">    HOUR(10),</span>
+<span class="fc" id="L218">    MINUTE(11),</span>
+<span class="fc" id="L219">    SECOND(12),</span>
+<span class="fc" id="L220">    MILLISECOND(13),</span>
+<span class="fc" id="L221">    MICROSECOND(14),</span>
+<span class="fc" id="L222">    DOY(15),</span>
+<span class="fc" id="L223">    DOW(16),</span>
+<span class="fc" id="L224">    UNITS(17),</span>
+<span class="fc" id="L225">    ADBC(18),</span>
+    /* these are only for relative dates */
+<span class="fc" id="L227">    AGO(19),</span>
+<span class="fc" id="L228">    ABS_BEFORE(20),</span>
+<span class="fc" id="L229">    ABS_AFTER(21),</span>
+    /* generic fields to help with parsing */
+<span class="fc" id="L231">    ISODATE(22),</span>
+<span class="fc" id="L232">    ISOTIME(23),</span>
+    /* these are only for parsing intervals */
+<span class="fc" id="L234">    WEEK(24),</span>
+<span class="fc" id="L235">    DECADE(25),</span>
+<span class="fc" id="L236">    CENTURY(26),</span>
+<span class="fc" id="L237">    MILLENNIUM(27),</span>
+    /* reserved for unrecognized string values */
+<span class="fc" id="L239">    UNKNOWN_FIELD(28);</span>
+
+    int value;
+<span class="fc" id="L242">    TokenField(int value) {</span>
+<span class="fc" id="L243">      this.value = value;</span>
+<span class="fc" id="L244">    }</span>
+
+    public int getValue() {
+<span class="fc" id="L247">      return value;</span>
+    }
+  }
+
+<span class="fc" id="L251">  static Object datetktbl[][] = {</span>
+    /*	text, token, lexval */
+    {&quot;-infinity&quot;, TokenField.RESERV, TokenField.DTK_EARLY}, /* &quot;-infinity&quot; reserved for &quot;early time&quot; */
+<span class="fc" id="L254">    {&quot;acsst&quot;, TokenField.DTZ, 42},	/* Cent. Australia */</span>
+<span class="fc" id="L255">    {&quot;acst&quot;, TokenField.DTZ, -16},		/* Atlantic/Porto Acre */</span>
+<span class="fc" id="L256">    {&quot;act&quot;, TokenField.TZ, -20},		/* Atlantic/Porto Acre */</span>
+    {DA_D, TokenField.ADBC, TokenField.AD},			/* &quot;ad&quot; for years &gt;= 0 */
+<span class="fc" id="L258">    {&quot;adt&quot;, TokenField.DTZ, -12},		/* Atlantic Daylight Time */</span>
+<span class="fc" id="L259">    {&quot;aesst&quot;, TokenField.DTZ, 44},	/* E. Australia */</span>
+<span class="fc" id="L260">    {&quot;aest&quot;, TokenField.TZ, 40},		/* Australia Eastern Std Time */</span>
+<span class="fc" id="L261">    {&quot;aft&quot;, TokenField.TZ, 18},		/* Kabul */</span>
+<span class="fc" id="L262">    {&quot;ahst&quot;, TokenField.TZ, -40},		/* Alaska-Hawaii Std Time */</span>
+<span class="fc" id="L263">    {&quot;akdt&quot;, TokenField.DTZ, -32},		/* Alaska Daylight Time */</span>
+<span class="fc" id="L264">    {&quot;akst&quot;, TokenField.DTZ, -36},		/* Alaska Standard Time */</span>
+    {&quot;allballs&quot;, TokenField.RESERV, TokenField.DTK_ZULU},		/* 00:00:00 */
+<span class="fc" id="L266">    {&quot;almst&quot;, TokenField.TZ, 28},		/* Almaty Savings Time */</span>
+<span class="fc" id="L267">    {&quot;almt&quot;, TokenField.TZ, 24},		/* Almaty Time */</span>
+    {&quot;am&quot;, TokenField.AMPM, TokenField.AM},
+<span class="fc" id="L269">    {&quot;amst&quot;, TokenField.DTZ, 20},		/* Armenia Summer Time (Yerevan) */</span>
+<span class="fc" id="L270">    {&quot;amt&quot;, TokenField.TZ, 16},		/* Armenia Time (Yerevan) */</span>
+<span class="fc" id="L271">    {&quot;anast&quot;, TokenField.DTZ, 52},	/* Anadyr Summer Time (Russia) */</span>
+<span class="fc" id="L272">    {&quot;anat&quot;, TokenField.TZ, 48},		/* Anadyr Time (Russia) */</span>
+<span class="fc" id="L273">    {&quot;apr&quot;, TokenField.MONTH, 4},</span>
+<span class="fc" id="L274">    {&quot;april&quot;, TokenField.MONTH, 4},</span>
+<span class="fc" id="L275">    {&quot;art&quot;, TokenField.TZ, -12},		/* Argentina Time */</span>
+<span class="fc" id="L276">    {&quot;ast&quot;, TokenField.TZ, -16},		/* Atlantic Std Time (Canada) */</span>
+<span class="fc" id="L277">    {&quot;at&quot;, TokenField.IGNORE_DTF, 0},		/* &quot;at&quot; (throwaway) */</span>
+<span class="fc" id="L278">    {&quot;aug&quot;, TokenField.MONTH, 8},</span>
+<span class="fc" id="L279">    {&quot;august&quot;, TokenField.MONTH, 8},</span>
+<span class="fc" id="L280">    {&quot;awsst&quot;, TokenField.DTZ, 36},	/* W. Australia */</span>
+<span class="fc" id="L281">    {&quot;awst&quot;, TokenField.TZ, 32},		/* W. Australia */</span>
+<span class="fc" id="L282">    {&quot;awt&quot;, TokenField.DTZ, -12},</span>
+<span class="fc" id="L283">    {&quot;azost&quot;, TokenField.DTZ, 0},		/* Azores Summer Time */</span>
+<span class="fc" id="L284">    {&quot;azot&quot;, TokenField.TZ, -4},		/* Azores Time */</span>
+<span class="fc" id="L285">    {&quot;azst&quot;, TokenField.DTZ, 20},		/* Azerbaijan Summer Time */</span>
+<span class="fc" id="L286">    {&quot;azt&quot;, TokenField.TZ, 16},		/* Azerbaijan Time */</span>
+    {DB_C, TokenField.ADBC, TokenField.BC},			/* &quot;bc&quot; for years &lt; 0 */
+<span class="fc" id="L288">    {&quot;bdst&quot;, TokenField.TZ, 8},		/* British Double Summer Time */</span>
+<span class="fc" id="L289">    {&quot;bdt&quot;, TokenField.TZ, 24},		/* Dacca */</span>
+<span class="fc" id="L290">    {&quot;bnt&quot;, TokenField.TZ, 32},		/* Brunei Darussalam Time */</span>
+<span class="fc" id="L291">    {&quot;bort&quot;, TokenField.TZ, 32},		/* Borneo Time (Indonesia) */</span>
+<span class="fc" id="L292">    {&quot;bot&quot;, TokenField.TZ, -16},		/* Bolivia Time */</span>
+<span class="fc" id="L293">    {&quot;bra&quot;, TokenField.TZ, -12},		/* Brazil Time */</span>
+<span class="fc" id="L294">    {&quot;bst&quot;, TokenField.DTZ, 4},		/* British Summer Time */</span>
+<span class="fc" id="L295">    {&quot;bt&quot;, TokenField.TZ, 12},		/* Baghdad Time */</span>
+<span class="fc" id="L296">    {&quot;btt&quot;, TokenField.TZ, 24},		/* Bhutan Time */</span>
+<span class="fc" id="L297">    {&quot;cadt&quot;, TokenField.DTZ, 42},		/* Central Australian DST */</span>
+<span class="fc" id="L298">    {&quot;cast&quot;, TokenField.TZ, 38},		/* Central Australian ST */</span>
+<span class="fc" id="L299">    {&quot;cat&quot;, TokenField.TZ, -40},		/* Central Alaska Time */</span>
+<span class="fc" id="L300">    {&quot;cct&quot;, TokenField.TZ, 32},		/* China Coast Time */</span>
+<span class="fc" id="L301">    {&quot;cdt&quot;, TokenField.DTZ, -20},		/* Central Daylight Time */</span>
+<span class="fc" id="L302">    {&quot;cest&quot;, TokenField.DTZ, 8},		/* Central European Dayl.Time */</span>
+<span class="fc" id="L303">    {&quot;cet&quot;, TokenField.TZ, 4},		/* Central European Time */</span>
+<span class="fc" id="L304">    {&quot;cetdst&quot;, TokenField.DTZ, 8},	/* Central European Dayl.Time */</span>
+<span class="fc" id="L305">    {&quot;chadt&quot;, TokenField.DTZ, 55},	/* Chatham Island Daylight Time (13:45) */</span>
+<span class="fc" id="L306">    {&quot;chast&quot;, TokenField.TZ, 51},		/* Chatham Island Time (12:45) */</span>
+<span class="fc" id="L307">    {&quot;ckt&quot;, TokenField.TZ, 48},		/* Cook Islands Time */</span>
+<span class="fc" id="L308">    {&quot;clst&quot;, TokenField.DTZ, -12},		/* Chile Summer Time */</span>
+<span class="fc" id="L309">    {&quot;clt&quot;, TokenField.TZ, -16},		/* Chile Time */</span>
+<span class="fc" id="L310">    {&quot;cot&quot;, TokenField.TZ, -20},		/* Columbia Time */</span>
+<span class="fc" id="L311">    {&quot;cst&quot;, TokenField.TZ, -24},		/* Central Standard Time */</span>
+    {DCURRENT, TokenField.RESERV, TokenField.DTK_CURRENT},	/* &quot;current&quot; is always now */
+<span class="fc" id="L313">    {&quot;cvt&quot;, TokenField.TZ, 28},		/* Christmas Island Time (Indian Ocean) */</span>
+<span class="fc" id="L314">    {&quot;cxt&quot;, TokenField.TZ, 28},		/* Christmas Island Time (Indian Ocean) */</span>
+    {&quot;d&quot;, TokenField.UNITS, TokenField.DTK_DAY},		/* &quot;day of month&quot; for ISO input */
+<span class="fc" id="L316">    {&quot;davt&quot;, TokenField.TZ, 28},		/* Davis Time (Antarctica) */</span>
+<span class="fc" id="L317">    {&quot;ddut&quot;, TokenField.TZ, 40},		/* Dumont-d'Urville Time (Antarctica) */</span>
+<span class="fc" id="L318">    {&quot;dec&quot;, TokenField.MONTH, 12},</span>
+<span class="fc" id="L319">    {&quot;december&quot;, TokenField.MONTH, 12},</span>
+<span class="fc" id="L320">    {&quot;dnt&quot;, TokenField.TZ, 4},		/* Dansk Normal Tid */</span>
+    {&quot;dow&quot;, TokenField.RESERV, TokenField.DTK_DOW},	/* day of week */
+    {&quot;doy&quot;, TokenField.RESERV, TokenField.DTK_DOY},	/* day of year */
+<span class="fc" id="L323">    {&quot;dst&quot;, TokenField.DTZMOD, 6},</span>
+<span class="fc" id="L324">    {&quot;easst&quot;, TokenField.DTZ, -20},	/* Easter Island Summer Time */</span>
+<span class="fc" id="L325">    {&quot;east&quot;, TokenField.TZ, -24},		/* Easter Island Time */</span>
+<span class="fc" id="L326">    {&quot;eat&quot;, TokenField.TZ, 12},		/* East Africa Time */</span>
+<span class="fc" id="L327">    {&quot;edt&quot;, TokenField.DTZ, -16},		/* Eastern Daylight Time */</span>
+<span class="fc" id="L328">    {&quot;eest&quot;, TokenField.DTZ, 12},		/* Eastern Europe Summer Time */</span>
+<span class="fc" id="L329">    {&quot;eet&quot;, TokenField.TZ, 8},		/* East. Europe, USSR Zone 1 */</span>
+<span class="fc" id="L330">    {&quot;eetdst&quot;, TokenField.DTZ, 12},	/* Eastern Europe Daylight Time */</span>
+<span class="fc" id="L331">    {&quot;egst&quot;, TokenField.DTZ, 0},		/* East Greenland Summer Time */</span>
+<span class="fc" id="L332">    {&quot;egt&quot;, TokenField.TZ, -4},		/* East Greenland Time */</span>
+    {EPOCH, TokenField.RESERV, TokenField.DTK_EPOCH}, /* &quot;epoch&quot; reserved for system epoch time */
+<span class="fc" id="L334">    {&quot;est&quot;, TokenField.TZ, -20},		/* Eastern Standard Time */</span>
+<span class="fc" id="L335">    {&quot;feb&quot;, TokenField.MONTH, 2},</span>
+<span class="fc" id="L336">    {&quot;february&quot;, TokenField.MONTH, 2},</span>
+<span class="fc" id="L337">    {&quot;fjst&quot;, TokenField.DTZ, -52},		/* Fiji Summer Time (13 hour offset!) */</span>
+<span class="fc" id="L338">    {&quot;fjt&quot;, TokenField.TZ, -48},		/* Fiji Time */</span>
+<span class="fc" id="L339">    {&quot;fkst&quot;, TokenField.DTZ, -12},		/* Falkland Islands Summer Time */</span>
+<span class="fc" id="L340">    {&quot;fkt&quot;, TokenField.TZ, -8},		/* Falkland Islands Time */</span>
+<span class="fc" id="L341">    {&quot;fri&quot;, TokenField.DOW, 5},</span>
+<span class="fc" id="L342">    {&quot;friday&quot;, TokenField.DOW, 5},</span>
+<span class="fc" id="L343">    {&quot;fst&quot;, TokenField.TZ, 4},		/* French Summer Time */</span>
+<span class="fc" id="L344">    {&quot;fwt&quot;, TokenField.DTZ, 8},		/* French Winter Time  */</span>
+<span class="fc" id="L345">    {&quot;galt&quot;, TokenField.TZ, -24},		/* Galapagos Time */</span>
+<span class="fc" id="L346">    {&quot;gamt&quot;, TokenField.TZ, -36},		/* Gambier Time */</span>
+<span class="fc" id="L347">    {&quot;gest&quot;, TokenField.DTZ, 20},		/* Georgia Summer Time */</span>
+<span class="fc" id="L348">    {&quot;get&quot;, TokenField.TZ, 16},		/* Georgia Time */</span>
+<span class="fc" id="L349">    {&quot;gft&quot;, TokenField.TZ, -12},		/* French Guiana Time */</span>
+<span class="fc" id="L350">    {&quot;gilt&quot;, TokenField.TZ, 48},		/* Gilbert Islands Time */</span>
+<span class="fc" id="L351">    {&quot;gmt&quot;, TokenField.TZ, 0},		/* Greenwish Mean Time */</span>
+<span class="fc" id="L352">    {&quot;gst&quot;, TokenField.TZ, 40},		/* Guam Std Time, USSR Zone 9 */</span>
+<span class="fc" id="L353">    {&quot;gyt&quot;, TokenField.TZ, -16},		/* Guyana Time */</span>
+    {&quot;h&quot;, TokenField.UNITS, TokenField.DTK_HOUR},		/* &quot;hour&quot; */
+<span class="fc" id="L355">    {&quot;hdt&quot;, TokenField.DTZ, -36},		/* Hawaii/Alaska Daylight Time */</span>
+<span class="fc" id="L356">    {&quot;hkt&quot;, TokenField.TZ, 32},		/* Hong Kong Time */</span>
+<span class="fc" id="L357">    {&quot;hst&quot;, TokenField.TZ, -40},		/* Hawaii Std Time */</span>
+<span class="fc" id="L358">    {&quot;ict&quot;, TokenField.TZ, 28},		/* Indochina Time */</span>
+<span class="fc" id="L359">    {&quot;idle&quot;, TokenField.TZ, 48},		/* Intl. Date Line, East */</span>
+<span class="fc" id="L360">    {&quot;idlw&quot;, TokenField.TZ, -48},		/* Intl. Date Line, West */</span>
+    {LATE, TokenField.RESERV, TokenField.DTK_LATE},	/* &quot;infinity&quot; reserved for &quot;late time&quot; */
+    {INVALID, TokenField.RESERV, TokenField.DTK_INVALID},		/* &quot;invalid&quot; reserved for bad time */
+<span class="fc" id="L363">    {&quot;iot&quot;, TokenField.TZ, 20},		/* Indian Chagos Time */</span>
+<span class="fc" id="L364">    {&quot;irkst&quot;, TokenField.DTZ, 36},	/* Irkutsk Summer Time */</span>
+<span class="fc" id="L365">    {&quot;irkt&quot;, TokenField.TZ, 32},		/* Irkutsk Time */</span>
+<span class="fc" id="L366">    {&quot;irt&quot;, TokenField.TZ, 14},		/* Iran Time */</span>
+    {&quot;isodow&quot;, TokenField.RESERV, TokenField.DTK_ISODOW},		/* ISO day of week, Sunday == 7 */
+<span class="fc" id="L368">    {&quot;ist&quot;, TokenField.TZ, 8},		/* Israel */</span>
+<span class="fc" id="L369">    {&quot;it&quot;, TokenField.TZ, 14},		/* Iran Time */</span>
+    {&quot;j&quot;, TokenField.UNITS, TokenField.DTK_JULIAN},
+<span class="fc" id="L371">    {&quot;jan&quot;, TokenField.MONTH, 1},</span>
+<span class="fc" id="L372">    {&quot;january&quot;, TokenField.MONTH, 1},</span>
+<span class="fc" id="L373">    {&quot;javt&quot;, TokenField.TZ, 28},		/* Java Time (07:00? see JT) */</span>
+<span class="fc" id="L374">    {&quot;jayt&quot;, TokenField.TZ, 36},		/* Jayapura Time (Indonesia) */</span>
+    {&quot;jd&quot;, TokenField.UNITS, TokenField.DTK_JULIAN},
+<span class="fc" id="L376">    {&quot;jst&quot;, TokenField.TZ, 36},		/* Japan Std Time,USSR Zone 8 */</span>
+<span class="fc" id="L377">    {&quot;jt&quot;, TokenField.TZ, 30},		/* Java Time (07:30? see JAVT) */</span>
+<span class="fc" id="L378">    {&quot;jul&quot;, TokenField.MONTH, 7},</span>
+    {&quot;julian&quot;, TokenField.UNITS, TokenField.DTK_JULIAN},
+<span class="fc" id="L380">    {&quot;july&quot;, TokenField.MONTH, 7},</span>
+<span class="fc" id="L381">    {&quot;jun&quot;, TokenField.MONTH, 6},</span>
+<span class="fc" id="L382">    {&quot;june&quot;, TokenField.MONTH, 6},</span>
+<span class="fc" id="L383">    {&quot;kdt&quot;, TokenField.DTZ, 40},		/* Korea Daylight Time */</span>
+<span class="fc" id="L384">    {&quot;kgst&quot;, TokenField.DTZ, 24},		/* Kyrgyzstan Summer Time */</span>
+<span class="fc" id="L385">    {&quot;kgt&quot;, TokenField.TZ, 20},		/* Kyrgyzstan Time */</span>
+<span class="fc" id="L386">    {&quot;kost&quot;, TokenField.TZ, 48},		/* Kosrae Time */</span>
+<span class="fc" id="L387">    {&quot;krast&quot;, TokenField.DTZ, 28},	/* Krasnoyarsk Summer Time */</span>
+<span class="fc" id="L388">    {&quot;krat&quot;, TokenField.TZ, 32},		/* Krasnoyarsk Standard Time */</span>
+<span class="fc" id="L389">    {&quot;kst&quot;, TokenField.TZ, 36},		/* Korea Standard Time */</span>
+<span class="fc" id="L390">    {&quot;lhdt&quot;, TokenField.DTZ, 44},		/* Lord Howe Daylight Time, Australia */</span>
+<span class="fc" id="L391">    {&quot;lhst&quot;, TokenField.TZ, 42},		/* Lord Howe Standard Time, Australia */</span>
+<span class="fc" id="L392">    {&quot;ligt&quot;, TokenField.TZ, 40},		/* From Melbourne, Australia */</span>
+<span class="fc" id="L393">    {&quot;lint&quot;, TokenField.TZ, 56},		/* Line Islands Time (Kiribati; +14 hours!) */</span>
+<span class="fc" id="L394">    {&quot;lkt&quot;, TokenField.TZ, 24},		/* Lanka Time */</span>
+    {&quot;m&quot;, TokenField.UNITS, TokenField.DTK_MONTH},	/* &quot;month&quot; for ISO input */
+<span class="fc" id="L396">    {&quot;magst&quot;, TokenField.DTZ, 48},	/* Magadan Summer Time */</span>
+<span class="fc" id="L397">    {&quot;magt&quot;, TokenField.TZ, 44},		/* Magadan Time */</span>
+<span class="fc" id="L398">    {&quot;mar&quot;, TokenField.MONTH, 3},</span>
+<span class="fc" id="L399">    {&quot;march&quot;, TokenField.MONTH, 3},</span>
+<span class="fc" id="L400">    {&quot;mart&quot;, TokenField.TZ, -38},		/* Marquesas Time */</span>
+<span class="fc" id="L401">    {&quot;mawt&quot;, TokenField.TZ, 24},		/* Mawson, Antarctica */</span>
+<span class="fc" id="L402">    {&quot;may&quot;, TokenField.MONTH, 5},</span>
+<span class="fc" id="L403">    {&quot;mdt&quot;, TokenField.DTZ, -24},		/* Mountain Daylight Time */</span>
+<span class="fc" id="L404">    {&quot;mest&quot;, TokenField.DTZ, 8},		/* Middle Europe Summer Time */</span>
+<span class="fc" id="L405">    {&quot;met&quot;, TokenField.TZ, 4},		/* Middle Europe Time */</span>
+<span class="fc" id="L406">    {&quot;metdst&quot;, TokenField.DTZ, 8},	/* Middle Europe Daylight Time */</span>
+<span class="fc" id="L407">    {&quot;mewt&quot;, TokenField.TZ, 4},		/* Middle Europe Winter Time */</span>
+<span class="fc" id="L408">    {&quot;mez&quot;, TokenField.TZ, 4},		/* Middle Europe Zone */</span>
+<span class="fc" id="L409">    {&quot;mht&quot;, TokenField.TZ, 48},		/* Kwajalein */</span>
+    {&quot;mm&quot;, TokenField.UNITS, TokenField.DTK_MINUTE},	/* &quot;minute&quot; for ISO input */
+<span class="fc" id="L411">    {&quot;mmt&quot;, TokenField.TZ, 26},		/* Myannar Time */</span>
+<span class="fc" id="L412">    {&quot;mon&quot;, TokenField.DOW, 1},</span>
+<span class="fc" id="L413">    {&quot;monday&quot;, TokenField.DOW, 1},</span>
+<span class="fc" id="L414">    {&quot;mpt&quot;, TokenField.TZ, 40},		/* North Mariana Islands Time */</span>
+<span class="fc" id="L415">    {&quot;msd&quot;, TokenField.DTZ, 16},		/* Moscow Summer Time */</span>
+<span class="fc" id="L416">    {&quot;msk&quot;, TokenField.TZ, 12},		/* Moscow Time */</span>
+<span class="fc" id="L417">    {&quot;mst&quot;, TokenField.TZ, -28},		/* Mountain Standard Time */</span>
+<span class="fc" id="L418">    {&quot;mt&quot;, TokenField.TZ, 34},		/* Moluccas Time */</span>
+<span class="fc" id="L419">    {&quot;mut&quot;, TokenField.TZ, 16},		/* Mauritius Island Time */</span>
+<span class="fc" id="L420">    {&quot;mvt&quot;, TokenField.TZ, 20},		/* Maldives Island Time */</span>
+<span class="fc" id="L421">    {&quot;myt&quot;, TokenField.TZ, 32},		/* Malaysia Time */</span>
+<span class="fc" id="L422">    {&quot;nct&quot;, TokenField.TZ, 44},		/* New Caledonia Time */</span>
+<span class="fc" id="L423">    {&quot;ndt&quot;, TokenField.DTZ, -10},		/* Nfld. Daylight Time */</span>
+<span class="fc" id="L424">    {&quot;nft&quot;, TokenField.TZ, -14},		/* Newfoundland Standard Time */</span>
+<span class="fc" id="L425">    {&quot;nor&quot;, TokenField.TZ, 4},		/* Norway Standard Time */</span>
+<span class="fc" id="L426">    {&quot;nov&quot;, TokenField.MONTH, 11},</span>
+<span class="fc" id="L427">    {&quot;november&quot;, TokenField.MONTH, 11},</span>
+<span class="fc" id="L428">    {&quot;novst&quot;, TokenField.DTZ, 28},	/* Novosibirsk Summer Time */</span>
+<span class="fc" id="L429">    {&quot;novt&quot;, TokenField.TZ, 24},		/* Novosibirsk Standard Time */</span>
+    {NOW, TokenField.RESERV, TokenField.DTK_NOW},		/* current transaction time */
+<span class="fc" id="L431">    {&quot;npt&quot;, TokenField.TZ, 23},		/* Nepal Standard Time (GMT-5:45) */</span>
+<span class="fc" id="L432">    {&quot;nst&quot;, TokenField.TZ, -14},		/* Nfld. Standard Time */</span>
+<span class="fc" id="L433">    {&quot;nt&quot;, TokenField.TZ, -44},		/* Nome Time */</span>
+<span class="fc" id="L434">    {&quot;nut&quot;, TokenField.TZ, -44},		/* Niue Time */</span>
+<span class="fc" id="L435">    {&quot;nzdt&quot;, TokenField.DTZ, 52},		/* New Zealand Daylight Time */</span>
+<span class="fc" id="L436">    {&quot;nzst&quot;, TokenField.TZ, 48},		/* New Zealand Standard Time */</span>
+<span class="fc" id="L437">    {&quot;nzt&quot;, TokenField.TZ, 48},		/* New Zealand Time */</span>
+<span class="fc" id="L438">    {&quot;oct&quot;, TokenField.MONTH, 10},</span>
+<span class="fc" id="L439">    {&quot;october&quot;, TokenField.MONTH, 10},</span>
+<span class="fc" id="L440">    {&quot;omsst&quot;, TokenField.DTZ, 28},	/* Omsk Summer Time */</span>
+<span class="fc" id="L441">    {&quot;omst&quot;, TokenField.TZ, 24},		/* Omsk Time */</span>
+<span class="fc" id="L442">    {&quot;on&quot;, TokenField.IGNORE_DTF, 0},		/* &quot;on&quot; (throwaway) */</span>
+<span class="fc" id="L443">    {&quot;pdt&quot;, TokenField.DTZ, -28},		/* Pacific Daylight Time */</span>
+<span class="fc" id="L444">    {&quot;pet&quot;, TokenField.TZ, -20},		/* Peru Time */</span>
+<span class="fc" id="L445">    {&quot;petst&quot;, TokenField.DTZ, 52},	/* Petropavlovsk-Kamchatski Summer Time */</span>
+<span class="fc" id="L446">    {&quot;pett&quot;, TokenField.TZ, 48},		/* Petropavlovsk-Kamchatski Time */</span>
+<span class="fc" id="L447">    {&quot;pgt&quot;, TokenField.TZ, 40},		/* Papua New Guinea Time */</span>
+<span class="fc" id="L448">    {&quot;phot&quot;, TokenField.TZ, 52},		/* Phoenix Islands (Kiribati) Time */</span>
+<span class="fc" id="L449">    {&quot;pht&quot;, TokenField.TZ, 32},		/* Philippine Time */</span>
+<span class="fc" id="L450">    {&quot;pkt&quot;, TokenField.TZ, 20},		/* Pakistan Time */</span>
+    {&quot;pm&quot;, TokenField.AMPM, TokenField.PM},
+<span class="fc" id="L452">    {&quot;pmdt&quot;, TokenField.DTZ, -8},		/* Pierre &amp; Miquelon Daylight Time */</span>
+<span class="fc" id="L453">    {&quot;pont&quot;, TokenField.TZ, 44},		/* Ponape Time (Micronesia) */</span>
+<span class="fc" id="L454">    {&quot;pst&quot;, TokenField.TZ, -32},		/* Pacific Standard Time */</span>
+<span class="fc" id="L455">    {&quot;pwt&quot;, TokenField.TZ, 36},		/* Palau Time */</span>
+<span class="fc" id="L456">    {&quot;pyst&quot;, TokenField.DTZ, -12},		/* Paraguay Summer Time */</span>
+<span class="fc" id="L457">    {&quot;pyt&quot;, TokenField.TZ, -16},		/* Paraguay Time */</span>
+<span class="fc" id="L458">    {&quot;ret&quot;, TokenField.DTZ, 16},		/* Reunion Island Time */</span>
+    {&quot;s&quot;, TokenField.UNITS, TokenField.DTK_SECOND},	/* &quot;seconds&quot; for ISO input */
+<span class="fc" id="L460">    {&quot;sadt&quot;, TokenField.DTZ, 42},		/* S. Australian Dayl. Time */</span>
+<span class="fc" id="L461">    {&quot;sast&quot;, TokenField.TZ, 38},		/* South Australian Std Time */</span>
+<span class="fc" id="L462">    {&quot;sat&quot;, TokenField.DOW, 6},</span>
+<span class="fc" id="L463">    {&quot;saturday&quot;, TokenField.DOW, 6},</span>
+<span class="fc" id="L464">    {&quot;sct&quot;, TokenField.DTZ, 16},		/* Mahe Island Time */</span>
+<span class="fc" id="L465">    {&quot;sep&quot;, TokenField.MONTH, 9},</span>
+<span class="fc" id="L466">    {&quot;sept&quot;, TokenField.MONTH, 9},</span>
+<span class="fc" id="L467">    {&quot;september&quot;, TokenField.MONTH, 9},</span>
+<span class="fc" id="L468">    {&quot;set&quot;, TokenField.TZ, -4},		/* Seychelles Time ?? */</span>
+<span class="fc" id="L469">    {&quot;sst&quot;, TokenField.DTZ, 8},		/* Swedish Summer Time */</span>
+<span class="fc" id="L470">    {&quot;sun&quot;, TokenField.DOW, 0},</span>
+<span class="fc" id="L471">    {&quot;sunday&quot;, TokenField.DOW, 0},</span>
+<span class="fc" id="L472">    {&quot;swt&quot;, TokenField.TZ, 4},		/* Swedish Winter Time */</span>
+    {&quot;t&quot;, TokenField.ISOTIME, TokenField.DTK_TIME},	/* Filler for ISO time fields */
+<span class="fc" id="L474">    {&quot;tft&quot;, TokenField.TZ, 20},		/* Kerguelen Time */</span>
+<span class="fc" id="L475">    {&quot;that&quot;, TokenField.TZ, -40},		/* Tahiti Time */</span>
+<span class="fc" id="L476">    {&quot;thu&quot;, TokenField.DOW, 4},</span>
+<span class="fc" id="L477">    {&quot;thur&quot;, TokenField.DOW, 4},</span>
+<span class="fc" id="L478">    {&quot;thurs&quot;, TokenField.DOW, 4},</span>
+<span class="fc" id="L479">    {&quot;thursday&quot;, TokenField.DOW, 4},</span>
+<span class="fc" id="L480">    {&quot;tjt&quot;, TokenField.TZ, 20},		/* Tajikistan Time */</span>
+<span class="fc" id="L481">    {&quot;tkt&quot;, TokenField.TZ, -40},		/* Tokelau Time */</span>
+<span class="fc" id="L482">    {&quot;tmt&quot;, TokenField.TZ, 20},		/* Turkmenistan Time */</span>
+    {TODAY, TokenField.RESERV, TokenField.DTK_TODAY}, /* midnight */
+    {TOMORROW, TokenField.RESERV, TokenField.DTK_TOMORROW},	/* tomorrow midnight */
+<span class="fc" id="L485">    {&quot;truk&quot;, TokenField.TZ, 40},		/* Truk Time */</span>
+<span class="fc" id="L486">    {&quot;tue&quot;, TokenField.DOW, 2},</span>
+<span class="fc" id="L487">    {&quot;tues&quot;, TokenField.DOW, 2},</span>
+<span class="fc" id="L488">    {&quot;tuesday&quot;, TokenField.DOW, 2},</span>
+<span class="fc" id="L489">    {&quot;tvt&quot;, TokenField.TZ, 48},		/* Tuvalu Time */</span>
+<span class="fc" id="L490">    {&quot;ulast&quot;, TokenField.DTZ, 36},	/* Ulan Bator Summer Time */</span>
+<span class="fc" id="L491">    {&quot;ulat&quot;, TokenField.TZ, 32},		/* Ulan Bator Time */</span>
+    {&quot;undefined&quot;, TokenField.RESERV, TokenField.DTK_INVALID}, /* pre-v6.1 invalid time */
+<span class="fc" id="L493">    {&quot;ut&quot;, TokenField.TZ, 0},</span>
+<span class="fc" id="L494">    {&quot;utc&quot;, TokenField.TZ, 0},</span>
+<span class="fc" id="L495">    {&quot;uyst&quot;, TokenField.DTZ, -8},		/* Uruguay Summer Time */</span>
+<span class="fc" id="L496">    {&quot;uyt&quot;, TokenField.TZ, -12},		/* Uruguay Time */</span>
+<span class="fc" id="L497">    {&quot;uzst&quot;, TokenField.DTZ, 24},		/* Uzbekistan Summer Time */</span>
+<span class="fc" id="L498">    {&quot;uzt&quot;, TokenField.TZ, 20},		/* Uzbekistan Time */</span>
+<span class="fc" id="L499">    {&quot;vet&quot;, TokenField.TZ, -16},		/* Venezuela Time */</span>
+<span class="fc" id="L500">    {&quot;vlast&quot;, TokenField.DTZ, 44},	/* Vladivostok Summer Time */</span>
+<span class="fc" id="L501">    {&quot;vlat&quot;, TokenField.TZ, 40},		/* Vladivostok Time */</span>
+<span class="fc" id="L502">    {&quot;vut&quot;, TokenField.TZ, 44},		/* Vanuata Time */</span>
+<span class="fc" id="L503">    {&quot;wadt&quot;, TokenField.DTZ, 32},		/* West Australian DST */</span>
+<span class="fc" id="L504">    {&quot;wakt&quot;, TokenField.TZ, 48},		/* Wake Time */</span>
+<span class="fc" id="L505">    {&quot;wast&quot;, TokenField.TZ, 28},		/* West Australian Std Time */</span>
+<span class="fc" id="L506">    {&quot;wat&quot;, TokenField.TZ, -4},		/* West Africa Time */</span>
+<span class="fc" id="L507">    {&quot;wdt&quot;, TokenField.DTZ, 36},		/* West Australian DST */</span>
+<span class="fc" id="L508">    {&quot;wed&quot;, TokenField.DOW, 3},</span>
+<span class="fc" id="L509">    {&quot;wednesday&quot;, TokenField.DOW, 3},</span>
+<span class="fc" id="L510">    {&quot;weds&quot;, TokenField.DOW, 3},</span>
+<span class="fc" id="L511">    {&quot;west&quot;, TokenField.DTZ, 4},		/* Western Europe Summer Time */</span>
+<span class="fc" id="L512">    {&quot;wet&quot;, TokenField.TZ, 0},		/* Western Europe */</span>
+<span class="fc" id="L513">    {&quot;wetdst&quot;, TokenField.DTZ, 4},	/* Western Europe Daylight Savings Time */</span>
+<span class="fc" id="L514">    {&quot;wft&quot;, TokenField.TZ, 48},		/* Wallis and Futuna Time */</span>
+<span class="fc" id="L515">    {&quot;wgst&quot;, TokenField.DTZ, -8},		/* West Greenland Summer Time */</span>
+<span class="fc" id="L516">    {&quot;wgt&quot;, TokenField.TZ, -12},		/* West Greenland Time */</span>
+<span class="fc" id="L517">    {&quot;wst&quot;, TokenField.TZ, 32},		/* West Australian Standard Time */</span>
+    {&quot;y&quot;, TokenField.UNITS, TokenField.DTK_YEAR},		/* &quot;year&quot; for ISO input */
+<span class="fc" id="L519">    {&quot;yakst&quot;, TokenField.DTZ, 40},	/* Yakutsk Summer Time */</span>
+<span class="fc" id="L520">    {&quot;yakt&quot;, TokenField.TZ, 36},		/* Yakutsk Time */</span>
+<span class="fc" id="L521">    {&quot;yapt&quot;, TokenField.TZ, 40},		/* Yap Time (Micronesia) */</span>
+<span class="fc" id="L522">    {&quot;ydt&quot;, TokenField.DTZ, -32},		/* Yukon Daylight Time */</span>
+<span class="fc" id="L523">    {&quot;yekst&quot;, TokenField.DTZ, 24},	/* Yekaterinburg Summer Time */</span>
+<span class="fc" id="L524">    {&quot;yekt&quot;, TokenField.TZ, 20},		/* Yekaterinburg Time */</span>
+    {YESTERDAY, TokenField.RESERV, TokenField.DTK_YESTERDAY}, /* yesterday midnight */
+<span class="fc" id="L526">    {&quot;yst&quot;, TokenField.TZ, -36},		/* Yukon Standard Time */</span>
+<span class="fc" id="L527">    {&quot;z&quot;, TokenField.TZ, 0},			/* time zone tag per ISO-8601 */</span>
+<span class="fc" id="L528">    {&quot;zp4&quot;, TokenField.TZ, -16},		/* UTC +4  hours. */</span>
+<span class="fc" id="L529">    {&quot;zp5&quot;, TokenField.TZ, -20},		/* UTC +5  hours. */</span>
+<span class="fc" id="L530">    {&quot;zp6&quot;, TokenField.TZ, -24},		/* UTC +6  hours. */</span>
+<span class="fc" id="L531">    {ZULU, TokenField.TZ, 0},			/* UTC */</span>
+  };
+
+<span class="fc" id="L534">  static Object[][] deltatktbl = {</span>
+	  /* text, token, lexval */
+<span class="fc" id="L536">    {&quot;@&quot;, TokenField.IGNORE_DTF, 0},		/* postgres relative prefix */</span>
+<span class="fc" id="L537">    {DAGO, TokenField.AGO, 0},				/* &quot;ago&quot; indicates negative time offset */</span>
+    {&quot;c&quot;, TokenField.UNITS, TokenField.DTK_CENTURY},	/* &quot;century&quot; relative */
+    {&quot;cent&quot;, TokenField.UNITS, TokenField.DTK_CENTURY},		/* &quot;century&quot; relative */
+    {&quot;centuries&quot;, TokenField.UNITS, TokenField.DTK_CENTURY},	/* &quot;centuries&quot; relative */
+    {DCENTURY, TokenField.UNITS, TokenField.DTK_CENTURY},		/* &quot;century&quot; relative */
+    {&quot;d&quot;, TokenField.UNITS, TokenField.DTK_DAY},		/* &quot;day&quot; relative */
+    {DDAY, TokenField.UNITS, TokenField.DTK_DAY},		/* &quot;day&quot; relative */
+    {&quot;days_full&quot;, TokenField.UNITS, TokenField.DTK_DAY},	/* &quot;days_full&quot; relative */
+    {&quot;dec&quot;, TokenField.UNITS, TokenField.DTK_DECADE}, /* &quot;decade&quot; relative */
+    {DDECADE, TokenField.UNITS, TokenField.DTK_DECADE},		/* &quot;decade&quot; relative */
+    {&quot;decades&quot;, TokenField.UNITS, TokenField.DTK_DECADE},		/* &quot;decades&quot; relative */
+    {&quot;decs&quot;, TokenField.UNITS, TokenField.DTK_DECADE},	/* &quot;decades&quot; relative */
+    {&quot;h&quot;, TokenField.UNITS, TokenField.DTK_HOUR},		/* &quot;hour&quot; relative */
+    {DHOUR, TokenField.UNITS, TokenField.DTK_HOUR},	/* &quot;hour&quot; relative */
+    {&quot;hours&quot;, TokenField.UNITS, TokenField.DTK_HOUR}, /* &quot;hours&quot; relative */
+    {&quot;hr&quot;, TokenField.UNITS, TokenField.DTK_HOUR},	/* &quot;hour&quot; relative */
+    {&quot;hrs&quot;, TokenField.UNITS, TokenField.DTK_HOUR},	/* &quot;hours&quot; relative */
+    {INVALID, TokenField.RESERV, TokenField.DTK_INVALID},		/* reserved for invalid time */
+    {&quot;m&quot;, TokenField.UNITS, TokenField.DTK_MINUTE},	/* &quot;minute&quot; relative */
+    {&quot;microsecon&quot;, TokenField.UNITS, TokenField.DTK_MICROSEC},		/* &quot;microsecond&quot; relative */
+    {&quot;mil&quot;, TokenField.UNITS, TokenField.DTK_MILLENNIUM},		/* &quot;millennium&quot; relative */
+    {&quot;millennia&quot;, TokenField.UNITS, TokenField.DTK_MILLENNIUM},		/* &quot;millennia&quot; relative */
+    {DMILLENNIUM, TokenField.UNITS, TokenField.DTK_MILLENNIUM},		/* &quot;millennium&quot; relative */
+    {&quot;millisecon&quot;, TokenField.UNITS, TokenField.DTK_MILLISEC},		/* relative */
+    {&quot;mils&quot;, TokenField.UNITS, TokenField.DTK_MILLENNIUM},	/* &quot;millennia&quot; relative */
+    {&quot;min&quot;, TokenField.UNITS, TokenField.DTK_MINUTE}, /* &quot;minute&quot; relative */
+    {&quot;mins&quot;, TokenField.UNITS, TokenField.DTK_MINUTE},	/* &quot;minutes&quot; relative */
+    {DMINUTE, TokenField.UNITS, TokenField.DTK_MINUTE},		/* &quot;minute&quot; relative */
+    {&quot;minutes&quot;, TokenField.UNITS, TokenField.DTK_MINUTE},		/* &quot;minutes&quot; relative */
+    {&quot;mon&quot;, TokenField.UNITS, TokenField.DTK_MONTH},	/* &quot;months_short&quot; relative */
+    {&quot;mons&quot;, TokenField.UNITS, TokenField.DTK_MONTH}, /* &quot;months_short&quot; relative */
+    {DMONTH, TokenField.UNITS, TokenField.DTK_MONTH}, /* &quot;month&quot; relative */
+    {&quot;months_short&quot;, TokenField.UNITS, TokenField.DTK_MONTH},
+    {&quot;ms&quot;, TokenField.UNITS, TokenField.DTK_MILLISEC},
+    {&quot;msec&quot;, TokenField.UNITS, TokenField.DTK_MILLISEC},
+    {DMILLISEC, TokenField.UNITS, TokenField.DTK_MILLISEC},
+    {&quot;mseconds&quot;, TokenField.UNITS, TokenField.DTK_MILLISEC},
+    {&quot;msecs&quot;, TokenField.UNITS, TokenField.DTK_MILLISEC},
+    {&quot;qtr&quot;, TokenField.UNITS, TokenField.DTK_QUARTER},	/* &quot;quarter&quot; relative */
+    {DQUARTER, TokenField.UNITS, TokenField.DTK_QUARTER},		/* &quot;quarter&quot; relative */
+    {&quot;s&quot;, TokenField.UNITS, TokenField.DTK_SECOND},
+    {&quot;sec&quot;, TokenField.UNITS, TokenField.DTK_SECOND},
+    {DSECOND, TokenField.UNITS, TokenField.DTK_SECOND},
+    {&quot;seconds&quot;, TokenField.UNITS, TokenField.DTK_SECOND},
+    {&quot;secs&quot;, TokenField.UNITS, TokenField.DTK_SECOND},
+    {DTIMEZONE, TokenField.UNITS, TokenField.DTK_TZ}, /* &quot;timezone&quot; time offset */
+    {&quot;timezone_h&quot;, TokenField.UNITS, TokenField.DTK_TZ_HOUR}, /* timezone hour units */
+    {&quot;timezone_m&quot;, TokenField.UNITS, TokenField.DTK_TZ_MINUTE},		/* timezone minutes units */
+    {&quot;undefined&quot;, TokenField.RESERV, TokenField.DTK_INVALID}, /* pre-v6.1 invalid time */
+    {&quot;us&quot;, TokenField.UNITS, TokenField.DTK_MICROSEC},	/* &quot;microsecond&quot; relative */
+    {&quot;usec&quot;, TokenField.UNITS, TokenField.DTK_MICROSEC},		/* &quot;microsecond&quot; relative */
+    {DMICROSEC, TokenField.UNITS, TokenField.DTK_MICROSEC},	/* &quot;microsecond&quot; relative */
+    {&quot;useconds&quot;, TokenField.UNITS, TokenField.DTK_MICROSEC},	/* &quot;microseconds&quot; relative */
+    {&quot;usecs&quot;, TokenField.UNITS, TokenField.DTK_MICROSEC},		/* &quot;microseconds&quot; relative */
+    {&quot;w&quot;, TokenField.UNITS, TokenField.DTK_WEEK},		/* &quot;week&quot; relative */
+    {DWEEK, TokenField.UNITS, TokenField.DTK_WEEK},	/* &quot;week&quot; relative */
+    {&quot;weeks&quot;, TokenField.UNITS, TokenField.DTK_WEEK}, /* &quot;weeks&quot; relative */
+    {&quot;y&quot;, TokenField.UNITS, TokenField.DTK_YEAR},		/* &quot;year&quot; relative */
+    {DYEAR, TokenField.UNITS, TokenField.DTK_YEAR},	/* &quot;year&quot; relative */
+    {&quot;years&quot;, TokenField.UNITS, TokenField.DTK_YEAR}, /* &quot;years&quot; relative */
+    {&quot;yr&quot;, TokenField.UNITS, TokenField.DTK_YEAR},	/* &quot;year&quot; relative */
+    {&quot;yrs&quot;, TokenField.UNITS, TokenField.DTK_YEAR},	/* &quot;years&quot; relative */
+  };
+
+<span class="fc" id="L601">  public static class DateToken {</span>
+    String key;
+    TokenField type;
+    int value;
+    TokenField valueType;
+
+    public String getKey() {
+<span class="nc" id="L608">      return key;</span>
+    }
+
+    public TokenField getType() {
+<span class="nc" id="L612">      return type;</span>
+    }
+
+    public int getValue() {
+<span class="nc" id="L616">      return value;</span>
+    }
+
+    public TokenField getValueType() {
+<span class="nc" id="L620">      return valueType;</span>
+    }
+  }
+<span class="fc" id="L623">  public static final Map&lt;String, DateToken&gt; dateTokenMap = new HashMap&lt;&gt;();</span>
+
+  static {
+<span class="fc bfc" id="L626" title="All 2 branches covered.">    for (Object[] eachToken: datetktbl) {</span>
+<span class="fc" id="L627">      DateToken dateToken = new DateToken();</span>
+<span class="fc" id="L628">      dateToken.key = eachToken[0].toString();</span>
+<span class="fc" id="L629">      dateToken.type = (TokenField)eachToken[1];</span>
+<span class="fc bfc" id="L630" title="All 2 branches covered.">      if (eachToken[2] instanceof TokenField) {</span>
+<span class="fc" id="L631">        dateToken.valueType = (TokenField)eachToken[2];</span>
+<span class="fc" id="L632">        dateToken.value = dateToken.valueType.getValue();</span>
+      } else {
+<span class="fc" id="L634">        dateToken.valueType = TokenField.DECIMAL;</span>
+<span class="fc" id="L635">        dateToken.value = ((Integer)eachToken[2]).intValue();</span>
+      }
+<span class="fc" id="L637">      dateTokenMap.put(dateToken.key, dateToken);</span>
+    }
+
+    /*
+     * TODO
+     * Currently, tajo does not support intervals, yet.
+     * The below code must be restored to support intervals.
+     */
+//    for (Object[] eachToken: deltatktbl) {
+//      DateToken dateToken = new DateToken();
+//      dateToken.key = eachToken[0].toString();
+//      dateToken.type = (TokenField)eachToken[1];
+//      if (eachToken[2] instanceof TokenField) {
+//        dateToken.valueType = (TokenField)eachToken[2];
+//        dateToken.value = dateToken.valueType.getValue();
+//      } else {
+//        dateToken.valueType = TokenField.DECIMAL;
+//        dateToken.value = ((Integer)eachToken[2]).intValue();
+//      }
+//      dateTokenMap.put(dateToken.key, dateToken);
+//    }
+  }
+
+<span class="nc" id="L660">  public static int INTERVAL_MASK(TokenField t) { return (1 &lt;&lt; (t.getValue())); }</span>
+<span class="fc" id="L661">  public static int DTK_M(TokenField t) { return (0x01 &lt;&lt; (t.getValue())); }</span>
+
+<span class="fc" id="L663">  public static final int DTK_ALL_SECS_M = (DTK_M(TokenField.SECOND) |</span>
+<span class="fc" id="L664">        DTK_M(TokenField.MILLISECOND) |</span>
+<span class="fc" id="L665">        DTK_M(TokenField.MICROSECOND));</span>
+<span class="fc" id="L666">  public static final int DTK_DATE_M = (DTK_M(TokenField.YEAR) | DTK_M(TokenField.MONTH) | DTK_M(TokenField.DAY));</span>
+<span class="fc" id="L667">  public static final int DTK_TIME_M = (DTK_M(TokenField.HOUR) | DTK_M(TokenField.MINUTE) | DTK_M(TokenField.SECOND));</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>UnsafeComparer.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">UnsafeComparer.java</span></div><h1>UnsafeComparer.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
+import com.google.common.primitives.UnsignedLongs;
+import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
+import java.nio.ByteOrder;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.util.Comparator;
+
+/**
+ * This is borrowed from Guava's UnsignedBytes.
+ */
+public class UnsafeComparer implements Comparator&lt;byte[]&gt; {
+
+  public static final UnsafeComparer INSTANCE;
+
+  static {
+<span class="nc" id="L40">    INSTANCE = new UnsafeComparer();</span>
+  }
+
+  public Comparator&lt;byte []&gt; get() {
+<span class="nc" id="L44">    return INSTANCE;</span>
+  }
+
+  private UnsafeComparer() {}
+
+  static final boolean littleEndian =
+<span class="nc" id="L50">      ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);</span>
+
+      /*
+       * The following static final fields exist for performance reasons.
+       *
+       * In UnsignedBytesBenchmark, accessing the following objects via static
+       * final fields is the fastest (more than twice as fast as the Java
+       * implementation, vs ~1.5x with non-final static fields, on x86_32)
+       * under the Hotspot server compiler. The reason is obviously that the
+       * non-final fields need to be reloaded inside the loop.
+       *
+       * And, no, defining (final or not) local variables out of the loop still
+       * isn't as good because the null check on the theUnsafe object remains
+       * inside the loop and BYTE_ARRAY_BASE_OFFSET doesn't get
+       * constant-folded.
+       *
+       * The compiler can treat static final fields as compile-time constants
+       * and can constant-fold them while (final or not) local variables are
+       * run time values.
+       */
+
+  static final Unsafe theUnsafe;
+
+  /** The offset to the first element in a byte array. */
+  static final int BYTE_ARRAY_BASE_OFFSET;
+
+  static {
+<span class="nc" id="L77">    theUnsafe = (Unsafe) AccessController.doPrivileged(</span>
+<span class="nc" id="L78">        new PrivilegedAction&lt;Object&gt;() {</span>
+          @Override
+          public Object run() {
+            try {
+<span class="nc" id="L82">              Field f = Unsafe.class.getDeclaredField(&quot;theUnsafe&quot;);</span>
+<span class="nc" id="L83">              f.setAccessible(true);</span>
+<span class="nc" id="L84">              return f.get(null);</span>
+<span class="nc" id="L85">            } catch (NoSuchFieldException e) {</span>
+              // It doesn't matter what we throw;
+              // it's swallowed in getBestComparator().
+<span class="nc" id="L88">              throw new Error();</span>
+<span class="nc" id="L89">            } catch (IllegalAccessException e) {</span>
+<span class="nc" id="L90">              throw new Error();</span>
+            }
+          }
+        });
+
+<span class="nc" id="L95">    BYTE_ARRAY_BASE_OFFSET = theUnsafe.arrayBaseOffset(byte[].class);</span>
+
+    // sanity check - this should never fail
+<span class="nc bnc" id="L98" title="All 2 branches missed.">    if (theUnsafe.arrayIndexScale(byte[].class) != 1) {</span>
+<span class="nc" id="L99">      throw new AssertionError();</span>
+    }
+<span class="nc" id="L101">  }</span>
+
+  @SuppressWarnings(&quot;unused&quot;)
+  public static int compareStatic(byte[] left, byte[] right) {
+<span class="nc" id="L105">    return INSTANCE.compare(left, right);</span>
+  }
+
+  @Override public int compare(byte[] left, byte[] right) {
+<span class="nc" id="L109">    int minLength = Math.min(left.length, right.length);</span>
+<span class="nc" id="L110">    int minWords = minLength / Longs.BYTES;</span>
+
+        /*
+         * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
+         * time is no slower than comparing 4 bytes at a time even on 32-bit.
+         * On the other hand, it is substantially faster on 64-bit.
+         */
+<span class="nc bnc" id="L117" title="All 2 branches missed.">    for (int i = 0; i &lt; minWords * Longs.BYTES; i += Longs.BYTES) {</span>
+<span class="nc" id="L118">      long lw = theUnsafe.getLong(left, BYTE_ARRAY_BASE_OFFSET + (long) i);</span>
+<span class="nc" id="L119">      long rw = theUnsafe.getLong(right, BYTE_ARRAY_BASE_OFFSET + (long) i);</span>
+<span class="nc" id="L120">      long diff = lw ^ rw;</span>
+
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      if (diff != 0) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (!littleEndian) {</span>
+<span class="nc" id="L124">          return UnsignedLongs.compare(lw, rw);</span>
+        }
+
+        // Use binary search
+<span class="nc" id="L128">        int n = 0;</span>
+        int y;
+<span class="nc" id="L130">        int x = (int) diff;</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        if (x == 0) {</span>
+<span class="nc" id="L132">          x = (int) (diff &gt;&gt;&gt; 32);</span>
+<span class="nc" id="L133">          n = 32;</span>
+        }
+
+<span class="nc" id="L136">        y = x &lt;&lt; 16;</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (y == 0) {</span>
+<span class="nc" id="L138">          n += 16;</span>
+        } else {
+<span class="nc" id="L140">          x = y;</span>
+        }
+
+<span class="nc" id="L143">        y = x &lt;&lt; 8;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (y == 0) {</span>
+<span class="nc" id="L145">          n += 8;</span>
+        }
+<span class="nc" id="L147">        return (int) (((lw &gt;&gt;&gt; n) &amp; 0xFFL) - ((rw &gt;&gt;&gt; n) &amp; 0xFFL));</span>
+      }
+    }
+
+    // The epilogue to cover the last (minLength % 8) elements.
+<span class="nc bnc" id="L152" title="All 2 branches missed.">    for (int i = minWords * Longs.BYTES; i &lt; minLength; i++) {</span>
+<span class="nc" id="L153">      int result = UnsignedBytes.compare(left[i], right[i]);</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">      if (result != 0) {</span>
+<span class="nc" id="L155">        return result;</span>
+      }
+    }
+<span class="nc" id="L158">    return left.length - right.length;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

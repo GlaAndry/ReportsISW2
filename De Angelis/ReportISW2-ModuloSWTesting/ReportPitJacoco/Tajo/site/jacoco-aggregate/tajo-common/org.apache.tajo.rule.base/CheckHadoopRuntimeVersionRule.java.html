@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CheckHadoopRuntimeVersionRule.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.rule.base</a> &gt; <span class="el_source">CheckHadoopRuntimeVersionRule.java</span></div><h1>CheckHadoopRuntimeVersionRule.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.rule.base;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.rule.*;
+import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
+import org.apache.tajo.validation.Validators;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
+@SelfDiagnosisRuleDefinition(category=&quot;base&quot;, name = &quot;CheckHadoopRuntimeVersionRule&quot;, priority = 0)
+@SelfDiagnosisRuleVisibility.Public
+public class CheckHadoopRuntimeVersionRule implements SelfDiagnosisRule {
+
+<span class="nc" id="L36">  private static final Log LOG = LogFactory.getLog(CheckHadoopRuntimeVersionRule.class);</span>
+  private final Properties versionInfo;
+  
+<span class="nc" id="L39">  public CheckHadoopRuntimeVersionRule() {</span>
+<span class="nc" id="L40">    InputStream is = ClassLoader.getSystemResourceAsStream(&quot;common-version-info.properties&quot;);</span>
+<span class="nc" id="L41">    versionInfo = new Properties();</span>
+    try {
+<span class="nc" id="L43">      versionInfo.load(is);</span>
+<span class="nc" id="L44">    } catch (IOException e) {</span>
+<span class="nc" id="L45">      LOG.warn(e.getMessage(), e);</span>
+    } finally {
+<span class="nc" id="L47">      IOUtils.closeStream(is);</span>
+    }
+<span class="nc" id="L49">  }</span>
+  
+  private int[] getVersion() {
+<span class="nc" id="L52">    int[] version = new int[0];</span>
+<span class="nc" id="L53">    String versionString = versionInfo.getProperty(&quot;version&quot;).split(&quot;-&quot;)[0];</span>
+    
+<span class="nc bnc" id="L55" title="All 4 branches missed.">    if (versionString != null &amp;&amp; !versionString.isEmpty()) {</span>
+<span class="nc" id="L56">      Validators.patternMatch(&quot;\\d+\\.\\d+\\.\\d+.*&quot;).validate(versionString, true);</span>
+      
+<span class="nc" id="L58">      String[] versionArray = versionString.split(&quot;\\.&quot;);</span>
+<span class="nc" id="L59">      version = new int[versionArray.length];</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">      for (int idx = 0; idx &lt; versionArray.length; idx++) {</span>
+<span class="nc" id="L61">        version[idx] = Integer.parseInt(versionArray[idx]);</span>
+      }
+    }
+    
+<span class="nc" id="L65">    return version;</span>
+  }
+  
+  private int compareVersion(int[] left, int[] right) {
+<span class="nc" id="L69">    int returnValue = 0;</span>
+<span class="nc" id="L70">    int minLength = Math.min(left.length, right.length);</span>
+    
+<span class="nc bnc" id="L72" title="All 2 branches missed.">    for (int idx = 0; idx &lt; minLength; idx++) {</span>
+<span class="nc" id="L73">      returnValue = (int) Math.signum(left[idx] - right[idx]);</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">      if (returnValue != 0) {</span>
+<span class="nc" id="L75">        break;</span>
+      }
+    }
+    
+<span class="nc bnc" id="L79" title="All 2 branches missed.">    if (returnValue == 0) {</span>
+<span class="nc" id="L80">      returnValue = (int) Math.signum(left.length - right.length);</span>
+    }
+<span class="nc" id="L82">    return returnValue;</span>
+  }
+
+  @Override
+  public EvaluationResult evaluate(EvaluationContext context) {
+<span class="nc" id="L87">    EvaluationResult evalResult = new EvaluationResult();</span>
+    
+    try {
+<span class="nc" id="L90">      int compared = compareVersion(getVersion(), new int[] {2, 3, 0});</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">      if (compared &gt;= 0) {</span>
+<span class="nc" id="L92">        evalResult.setReturnCode(EvaluationResultCode.OK);</span>
+<span class="nc" id="L93">        evalResult.setMessage(&quot;Version test for hadoop common has passed.&quot;);</span>
+      } else {
+<span class="nc" id="L95">        evalResult.setReturnCode(EvaluationResultCode.ERROR);</span>
+<span class="nc" id="L96">        evalResult.setMessage(&quot;Checking the version of hadoop common component has failed.\n&quot; +</span>
+<span class="nc" id="L97">            &quot;Current version : &quot; + versionInfo.getProperty(&quot;version&quot;));</span>
+      }
+<span class="nc" id="L99">    } catch (Exception e) {</span>
+<span class="nc" id="L100">      evalResult.setReturnCode(EvaluationResultCode.ERROR);</span>
+<span class="nc" id="L101">      evalResult.setThrowable(e);</span>
+<span class="nc" id="L102">      evalResult.setMessage(&quot;Checking the version of hadoop common component has failed.&quot;);</span>
+<span class="nc" id="L103">    }</span>
+    
+<span class="nc" id="L105">    return evalResult;</span>
+  }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Validators.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.validation</a> &gt; <span class="el_source">Validators.java</span></div><h1>Validators.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.validation;
+
+import java.util.Arrays;
+import java.util.HashSet;
+
+<span class="nc" id="L24">public class Validators {</span>
+  
+  public static Validator groups(Validator...validators) {
+<span class="fc" id="L27">    return new GroupValidator(new HashSet&lt;&gt;(Arrays.asList(validators)));</span>
+  }
+  
+  public static Validator length(int maxLength) {
+<span class="nc" id="L31">    return new LengthValidator(maxLength);</span>
+  }
+  
+  public static Validator max(String maxValue) {
+<span class="nc" id="L35">    return new MaxValidator(maxValue);</span>
+  }
+  
+  public static Validator min(String minValue) {
+<span class="fc" id="L39">    return new MinValidator(minValue);</span>
+  }
+  
+  public static Validator notNull() {
+<span class="fc" id="L43">    return new NotNullValidator();</span>
+  }
+  
+  public static Validator patternMatch(String regex) {
+<span class="nc" id="L47">    return new PatternValidator(regex);</span>
+  }
+  
+  public static Validator range(String minValue, String maxValue) {
+<span class="fc" id="L51">    return new RangeValidator(minValue, maxValue);</span>
+  }
+  
+  public static Validator pathUrl() {
+<span class="fc" id="L55">    return new PathValidator();</span>
+  }
+
+  public static Validator pathUrlList() {
+<span class="fc" id="L59">    return new PathListValidator();</span>
+  }
+  
+  public static Validator shellVar() {
+<span class="nc" id="L63">    return new ShellVariableValidator();</span>
+  }
+  
+  public static Validator networkAddr() {
+<span class="fc" id="L67">    return new NetworkAddressValidator();</span>
+  }
+  
+  public static Validator bool() {
+<span class="fc" id="L71">    return new BooleanValidator();</span>
+  }
+  
+  public static Validator clazz() {
+<span class="fc" id="L75">    return new ClassValidator();</span>
+  }
+  
+  public static Validator javaString() {
+<span class="fc" id="L79">    return new JavaStringValidator();</span>
+  }
+  
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

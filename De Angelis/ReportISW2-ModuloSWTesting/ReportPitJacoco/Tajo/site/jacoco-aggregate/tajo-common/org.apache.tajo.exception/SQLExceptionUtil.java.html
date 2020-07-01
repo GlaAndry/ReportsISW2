@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SQLExceptionUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.exception</a> &gt; <span class="el_source">SQLExceptionUtil.java</span></div><h1>SQLExceptionUtil.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.exception;
+
+import com.google.common.collect.Maps;
+import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+
+import java.sql.SQLException;
+import java.util.Map;
+
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
+
+<span class="nc" id="L30">public class SQLExceptionUtil {</span>
+
+<span class="nc" id="L32">  private static final Map&lt;ResultCode, String&gt; SQLSTATES = Maps.newHashMap();</span>
+
+  static {
+<span class="nc" id="L35">    SQLSTATES.put(ResultCode.INTERNAL_ERROR,                        &quot;XX000&quot;);</span>
+<span class="nc" id="L36">    SQLSTATES.put(ResultCode.NOT_IMPLEMENTED,                       &quot;0A000&quot;);</span>
+<span class="nc" id="L37">    SQLSTATES.put(ResultCode.FEATURE_NOT_SUPPORTED,                 &quot;0A000&quot;);</span>
+<span class="nc" id="L38">    SQLSTATES.put(ResultCode.INVALID_RPC_CALL,                      &quot;08P01&quot;); // Protocol violation</span>
+
+
+    // Class 61 - Query Management and Scheduler
+<span class="nc" id="L42">    SQLSTATES.put(ResultCode.QUERY_FAILED,                          &quot;61T01&quot;);</span>
+<span class="nc" id="L43">    SQLSTATES.put(ResultCode.QUERY_KILLED,                          &quot;61T02&quot;);</span>
+<span class="nc" id="L44">    SQLSTATES.put(ResultCode.QUERY_TIMEOUT,                         &quot;61T03&quot;);</span>
+<span class="nc" id="L45">    SQLSTATES.put(ResultCode.QUERY_NOT_FOUND,                       &quot;61T04&quot;);</span>
+<span class="nc" id="L46">    SQLSTATES.put(ResultCode.NO_DATA,                               &quot;61T05&quot;);</span>
+<span class="nc" id="L47">    SQLSTATES.put(ResultCode.INCOMPLETE_QUERY,                      &quot;61T06&quot;);</span>
+
+
+    // Class 62 - Session
+<span class="nc" id="L51">    SQLSTATES.put(ResultCode.INVALID_SESSION,                       &quot;62T01&quot;);</span>
+<span class="nc" id="L52">    SQLSTATES.put(ResultCode.NO_SUCH_SESSION_VARIABLE,              &quot;62T02&quot;);</span>
+<span class="nc" id="L53">    SQLSTATES.put(ResultCode.INVALID_SESSION_VARIABLE,              &quot;62T03&quot;);</span>
+
+
+    // Data Exception (SQLState Class - 22)
+<span class="nc" id="L57">    SQLSTATES.put(ResultCode.DIVISION_BY_ZERO,                      &quot;22012&quot;);</span>
+<span class="nc" id="L58">    SQLSTATES.put(ResultCode.INVALID_VALUE_FOR_CAST,                &quot;22T01&quot;);</span>
+
+    // Section: Class 42 - Syntax Error or Access Rule Violation
+<span class="nc" id="L61">    SQLSTATES.put(ResultCode.SYNTAX_ERROR,                          &quot;42601&quot;);</span>
+
+<span class="nc" id="L63">    SQLSTATES.put(ResultCode.UNDEFINED_DATABASE,                    &quot;42T01&quot;);</span>
+<span class="nc" id="L64">    SQLSTATES.put(ResultCode.UNDEFINED_SCHEMA,                      &quot;42T02&quot;);</span>
+<span class="nc" id="L65">    SQLSTATES.put(ResultCode.UNDEFINED_TABLE,                       &quot;42P01&quot;);</span>
+<span class="nc" id="L66">    SQLSTATES.put(ResultCode.UNDEFINED_COLUMN,                      &quot;42703&quot;);</span>
+<span class="nc" id="L67">    SQLSTATES.put(ResultCode.UNDEFINED_FUNCTION,                    &quot;42883&quot;);</span>
+<span class="nc" id="L68">    SQLSTATES.put(ResultCode.UNDEFINED_INDEX_FOR_TABLE,             &quot;42T03&quot;);</span>
+<span class="nc" id="L69">    SQLSTATES.put(ResultCode.UNDEFINED_INDEX_FOR_COLUMNS,           &quot;42T04&quot;);</span>
+<span class="nc" id="L70">    SQLSTATES.put(ResultCode.UNDEFINED_PARTITION,                   &quot;42T05&quot;);</span>
+<span class="nc" id="L71">    SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_METHOD,            &quot;42T06&quot;);</span>
+<span class="nc" id="L72">    SQLSTATES.put(ResultCode.UNDEFINED_OPERATOR,                    &quot;42883&quot;); // == UNDEFINED_FUNCTION</span>
+<span class="nc" id="L73">    SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_KEY,               &quot;42T07&quot;);</span>
+<span class="nc" id="L74">    SQLSTATES.put(ResultCode.UNDEFINED_TABLESPACE_HANDLER,          &quot;42T11&quot;);</span>
+
+<span class="nc" id="L76">    SQLSTATES.put(ResultCode.DUPLICATE_TABLESPACE,                  &quot;42T08&quot;);</span>
+<span class="nc" id="L77">    SQLSTATES.put(ResultCode.DUPLICATE_DATABASE,                    &quot;42P04&quot;);</span>
+<span class="nc" id="L78">    SQLSTATES.put(ResultCode.DUPLICATE_SCHEMA,                      &quot;42P06&quot;);</span>
+<span class="nc" id="L79">    SQLSTATES.put(ResultCode.DUPLICATE_TABLE,                       &quot;42P07&quot;);</span>
+<span class="nc" id="L80">    SQLSTATES.put(ResultCode.DUPLICATE_COLUMN,                      &quot;42701&quot;);</span>
+<span class="nc" id="L81">    SQLSTATES.put(ResultCode.DUPLICATE_ALIAS,                       &quot;42712&quot;);</span>
+<span class="nc" id="L82">    SQLSTATES.put(ResultCode.DUPLICATE_FUNCTION,                    &quot;42723&quot;);</span>
+<span class="nc" id="L83">    SQLSTATES.put(ResultCode.DUPLICATE_INDEX,                       &quot;42710&quot;);</span>
+<span class="nc" id="L84">    SQLSTATES.put(ResultCode.DUPLICATE_PARTITION,                   &quot;42T09&quot;);</span>
+
+<span class="nc" id="L86">    SQLSTATES.put(ResultCode.AMBIGUOUS_TABLE,                       &quot;42723&quot;);</span>
+<span class="nc" id="L87">    SQLSTATES.put(ResultCode.AMBIGUOUS_COLUMN,                      &quot;42723&quot;);</span>
+<span class="nc" id="L88">    SQLSTATES.put(ResultCode.AMBIGUOUS_FUNCTION,                    &quot;42723&quot;);</span>
+<span class="nc" id="L89">    SQLSTATES.put(ResultCode.AMBIGUOUS_PARTITION_DIRECTORY,         &quot;42T10&quot;);</span>
+
+<span class="nc" id="L91">    SQLSTATES.put(ResultCode.CANNOT_CAST,                           &quot;42846&quot;);</span>
+<span class="nc" id="L92">    SQLSTATES.put(ResultCode.GROUPING_ERROR,                        &quot;42803&quot;);</span>
+<span class="nc" id="L93">    SQLSTATES.put(ResultCode.WINDOWING_ERROR,                       &quot;42P20&quot;);</span>
+<span class="nc" id="L94">    SQLSTATES.put(ResultCode.INVALID_RECURSION,                     &quot;42P19&quot;);</span>
+<span class="nc" id="L95">    SQLSTATES.put(ResultCode.SET_OPERATION_SCHEMA_MISMATCH,         &quot;42601&quot;);</span>
+<span class="nc" id="L96">    SQLSTATES.put(ResultCode.SET_OPERATION_DATATYPE_MISMATCH,       &quot;42601&quot;);</span>
+<span class="nc" id="L97">    SQLSTATES.put(ResultCode.INVALID_FOREIGN_KEY,                   &quot;42830&quot;);</span>
+<span class="nc" id="L98">    SQLSTATES.put(ResultCode.INVALID_NAME,                          &quot;42602&quot;);</span>
+<span class="nc" id="L99">    SQLSTATES.put(ResultCode.INVALID_COLUMN_DEFINITION,             &quot;42611&quot;);</span>
+<span class="nc" id="L100">    SQLSTATES.put(ResultCode.NAME_TOO_LONG,                         &quot;42622&quot;);</span>
+<span class="nc" id="L101">    SQLSTATES.put(ResultCode.RESERVED_NAME,                         &quot;42939&quot;);</span>
+<span class="nc" id="L102">    SQLSTATES.put(ResultCode.DATATYPE_MISMATCH,                     &quot;42804&quot;);</span>
+<span class="nc" id="L103">    SQLSTATES.put(ResultCode.INDETERMINATE_DATATYPE,                &quot;42P18&quot;);</span>
+
+    // Client Connection
+<span class="nc" id="L106">    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_EXCEPTION,           &quot;08000&quot;);</span>
+<span class="nc" id="L107">    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST,      &quot;08003&quot;);</span>
+<span class="nc" id="L108">    SQLSTATES.put(ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, &quot;08006&quot;);</span>
+<span class="nc" id="L109">  }</span>
+
+  public static boolean isThisError(SQLException e, ResultCode code) {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">    if (SQLSTATES.containsKey(code)) {</span>
+<span class="nc" id="L113">      return e.getSQLState().equals(SQLSTATES.get(code));</span>
+    } else {
+<span class="nc" id="L115">      throw new TajoInternalError(&quot;Unknown error code: &quot; + code.name());</span>
+    }
+  }
+
+  public static void throwIfError(ReturnState state) throws SQLException {
+<span class="nc bnc" id="L120" title="All 2 branches missed.">    if (isError(state)) {</span>
+<span class="nc" id="L121">      throw toSQLException(state);</span>
+    }
+<span class="nc" id="L123">  }</span>
+
+  private static SQLException toSQLException(ResultCode code, String message) throws SQLException {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">    if (SQLSTATES.containsKey(code)) {</span>
+
+<span class="nc" id="L128">      return new SQLException(</span>
+          message,
+<span class="nc" id="L130">          SQLSTATES.get(code),</span>
+<span class="nc" id="L131">          code.getNumber()</span>
+      );
+
+    } else {
+      // If there is no SQLState corresponding to error code,
+      // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).
+<span class="nc" id="L137">      return new SQLException(</span>
+          message,
+          &quot;42000&quot;,
+          ResultCode.SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION_VALUE
+      );
+    }
+  }
+
+  public static String toSQLState(ResultCode code) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">    if (SQLSTATES.containsKey(code)) {</span>
+<span class="nc" id="L147">      return SQLSTATES.get(code);</span>
+    } else {
+<span class="nc" id="L149">      return &quot;42000&quot;;</span>
+    }
+  }
+
+  public static SQLException toSQLException(DefaultTajoException e) throws SQLException {
+<span class="nc bnc" id="L154" title="All 2 branches missed.">    if (e instanceof TajoRuntimeException) {</span>
+<span class="nc" id="L155">      return toSQLException(e.getErrorCode(), ((TajoRuntimeException) e).getCause().getMessage());</span>
+    } else {
+<span class="nc" id="L157">      return toSQLException(e.getErrorCode(), e.getMessage());</span>
+    }
+  }
+
+  public static SQLException toSQLException(ReturnState state) throws SQLException {
+<span class="nc" id="L162">    return toSQLException(state.getReturnCode(), state.getMessage());</span>
+  }
+
+  public static SQLException makeSQLException(ResultCode code, String ...args) {
+<span class="nc bnc" id="L166" title="All 2 branches missed.">    if (SQLSTATES.containsKey(code)) {</span>
+<span class="nc" id="L167">      return new SQLException(</span>
+<span class="nc" id="L168">          ErrorMessages.getMessage(code, args),</span>
+<span class="nc" id="L169">          SQLSTATES.get(code),</span>
+<span class="nc" id="L170">          code.getNumber());</span>
+    } else {
+      // If there is no SQLState corresponding to error code,
+      // It will make SQLState '42000' (Syntax Error Or Access Rule Violation).
+<span class="nc" id="L174">      return new SQLException(</span>
+<span class="nc" id="L175">          code.name(),</span>
+          &quot;42000&quot;,
+<span class="nc" id="L177">          code.getNumber());</span>
+    }
+
+  }
+
+  public static SQLException makeUnableToEstablishConnection(Throwable t) {
+<span class="nc" id="L183">    return makeSQLException(</span>
+<span class="nc" id="L184">        ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, t.getMessage());</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

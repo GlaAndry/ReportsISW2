@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BitDatum.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.datum</a> &gt; <span class="el_source">BitDatum.java</span></div><h1>BitDatum.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.datum;
+
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.type.Type;
+import org.apache.tajo.util.NumberUtil;
+
+public class BitDatum extends Datum {
+  private static final int size = 1;
+  @Expose	final byte val;
+	
+	public BitDatum(byte val) {
+<span class="nc" id="L31">		super(Type.Bit);</span>
+<span class="nc" id="L32">		this.val = val;</span>
+<span class="nc" id="L33">	}</span>
+
+  public BitDatum(byte[] bytes) {
+<span class="nc" id="L36">    this(bytes[0]);</span>
+<span class="nc" id="L37">  }</span>
+
+  @Override
+  public char asChar() {
+<span class="nc" id="L41">    return (char)val;</span>
+  }
+
+	@Override
+	public int asInt4() {
+<span class="nc" id="L46">		return val;</span>
+	}
+
+  @Override
+	public long asInt8() {
+<span class="nc" id="L51">		return val;</span>
+	}
+
+  @Override
+	public byte asByte() {
+<span class="nc" id="L56">		return val;</span>
+	}
+
+  @Override
+	public byte[] asByteArray() {
+<span class="nc" id="L61">    byte [] bytes = new byte[1];</span>
+<span class="nc" id="L62">    bytes[0] = this.val;</span>
+<span class="nc" id="L63">		return bytes;</span>
+	}
+
+  @Override
+	public float asFloat4() {
+<span class="nc" id="L68">		return val;</span>
+	}
+
+  @Override
+	public double asFloat8() {
+<span class="nc" id="L73">		return val;</span>
+	}
+
+  @Override
+	public String asChars() {
+<span class="nc" id="L78">		return &quot;0x&quot;+val;</span>
+	}
+
+  @Override
+  public byte[] asTextBytes() {
+<span class="nc" id="L83">    return NumberUtil.toAsciiBytes(asInt4());</span>
+  }
+
+  @Override
+  public int size() {
+<span class="nc" id="L88">    return size;</span>
+  }
+  
+  @Override
+  public int hashCode() {
+<span class="nc" id="L93">    return val;</span>
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+<span class="nc bnc" id="L98" title="All 2 branches missed.">    if (obj instanceof BitDatum) {</span>
+<span class="nc" id="L99">      BitDatum other = (BitDatum) obj;</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">      return val == other.val;</span>
+    }
+    
+<span class="nc" id="L103">    return false;</span>
+  }
+
+  @Override
+  public Datum equalsTo(Datum datum) {
+<span class="nc bnc" id="L108" title="All 3 branches missed.">    switch (datum.kind()) {</span>
+    case BIT:
+<span class="nc bnc" id="L110" title="All 2 branches missed.">      return DatumFactory.createBool(this.val == (((BitDatum) datum).val));</span>
+    case NULL_TYPE:
+<span class="nc" id="L112">      return datum;</span>
+    default:
+<span class="nc" id="L114">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+  
+  @Override
+  public int compareTo(Datum datum) {
+<span class="nc bnc" id="L120" title="All 3 branches missed.">    switch (datum.kind()) {</span>
+    case BIT:
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      if (val &lt; datum.asByte() ) {</span>
+<span class="nc" id="L123">        return -1;</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">      } else if (val &gt; datum.asByte()) {</span>
+<span class="nc" id="L125">        return 1;</span>
+      } else {
+<span class="nc" id="L127">        return 0;</span>
+      }
+    case NULL_TYPE:
+<span class="nc" id="L130">      return -1;</span>
+    default:
+<span class="nc" id="L132">      throw new InvalidOperationException(datum.type());</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

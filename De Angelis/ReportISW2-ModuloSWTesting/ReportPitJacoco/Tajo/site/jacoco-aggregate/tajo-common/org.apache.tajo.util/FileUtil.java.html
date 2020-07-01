@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>FileUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">FileUtil.java</span></div><h1>FileUtil.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import org.apache.commons.logging.Log;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.conf.TajoConf;
+
+import java.io.*;
+import java.nio.charset.Charset;
+
+/**
+ * Simple File Utilities
+ */
+<span class="nc" id="L34">public class FileUtil {</span>
+
+  public static String readTextFile(File file) throws IOException {
+<span class="nc" id="L37">    StringBuilder fileData = new StringBuilder(1000);</span>
+<span class="nc" id="L38">    BufferedReader reader = new BufferedReader(new FileReader(file));</span>
+<span class="nc" id="L39">    char[] buf = new char[1024];</span>
+    int numRead;
+    try {
+<span class="nc bnc" id="L42" title="All 2 branches missed.">      while ((numRead = reader.read(buf)) != -1) {</span>
+<span class="nc" id="L43">        String readData = String.valueOf(buf, 0, numRead);</span>
+<span class="nc" id="L44">        fileData.append(readData);</span>
+<span class="nc" id="L45">        buf = new char[1024];</span>
+<span class="nc" id="L46">      }</span>
+    } finally {
+<span class="nc" id="L48">      IOUtils.cleanup(null, reader);</span>
+    }
+<span class="nc" id="L50">    return fileData.toString();</span>
+  }
+
+  /**
+   * Write a string into a file
+   *
+   * @param text
+   * @param path File path
+   * @throws IOException
+   */
+  public static void writeTextToFile(String text, Path path) throws IOException {
+<span class="nc" id="L61">    FileSystem fs = path.getFileSystem(new TajoConf());</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">    if (!fs.exists(path.getParent())) {</span>
+<span class="nc" id="L63">      fs.mkdirs(path.getParent());</span>
+    }
+<span class="nc" id="L65">    FSDataOutputStream out = fs.create(path);</span>
+<span class="nc" id="L66">    out.write(text.getBytes());</span>
+<span class="nc" id="L67">    out.close();</span>
+<span class="nc" id="L68">  }</span>
+
+  public static String readTextFromStream(InputStream inputStream)
+      throws IOException {
+    try {
+<span class="nc" id="L73">      StringBuilder fileData = new StringBuilder(1000);</span>
+<span class="nc" id="L74">      byte[] buf = new byte[1024];</span>
+      int numRead;
+<span class="nc bnc" id="L76" title="All 2 branches missed.">      while ((numRead = inputStream.read(buf)) != -1) {</span>
+<span class="nc" id="L77">        String readData = new String(buf, 0, numRead, Charset.defaultCharset());</span>
+<span class="nc" id="L78">        fileData.append(readData);</span>
+<span class="nc" id="L79">      }</span>
+<span class="nc" id="L80">      return fileData.toString();</span>
+    } finally {
+<span class="nc" id="L82">      IOUtils.closeStream(inputStream);</span>
+    }
+  }
+
+  public static void writeTextToStream(String text, OutputStream outputStream) throws IOException {
+    try {
+<span class="nc" id="L88">      outputStream.write(text.getBytes());</span>
+    } finally {
+<span class="nc" id="L90">      IOUtils.closeStream(outputStream);</span>
+    }
+<span class="nc" id="L92">  }</span>
+
+  public static String humanReadableByteCount(long bytes, boolean si) {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">    int unit = si ? 1000 : 1024;</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    if (bytes &lt; unit) return bytes + &quot; B&quot;;</span>
+<span class="nc" id="L97">    int exp = (int) (Math.log(bytes) / Math.log(unit));</span>
+<span class="nc bnc" id="L98" title="All 4 branches missed.">    String pre = (si ? &quot;kMGTPE&quot; : &quot;KMGTPE&quot;).charAt(exp - 1) + (si ? &quot;&quot; : &quot;i&quot;);</span>
+<span class="nc" id="L99">    return String.format(&quot;%.1f %sB&quot;, bytes / Math.pow(unit, exp), pre);</span>
+  }
+
+
+  /**
+   * Close the Closeable objects and &lt;b&gt;ignore&lt;/b&gt; any {@link IOException} or
+   * null pointers. Must only be used for cleanup in exception handlers.
+   *
+   * @param log the log to record problems to at debug level. Can be null.
+   * @param closeables the objects to close
+   */
+  public static void cleanup(Log log, java.io.Closeable... closeables) {
+<span class="nc bnc" id="L111" title="All 2 branches missed.">    for (java.io.Closeable c : closeables) {</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">      if (c != null) {</span>
+        try {
+<span class="nc" id="L114">          c.close();</span>
+<span class="nc" id="L115">        } catch(IOException e) {</span>
+<span class="nc bnc" id="L116" title="All 4 branches missed.">          if (log != null &amp;&amp; log.isDebugEnabled()) {</span>
+<span class="nc" id="L117">            log.debug(&quot;Exception in closing &quot; + c, e);</span>
+          }
+<span class="nc" id="L119">        }</span>
+      }
+    }
+<span class="nc" id="L122">  }</span>
+
+  /**
+   * Close the Closeable objects and &lt;b&gt;throw&lt;/b&gt; first {@link IOException}, if failed
+   * @param closeables the objects to close
+   */
+  public static void cleanupAndthrowIfFailed(java.io.Closeable... closeables) throws IOException {
+<span class="nc" id="L129">    IOException ioe = null;</span>
+
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    for (java.io.Closeable c : closeables) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">      if (c != null) {</span>
+        try {
+<span class="nc" id="L134">          c.close();</span>
+<span class="nc" id="L135">        } catch (IOException e) {</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">          if (ioe == null) ioe = e;</span>
+<span class="nc" id="L137">        }</span>
+      }
+    }
+
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    if (ioe != null) {</span>
+<span class="nc" id="L142">      throw ioe;</span>
+    }
+<span class="nc" id="L144">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

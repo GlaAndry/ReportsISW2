@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>SizeOf.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">SizeOf.java</span></div><h1>SizeOf.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+import static org.apache.tajo.util.UnsafeUtil.*;
+
+
+public final class SizeOf {
+
+  public static final int BITS_PER_BYTE = 8;
+  public static final int BYTES_PER_WORD = SizeOf.SIZE_OF_LONG;
+  public static final int BITS_PER_WORD = SizeOf.SIZE_OF_LONG * BITS_PER_BYTE;
+
+  public static final byte SIZE_OF_BOOL = 1;
+  public static final byte SIZE_OF_BYTE = 1;
+  public static final byte SIZE_OF_SHORT = 2;
+  public static final byte SIZE_OF_INT = 4;
+  public static final byte SIZE_OF_LONG = 8;
+  public static final byte SIZE_OF_FLOAT = 4;
+  public static final byte SIZE_OF_DOUBLE = 8;
+
+  public static long sizeOf(boolean[] array)
+  {
+<span class="nc bnc" id="L40" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L41">      return 0;</span>
+    }
+<span class="nc" id="L43">    return ARRAY_BOOLEAN_BASE_OFFSET + (((long) ARRAY_BOOLEAN_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(byte[] array)
+  {
+<span class="nc bnc" id="L48" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L49">      return 0;</span>
+    }
+<span class="nc" id="L51">    return ARRAY_BYTE_BASE_OFFSET + (((long) ARRAY_BYTE_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(short[] array)
+  {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L57">      return 0;</span>
+    }
+<span class="nc" id="L59">    return ARRAY_SHORT_BASE_OFFSET + (((long) ARRAY_SHORT_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(char[] array)
+  {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L65">      return 0;</span>
+    }
+<span class="nc" id="L67">    return ARRAY_CHAR_BASE_OFFSET + (((long) ARRAY_CHAR_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(int[] array)
+  {
+<span class="nc bnc" id="L72" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L73">      return 0;</span>
+    }
+<span class="nc" id="L75">    return ARRAY_INT_BASE_OFFSET + (((long) ARRAY_INT_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(long[] array)
+  {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L81">      return 0;</span>
+    }
+<span class="nc" id="L83">    return ARRAY_LONG_BASE_OFFSET + (((long) ARRAY_LONG_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(float[] array)
+  {
+<span class="nc bnc" id="L88" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L89">      return 0;</span>
+    }
+<span class="nc" id="L91">    return ARRAY_FLOAT_BASE_OFFSET + (((long) ARRAY_FLOAT_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(double[] array)
+  {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L97">      return 0;</span>
+    }
+<span class="nc" id="L99">    return ARRAY_DOUBLE_BASE_OFFSET + (((long) ARRAY_DOUBLE_INDEX_SCALE) * array.length);</span>
+  }
+
+  public static long sizeOf(Object[] array)
+  {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">    if (array == null) {</span>
+<span class="nc" id="L105">      return 0;</span>
+    }
+<span class="nc" id="L107">    return ARRAY_OBJECT_BASE_OFFSET + (((long) ARRAY_OBJECT_INDEX_SCALE) * array.length);</span>
+  }
+
+
+  public static long sizeOfBooleanArray(int length)
+  {
+<span class="nc" id="L113">    return ARRAY_BOOLEAN_BASE_OFFSET + (((long) ARRAY_BOOLEAN_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfByteArray(int length)
+  {
+<span class="nc" id="L118">    return ARRAY_BYTE_BASE_OFFSET + (((long) ARRAY_BYTE_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfShortArray(int length)
+  {
+<span class="nc" id="L123">    return ARRAY_SHORT_BASE_OFFSET + (((long) ARRAY_SHORT_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfCharArray(int length)
+  {
+<span class="nc" id="L128">    return ARRAY_CHAR_BASE_OFFSET + (((long) ARRAY_CHAR_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfIntArray(int length)
+  {
+<span class="nc" id="L133">    return ARRAY_INT_BASE_OFFSET + (((long) ARRAY_INT_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfLongArray(int length)
+  {
+<span class="nc" id="L138">    return ARRAY_LONG_BASE_OFFSET + (((long) ARRAY_LONG_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfFloatArray(int length)
+  {
+<span class="nc" id="L143">    return ARRAY_FLOAT_BASE_OFFSET + (((long) ARRAY_FLOAT_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfDoubleArray(int length)
+  {
+<span class="nc" id="L148">    return ARRAY_DOUBLE_BASE_OFFSET + (((long) ARRAY_DOUBLE_INDEX_SCALE) * length);</span>
+  }
+
+  public static long sizeOfObjectArray(int length)
+  {
+<span class="nc" id="L153">    return ARRAY_OBJECT_BASE_OFFSET + (((long) ARRAY_OBJECT_INDEX_SCALE) * length);</span>
+  }
+
+  private SizeOf()
+  {
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

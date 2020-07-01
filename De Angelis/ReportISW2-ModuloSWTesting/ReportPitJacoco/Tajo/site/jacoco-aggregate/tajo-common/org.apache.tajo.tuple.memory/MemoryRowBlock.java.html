@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MemoryRowBlock.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.tuple.memory</a> &gt; <span class="el_source">MemoryRowBlock.java</span></div><h1>MemoryRowBlock.java</h1><pre class="source lang-java linenums">/***
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.tuple.memory;
+
+import io.netty.util.internal.PlatformDependent;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.annotation.NotThreadSafe;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.Deallocatable;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.TUtil;
+
+import java.io.IOException;
+import java.nio.channels.ScatteringByteChannel;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
+
+<span class="nc bnc" id="L37" title="All 2 branches missed.">@NotThreadSafe</span>
+public class MemoryRowBlock implements RowBlock, Deallocatable {
+  public static final int NULL_FIELD_OFFSET = -1;
+
+  private final DataType[] dataTypes;
+  private final String dataFormat;
+
+  // Basic States
+<span class="nc" id="L45">  private int maxRowNum = Integer.MAX_VALUE; // optional</span>
+  private int rowNum;
+
+  private RowWriter builder;
+  private MemoryBlock memory;
+
+  public MemoryRowBlock(DataType[] dataTypes, ResizableLimitSpec limitSpec, boolean isDirect) {
+<span class="nc" id="L52">    this(dataTypes, limitSpec, isDirect, BuiltinStorages.DRAW);</span>
+<span class="nc" id="L53">  }</span>
+
+<span class="nc" id="L55">  public MemoryRowBlock(DataType[] dataTypes, ResizableLimitSpec limitSpec, boolean isDirect, String dataFormat) {</span>
+<span class="nc" id="L56">    this.memory = new ResizableMemoryBlock(limitSpec, isDirect);</span>
+<span class="nc" id="L57">    this.dataTypes = dataTypes;</span>
+<span class="nc" id="L58">    this.dataFormat = dataFormat;</span>
+<span class="nc" id="L59">  }</span>
+
+<span class="nc" id="L61">  public MemoryRowBlock(MemoryRowBlock rowBlock) {</span>
+<span class="nc" id="L62">    this.memory = TUtil.checkTypeAndGet(rowBlock.getMemory().duplicate(), ResizableMemoryBlock.class);</span>
+<span class="nc" id="L63">    this.rowNum = rowBlock.rowNum;</span>
+<span class="nc" id="L64">    this.dataTypes = rowBlock.dataTypes;</span>
+<span class="nc" id="L65">    this.dataFormat = rowBlock.dataFormat;</span>
+<span class="nc" id="L66">  }</span>
+
+  public MemoryRowBlock(DataType[] dataTypes) {
+<span class="nc" id="L69">    this(dataTypes, new ResizableLimitSpec(64 * StorageUnit.KB), true);</span>
+<span class="nc" id="L70">  }</span>
+
+  public MemoryRowBlock(DataType[] dataTypes, int bytes) {
+<span class="nc" id="L73">    this(dataTypes, new ResizableLimitSpec(bytes), true);</span>
+<span class="nc" id="L74">  }</span>
+
+  public MemoryRowBlock(DataType[] dataTypes, int bytes, boolean isDirect, String dataFormat) {
+<span class="nc" id="L77">    this(dataTypes, new ResizableLimitSpec(bytes), isDirect, dataFormat);</span>
+<span class="nc" id="L78">  }</span>
+
+  @Override
+  public String getDataFormat() {
+<span class="nc" id="L82">    return dataFormat;</span>
+  }
+
+  @Override
+  public void clear() {
+<span class="nc" id="L87">    reset();</span>
+<span class="nc" id="L88">    memory.clear();</span>
+<span class="nc" id="L89">  }</span>
+
+  private void reset() {
+<span class="nc" id="L92">    rowNum = 0;</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">    if (builder != null) {</span>
+<span class="nc" id="L94">      builder.clear();</span>
+    }
+<span class="nc" id="L96">  }</span>
+
+  @Override
+  public int capacity() {
+<span class="nc" id="L100">    return memory.capacity();</span>
+  }
+
+  @Override
+  public int usedMem() {
+<span class="nc" id="L105">    return memory.writerPosition();</span>
+  }
+
+  @Override
+  public float usage() {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">    if (usedMem() &gt; 0) {</span>
+<span class="nc" id="L111">      return (usedMem() / (float) capacity());</span>
+    } else {
+<span class="nc" id="L113">      return 0.0f;</span>
+    }
+  }
+
+  public int maxRowNum() {
+<span class="nc" id="L118">    return maxRowNum;</span>
+  }
+
+  @Override
+  public int rows() {
+<span class="nc" id="L123">    return rowNum;</span>
+  }
+
+  @Override
+  public void setRows(int rowNum) {
+<span class="nc" id="L128">    this.rowNum = rowNum;</span>
+<span class="nc" id="L129">  }</span>
+
+  @Override
+  public DataType[] getDataTypes() {
+<span class="nc" id="L133">    return dataTypes;</span>
+  }
+
+  @Override
+  public boolean copyFromChannel(ScatteringByteChannel channel) throws IOException {
+<span class="nc bnc" id="L138" title="All 2 branches missed.">    switch (dataFormat) {</span>
+    case BuiltinStorages.DRAW:
+<span class="nc" id="L140">      return fillDrawBuffer(channel);</span>
+    default:
+<span class="nc" id="L142">      throw new TajoInternalError(new NotImplementedException(&quot;Heap memory writer not implemented yet&quot;));</span>
+    }
+  }
+
+  protected boolean fillDrawBuffer(ScatteringByteChannel channel) throws IOException {
+<span class="nc" id="L147">    reset();</span>
+
+<span class="nc" id="L149">    int readBytes = memory.writeBytes(channel);</span>
+
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    if (readBytes &gt; 0) {</span>
+      // get row capacity in buffer
+<span class="nc bnc" id="L153" title="All 2 branches missed.">      while (memory.isReadable()) {</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (memory.readableBytes() &lt; SizeOf.SIZE_OF_INT) {</span>
+<span class="nc" id="L155">          return true;</span>
+        }
+
+<span class="nc" id="L158">        int recordSize = PlatformDependent.getInt(memory.address() + memory.readerPosition());</span>
+<span class="nc bnc" id="L159" title="All 4 branches missed.">        assert recordSize &gt; 0;</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (memory.readableBytes() &lt; recordSize) {</span>
+<span class="nc" id="L161">          return true;</span>
+        } else {
+<span class="nc" id="L163">          memory.readerPosition(memory.readerPosition() + recordSize);</span>
+        }
+
+<span class="nc" id="L166">        rowNum++;</span>
+<span class="nc" id="L167">      }</span>
+
+<span class="nc" id="L169">      return true;</span>
+    } else {
+<span class="nc" id="L171">      return false;</span>
+    }
+  }
+
+  @Override
+  public RowWriter getWriter() {
+
+<span class="nc bnc" id="L178" title="All 2 branches missed.">    if (!getMemory().hasAddress()) {</span>
+<span class="nc" id="L179">      throw new TajoInternalError(new NotImplementedException(&quot;Heap memory writer not implemented yet&quot;));</span>
+    }
+
+<span class="nc bnc" id="L182" title="All 2 branches missed.">    if (builder == null) {</span>
+<span class="nc bnc" id="L183" title="All 3 branches missed.">      switch (dataFormat) {</span>
+      case BuiltinStorages.DRAW:
+<span class="nc" id="L185">        this.builder = new OffHeapRowBlockWriter(this);</span>
+<span class="nc" id="L186">        break;</span>
+      case BuiltinStorages.RAW:
+<span class="nc" id="L188">        this.builder = new CompactRowBlockWriter(this);</span>
+<span class="nc" id="L189">        break;</span>
+      default:
+<span class="nc" id="L191">        throw new TajoInternalError(new NotImplementedException(dataFormat + &quot; memory writer not implemented yet&quot;));</span>
+      }
+    }
+
+<span class="nc" id="L195">    return builder;</span>
+  }
+
+  @Override
+  public MemoryBlock getMemory() {
+<span class="nc" id="L200">    return memory;</span>
+  }
+
+  @Override
+  public void release() {
+<span class="nc" id="L205">    memory.release();</span>
+<span class="nc" id="L206">  }</span>
+
+  @Override
+  public RowBlockReader getReader() {
+
+<span class="nc bnc" id="L211" title="All 2 branches missed.">    switch (dataFormat) {</span>
+    case BuiltinStorages.DRAW: {
+<span class="nc bnc" id="L213" title="All 2 branches missed.">      if (!getMemory().hasAddress()) {</span>
+<span class="nc" id="L214">        return new HeapRowBlockReader(this);</span>
+      } else {
+<span class="nc" id="L216">        return new OffHeapRowBlockReader(this);</span>
+      }
+    }
+    default:
+<span class="nc" id="L220">      throw new TajoInternalError(new NotImplementedException(dataFormat + &quot; memory writer not implemented yet&quot;));</span>
+    }
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

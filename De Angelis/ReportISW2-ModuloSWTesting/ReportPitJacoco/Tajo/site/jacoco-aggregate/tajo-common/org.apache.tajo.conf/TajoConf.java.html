@@ -1,0 +1,907 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>TajoConf.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.conf</a> &gt; <span class="el_source">TajoConf.java</span></div><h1>TajoConf.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.conf;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.ConfigKey;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.service.BaseServiceTracker;
+import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.NumberUtil;
+import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.validation.ConstraintViolationException;
+import org.apache.tajo.validation.Validator;
+import org.apache.tajo.validation.Validators;
+
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">public class TajoConf extends Configuration {</span>
+<span class="fc" id="L51">  private static int DATE_ORDER = -1;</span>
+
+<span class="fc" id="L53">  private static final Map&lt;String, ConfVars&gt; vars = new HashMap&lt;&gt;();</span>
+
+  static {
+<span class="fc" id="L56">    Configuration.addDefaultResource(&quot;catalog-default.xml&quot;);</span>
+<span class="fc" id="L57">    Configuration.addDefaultResource(&quot;catalog-site.xml&quot;);</span>
+<span class="fc" id="L58">    Configuration.addDefaultResource(&quot;storage-default.xml&quot;);</span>
+<span class="fc" id="L59">    Configuration.addDefaultResource(&quot;storage-site.xml&quot;);</span>
+<span class="fc" id="L60">    Configuration.addDefaultResource(&quot;tajo-default.xml&quot;);</span>
+<span class="fc" id="L61">    Configuration.addDefaultResource(&quot;tajo-site.xml&quot;);</span>
+
+<span class="fc bfc" id="L63" title="All 2 branches covered.">    for (ConfVars confVars: ConfVars.values()) {</span>
+<span class="fc" id="L64">      vars.put(confVars.keyname(), confVars);</span>
+    }
+<span class="fc" id="L66">  }</span>
+
+  private static final String EMPTY_VALUE = &quot;&quot;;
+
+  public TajoConf() {
+<span class="fc" id="L71">    super();</span>
+<span class="fc" id="L72">  }</span>
+
+  public TajoConf(Configuration conf) {
+<span class="nc" id="L75">    super(conf);</span>
+<span class="nc" id="L76">  }</span>
+
+  public TajoConf(Path path) {
+<span class="nc" id="L79">    super();</span>
+<span class="nc" id="L80">    addResource(path);</span>
+<span class="nc" id="L81">  }</span>
+
+  public TimeZone getSystemTimezone() {
+<span class="nc" id="L84">    return TimeZone.getTimeZone(getVar(ConfVars.$TIMEZONE));</span>
+  }
+
+  public void setSystemTimezone(TimeZone timezone) {
+<span class="nc" id="L88">    setVar(ConfVars.$TIMEZONE, timezone.getID());</span>
+<span class="nc" id="L89">  }</span>
+
+  public static int getDateOrder() {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">    if (DATE_ORDER &lt; 0) {</span>
+<span class="nc" id="L93">      TajoConf tajoConf = new TajoConf();</span>
+<span class="nc" id="L94">      String dateOrder = tajoConf.getVar(ConfVars.$DATE_ORDER);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">      if (&quot;YMD&quot;.equals(dateOrder)) {</span>
+<span class="nc" id="L96">        DATE_ORDER = DateTimeConstants.DATEORDER_YMD;</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">      } else if (&quot;DMY&quot;.equals(dateOrder)) {</span>
+<span class="nc" id="L98">        DATE_ORDER = DateTimeConstants.DATEORDER_DMY;</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">      } else if (&quot;MDY&quot;.equals(dateOrder)) {</span>
+<span class="nc" id="L100">        DATE_ORDER = DateTimeConstants.DATEORDER_MDY;</span>
+      } else {
+<span class="nc" id="L102">        DATE_ORDER = DateTimeConstants.DATEORDER_YMD;</span>
+      }
+    }
+<span class="nc" id="L105">    return DATE_ORDER;</span>
+  }
+
+  @VisibleForTesting
+  public static int setDateOrder(int dateOrder) {
+<span class="nc" id="L110">    int oldDateOrder = DATE_ORDER;</span>
+<span class="nc" id="L111">    DATE_ORDER = dateOrder;</span>
+<span class="nc" id="L112">    return oldDateOrder;</span>
+  }
+
+<span class="fc" id="L115">  public static enum ConfVars implements ConfigKey {</span>
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    // Tajo System Configuration
+    //
+    // They are all static configs which are not changed or not overwritten at all.
+    ///////////////////////////////////////////////////////////////////////////////////////
+
+    // a username for a running Tajo cluster
+<span class="fc" id="L124">    ROOT_DIR(&quot;tajo.rootdir&quot;, &quot;file:///tmp/tajo-${user.name}/&quot;,</span>
+<span class="fc" id="L125">        Validators.groups(Validators.notNull(), Validators.pathUrl())),</span>
+<span class="fc" id="L126">    USERNAME(&quot;tajo.username&quot;, &quot;${user.name}&quot;, Validators.javaString()),</span>
+
+    // Configurable System Directories
+<span class="fc" id="L129">    WAREHOUSE_DIR(&quot;tajo.warehouse.directory&quot;, EMPTY_VALUE, Validators.pathUrl()),</span>
+<span class="fc" id="L130">    STAGING_ROOT_DIR(&quot;tajo.staging.directory&quot;, &quot;/tmp/tajo-${user.name}/staging&quot;, Validators.pathUrl()),</span>
+
+<span class="fc" id="L132">    SYSTEM_CONF_PATH(&quot;tajo.system-conf.path&quot;, EMPTY_VALUE, Validators.pathUrl()),</span>
+<span class="fc" id="L133">    SYSTEM_CONF_REPLICA_COUNT(&quot;tajo.system-conf.replica-count&quot;, 20, Validators.min(&quot;1&quot;)),</span>
+
+    // Tajo Master Service Addresses
+<span class="fc" id="L136">    TAJO_MASTER_UMBILICAL_RPC_ADDRESS(&quot;tajo.master.umbilical-rpc.address&quot;, &quot;localhost:26001&quot;,</span>
+<span class="fc" id="L137">        Validators.networkAddr()),</span>
+<span class="fc" id="L138">    TAJO_MASTER_CLIENT_RPC_ADDRESS(&quot;tajo.master.client-rpc.address&quot;, &quot;localhost:26002&quot;, Validators.networkAddr()),</span>
+<span class="fc" id="L139">    TAJO_MASTER_INFO_ADDRESS(&quot;tajo.master.info-http.address&quot;, &quot;0.0.0.0:26080&quot;, Validators.networkAddr()),</span>
+
+    // Resource tracker service
+<span class="fc" id="L142">    RESOURCE_TRACKER_RPC_ADDRESS(&quot;tajo.resource-tracker.rpc.address&quot;, &quot;0.0.0.0:26003&quot;, Validators.networkAddr()),</span>
+<span class="fc" id="L143">    RESOURCE_TRACKER_HEARTBEAT_TIMEOUT(&quot;tajo.resource-tracker.heartbeat.timeout-secs&quot;, 120), // seconds</span>
+
+    // Tajo Rest Service
+<span class="fc" id="L146">    REST_SERVICE_ADDRESS(&quot;tajo.rest.service.address&quot;, &quot;0.0.0.0:26880&quot;, Validators.networkAddr()),</span>
+
+    // Catalog
+<span class="fc" id="L149">    CATALOG_ADDRESS(&quot;tajo.catalog.client-rpc.address&quot;, &quot;0.0.0.0:26005&quot;, Validators.networkAddr()),</span>
+
+    // High availability configurations
+<span class="fc" id="L152">    TAJO_MASTER_HA_ENABLE(&quot;tajo.master.ha.enable&quot;, false, Validators.bool()),</span>
+<span class="fc" id="L153">    TAJO_MASTER_HA_MONITOR_INTERVAL(&quot;tajo.master.ha.monitor.interval&quot;, 5 * 1000), // 5 sec</span>
+<span class="fc" id="L154">    TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM(&quot;tajo.master.ha.client.read.retry.max-num&quot;, 120), // 120 retry</span>
+<span class="fc" id="L155">    TAJO_MASTER_HA_CLIENT_RETRY_PAUSE_TIME(&quot;tajo.master.ha.client.read.pause-time&quot;, 500), // 500 ms</span>
+
+    // Service discovery
+<span class="fc" id="L158">    DEFAULT_SERVICE_TRACKER_CLASS(&quot;tajo.discovery.service-tracker.class&quot;, BaseServiceTracker.class.getCanonicalName()),</span>
+<span class="fc" id="L159">    HA_SERVICE_TRACKER_CLASS(&quot;tajo.discovery.ha-service-tracker.class&quot;, &quot;org.apache.tajo.ha.HdfsServiceTracker&quot;),</span>
+
+    // Async IO Task Service
+    /** The number of threads for async tasks */
+<span class="fc" id="L163">    MASTER_ASYNC_TASK_THREAD_NUM(&quot;tajo.master.async-task.thread-num&quot;, 4),</span>
+    /** How long it will wait for termination */
+<span class="fc" id="L165">    MASTER_ASYNC_TASK_TERMINATION_WAIT_TIME(&quot;tajo.master.async-task.wait-time-sec&quot;, 60), // 1 min</span>
+
+    // QueryMaster resource
+<span class="fc" id="L168">    QUERYMASTER_MINIMUM_MEMORY(&quot;tajo.qm.resource.min.memory-mb&quot;, 500, Validators.min(&quot;64&quot;)),</span>
+
+    // Worker task resource
+<span class="fc" id="L171">    TASK_RESOURCE_MINIMUM_MEMORY(&quot;tajo.task.resource.min.memory-mb&quot;, 1000, Validators.min(&quot;64&quot;)),</span>
+
+    // Tajo Worker Service Addresses
+<span class="fc" id="L174">    WORKER_INFO_ADDRESS(&quot;tajo.worker.info-http.address&quot;, &quot;0.0.0.0:28080&quot;, Validators.networkAddr()),</span>
+<span class="fc" id="L175">    WORKER_QM_INFO_ADDRESS(&quot;tajo.worker.qm-info-http.address&quot;, &quot;0.0.0.0:28081&quot;, Validators.networkAddr()),</span>
+<span class="fc" id="L176">    WORKER_PEER_RPC_ADDRESS(&quot;tajo.worker.peer-rpc.address&quot;, &quot;0.0.0.0:28091&quot;, Validators.networkAddr()),</span>
+<span class="fc" id="L177">    WORKER_CLIENT_RPC_ADDRESS(&quot;tajo.worker.client-rpc.address&quot;, &quot;0.0.0.0:28092&quot;, Validators.networkAddr()),</span>
+<span class="fc" id="L178">    WORKER_QM_RPC_ADDRESS(&quot;tajo.worker.qm-rpc.address&quot;, &quot;0.0.0.0:28093&quot;, Validators.networkAddr()),</span>
+
+    // Tajo Worker Temporal Directories
+<span class="fc" id="L181">    WORKER_TEMPORAL_DIR(&quot;tajo.worker.tmpdir.locations&quot;, &quot;/tmp/tajo-${user.name}/tmpdir&quot;, Validators.pathUrlList()),</span>
+<span class="fc" id="L182">    WORKER_TEMPORAL_DIR_CLEANUP(&quot;tajo.worker.tmpdir.cleanup-at-startup&quot;, false, Validators.bool()),</span>
+
+    // Tajo Worker Resources
+<span class="fc" id="L185">    WORKER_RESOURCE_AVAILABLE_CPU_CORES(&quot;tajo.worker.resource.cpu-cores&quot;,</span>
+<span class="fc" id="L186">        Math.max(Runtime.getRuntime().availableProcessors(), 2), Validators.min(&quot;2&quot;)), // 1qm + 1task container</span>
+<span class="fc" id="L187">    WORKER_RESOURCE_AVAILABLE_MEMORY_MB(&quot;tajo.worker.resource.memory-mb&quot;, 1500, Validators.min(&quot;64&quot;)),</span>
+
+<span class="fc" id="L189">    WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM(&quot;tajo.worker.resource.disk.parallel-execution.num&quot;, 2,</span>
+<span class="fc" id="L190">        Validators.min(&quot;1&quot;)),</span>
+
+<span class="fc" id="L192">    WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE(&quot;tajo.worker.heartbeat.queue.threshold-rate&quot;, 0.1f, Validators.min(&quot;0&quot;)),//10%</span>
+<span class="fc" id="L193">    WORKER_HEARTBEAT_IDLE_INTERVAL(&quot;tajo.worker.heartbeat.idle.interval&quot;, 10 * 1000),  // 10 sec</span>
+<span class="fc" id="L194">    WORKER_HEARTBEAT_ACTIVE_INTERVAL(&quot;tajo.worker.heartbeat.active.interval&quot;, 1000),  // 1 sec</span>
+
+    //Default query scheduler
+<span class="fc" id="L197">    RESOURCE_SCHEDULER_CLASS(&quot;tajo.resource.scheduler&quot;, &quot;org.apache.tajo.master.scheduler.SimpleScheduler&quot;,</span>
+<span class="fc" id="L198">        Validators.groups(Validators.notNull(), Validators.clazz())),</span>
+
+<span class="fc" id="L200">    QUERYMASTER_TASK_SCHEDULER_DELAY(&quot;tajo.qm.task-scheduler.delay&quot;, 50),  // 50 ms</span>
+
+<span class="fc" id="L202">    QUERYMASTER_TASK_SCHEDULER_REQUEST_MAX_NUM(&quot;tajo.qm.task-scheduler.request.max-num&quot;, 50),</span>
+
+    // Query Configuration
+<span class="fc" id="L205">    QUERY_SESSION_TIMEOUT(&quot;tajo.query.session.timeout-sec&quot;, 60, Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L206">    QUERY_SESSION_QUERY_CACHE_SIZE(&quot;tajo.query.session.query-cache-size-kb&quot;, 0, Validators.min(&quot;0&quot;)),</span>
+
+    // Shuffle Configuration --------------------------------------------------
+<span class="fc" id="L209">    PULLSERVER_PORT(&quot;tajo.pullserver.port&quot;, 0, Validators.range(&quot;0&quot;, &quot;65535&quot;)),</span>
+<span class="fc" id="L210">    PULLSERVER_CACHE_SIZE(&quot;tajo.pullserver.index-cache.size&quot;, 10000, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L211">    PULLSERVER_CACHE_TIMEOUT(&quot;tajo.pullserver.index-cache.timeout-min&quot;, 5, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L212">    PULLSERVER_FETCH_URL_MAX_LENGTH(&quot;tajo.pullserver.fetch-url.max-length&quot;, StorageUnit.KB,</span>
+<span class="fc" id="L213">        Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L214">    YARN_SHUFFLE_SERVICE_ENABLED(&quot;tajo.shuffle.yarn-service.enabled&quot;, false, Validators.bool()),</span>
+<span class="fc" id="L215">    SHUFFLE_SSL_ENABLED_KEY(&quot;tajo.pullserver.ssl.enabled&quot;, false, Validators.bool()),</span>
+<span class="fc" id="L216">    SHUFFLE_FILE_FORMAT(&quot;tajo.shuffle.file-format&quot;, BuiltinStorages.RAW, Validators.javaString()),</span>
+<span class="fc" id="L217">    SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM(&quot;tajo.shuffle.fetcher.parallel-execution.max-num&quot;,</span>
+<span class="fc" id="L218">        2, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L219">    SHUFFLE_FETCHER_CHUNK_MAX_SIZE(&quot;tajo.shuffle.fetcher.chunk.max-size&quot;,  8192),</span>
+<span class="fc" id="L220">    SHUFFLE_FETCHER_CONNECT_TIMEOUT(&quot;tajo.shuffle.fetcher.connect.timeout-sec&quot;, 60, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L221">    SHUFFLE_FETCHER_READ_TIMEOUT(&quot;tajo.shuffle.fetcher.read.timeout-sec&quot;, 60, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L222">    SHUFFLE_FETCHER_READ_RETRY_MAX_NUM(&quot;tajo.shuffle.fetcher.read.retry.max-num&quot;, 2, Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L223">    SHUFFLE_HASH_APPENDER_PAGE_VOLUME(&quot;tajo.shuffle.hash.appender.page.volume-mb&quot;, 30),</span>
+<span class="fc" id="L224">    SHUFFLE_HASH_PARENT_DIRS(&quot;tajo.shuffle.hash.parent.dirs.count&quot;, 64),</span>
+
+    // Query output Configuration --------------------------------------------------
+<span class="fc" id="L227">    QUERY_OUTPUT_DEFAULT_FILE_FORMAT(&quot;tajo.query.output.file-format&quot;, BuiltinStorages.DRAW, Validators.javaString()),</span>
+
+    // Storage Configuration --------------------------------------------------
+<span class="fc" id="L230">    ROWFILE_SYNC_INTERVAL(&quot;rowfile.sync.interval&quot;, 100),</span>
+<span class="fc" id="L231">    MINIMUM_SPLIT_SIZE(&quot;tajo.min.split.size&quot;, 32 * StorageUnit.MB, Validators.min(&quot;1&quot;)),</span>
+    // for RCFile
+<span class="fc" id="L233">    HIVEUSEEXPLICITRCFILEHEADER(&quot;tajo.exec.rcfile.use.explicit.header&quot;, true, Validators.bool()),</span>
+
+    // RPC --------------------------------------------------------------------
+    //  Internal RPC Client
+<span class="fc" id="L237">    INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM(&quot;tajo.internal.rpc.client.worker-thread-num&quot;,</span>
+<span class="fc" id="L238">        Runtime.getRuntime().availableProcessors() * 2),</span>
+<span class="fc" id="L239">    RPC_CLIENT_RETRY_NUM(&quot;tajo.rpc.client.retry-num&quot;, 3, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L240">    RPC_CLIENT_CONNECTION_TIMEOUT(&quot;tajo.rpc.client.connection-timeout-ms&quot;, (long)15 * 1000, Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L241">    RPC_CLIENT_SOCKET_TIMEOUT(&quot;tajo.rpc.client.socket-timeout-ms&quot;, (long)180 * 1000, Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L242">    RPC_CLIENT_HANG_DETECTION_ENABLED(&quot;tajo.rpc.client.hang-detection&quot;, true, Validators.bool()),</span>
+
+    // Internal RPC Server
+<span class="fc" id="L245">    MASTER_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.master.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L246">        Runtime.getRuntime().availableProcessors() * 2),</span>
+<span class="fc" id="L247">    QUERY_MASTER_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.querymaster.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L248">        Runtime.getRuntime().availableProcessors() * 2),</span>
+<span class="fc" id="L249">    WORKER_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.worker.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L250">        Runtime.getRuntime().availableProcessors() * 2),</span>
+<span class="fc" id="L251">    CATALOG_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.catalog.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L252">        Runtime.getRuntime().availableProcessors() * 2),</span>
+<span class="fc" id="L253">    SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.shuffle.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L254">        Runtime.getRuntime().availableProcessors() * 2),</span>
+
+    // Client RPC
+<span class="fc" id="L257">    RPC_CLIENT_WORKER_THREAD_NUM(&quot;tajo.rpc.client.worker-thread-num&quot;, 4),</span>
+
+<span class="fc" id="L259">    SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM(&quot;tajo.shuffle.rpc.client.worker-thread-num&quot;,</span>
+<span class="fc" id="L260">        Runtime.getRuntime().availableProcessors()),</span>
+
+    //Client service RPC Server
+<span class="fc" id="L263">    MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.master.service.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L264">        Runtime.getRuntime().availableProcessors() * 1),</span>
+<span class="fc" id="L265">    WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.worker.service.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L266">        Runtime.getRuntime().availableProcessors() * 1),</span>
+<span class="fc" id="L267">    REST_SERVICE_RPC_SERVER_WORKER_THREAD_NUM(&quot;tajo.rest.service.rpc.server.worker-thread-num&quot;,</span>
+<span class="fc" id="L268">        Runtime.getRuntime().availableProcessors() * 1),</span>
+
+    // Task Configuration -----------------------------------------------------
+<span class="fc" id="L271">    TASK_DEFAULT_SIZE(&quot;tajo.task.size-mb&quot;, 128),</span>
+
+    // Query and Optimization -------------------------------------------------
+    // This class provides a ordered list of logical plan rewrite rule classes.
+<span class="fc" id="L275">    LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS(&quot;tajo.plan.logical.rewriter.provider&quot;,</span>
+        &quot;org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider&quot;),
+    // This class provides a ordered list of global plan rewrite rule classes.
+<span class="fc" id="L278">    GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS(&quot;tajo.plan.global.rewriter.provider&quot;,</span>
+        &quot;org.apache.tajo.engine.planner.global.rewriter.BaseGlobalPlanRewriteRuleProvider&quot;),
+<span class="fc" id="L280">    EXECUTOR_EXTERNAL_SORT_THREAD_NUM(&quot;tajo.executor.external-sort.thread-num&quot;, 1),</span>
+<span class="fc" id="L281">    EXECUTOR_EXTERNAL_SORT_FANOUT(&quot;tajo.executor.external-sort.fanout-num&quot;, 8),</span>
+
+    // Metrics ----------------------------------------------------------------
+<span class="fc" id="L284">    METRICS_PROPERTY_FILENAME(&quot;tajo.metrics.property.file&quot;, &quot;tajo-metrics.properties&quot;),</span>
+
+    // Query History  ---------------------------------------------------------
+<span class="fc" id="L287">    HISTORY_QUERY_DIR(&quot;tajo.history.query.dir&quot;, STAGING_ROOT_DIR.defaultVal + &quot;/history&quot;),</span>
+<span class="fc" id="L288">    HISTORY_TASK_DIR(&quot;tajo.history.task.dir&quot;, &quot;file:///tmp/tajo-${user.name}/history&quot;),</span>
+<span class="fc" id="L289">    HISTORY_EXPIRY_TIME_DAY(&quot;tajo.history.expiry-time-day&quot;, 7),</span>
+<span class="fc" id="L290">    HISTORY_QUERY_CACHE_SIZE(&quot;tajo.history.cache.size&quot;, 100, Validators.min(&quot;0&quot;)),</span>
+
+    // Misc -------------------------------------------------------------------
+    // Fragment
+    // When making physical plan, the length of fragment is used to determine the physical operation.
+    // Some storage does not know the size of the fragment.
+    // In this case PhysicalPlanner uses this value to determine.
+<span class="fc" id="L297">    FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH(&quot;tajo.fragment.alternative.unknown.length&quot;, (long)(512 * 1024 * 1024)),</span>
+
+    // Geo IP
+<span class="fc" id="L300">    GEOIP_DATA(&quot;tajo.function.geoip-database-location&quot;, &quot;&quot;),</span>
+
+    // Python UDF
+<span class="fc" id="L303">    PYTHON_CODE_DIR(&quot;tajo.function.python.code-dir&quot;, &quot;&quot;),</span>
+<span class="fc" id="L304">    PYTHON_CONTROLLER_LOG_DIR(&quot;tajo.function.python.controller.log-dir&quot;, &quot;&quot;),</span>
+
+    // HIVE UDF
+<span class="fc" id="L307">    HIVE_UDF_JAR_DIR(&quot;tajo.function.hive.jar-dir&quot;, &quot;./lib/hiveudf&quot;),</span>
+
+    // Partition
+<span class="fc" id="L310">    PARTITION_DYNAMIC_BULK_INSERT_BATCH_SIZE(&quot;tajo.partition.dynamic.bulk-insert.batch-size&quot;, 1000),</span>
+
+
+    /////////////////////////////////////////////////////////////////////////////////
+    // User Session Configuration
+    //
+    // All session variables begin with dollar($) sign. They are default configs
+    // for session variables. Do not directly use the following configs. Instead,
+    // please use QueryContext in order to access session variables.
+    //
+    // Also, users can change the default values of session variables in tajo-site.xml.
+    /////////////////////////////////////////////////////////////////////////////////
+
+
+<span class="fc" id="L324">    $EMPTY(&quot;tajo._&quot;, &quot;&quot;),</span>
+
+    // Query and Optimization ---------------------------------------------------
+
+
+    // Enables the optimizer to get and use table volumes via storage handlers.
+    // This feature may cause some performance degradation when storage access is too slow (S3).
+    // By default, this config value is false, and in this case the optimizer uses the table stats from catalog.
+<span class="fc" id="L332">    $USE_TABLE_VOLUME(&quot;tajo.optimizer.stats.use-table-volume&quot;, Boolean.FALSE),</span>
+
+
+    // for distributed query strategies
+<span class="fc" id="L336">    $DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD(&quot;tajo.dist-query.broadcast.non-cross-join.threshold-kb&quot;, 5 * 1024l,</span>
+<span class="fc" id="L337">        Validators.min(&quot;0&quot;)), // 5 MB</span>
+<span class="fc" id="L338">    $DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD(&quot;tajo.dist-query.broadcast.cross-join.threshold-kb&quot;, 1 * 1024l,</span>
+<span class="fc" id="L339">        Validators.min(&quot;0&quot;)), // 1 MB</span>
+
+<span class="fc" id="L341">    $DIST_QUERY_JOIN_TASK_VOLUME(&quot;tajo.dist-query.join.task-volume-mb&quot;, 64),</span>
+<span class="fc" id="L342">    $DIST_QUERY_SORT_TASK_VOLUME(&quot;tajo.dist-query.sort.task-volume-mb&quot;, 64),</span>
+<span class="fc" id="L343">    $DIST_QUERY_GROUPBY_TASK_VOLUME(&quot;tajo.dist-query.groupby.task-volume-mb&quot;, 64),</span>
+<span class="fc" id="L344">    $DIST_QUERY_JOIN_PARTITION_VOLUME(&quot;tajo.dist-query.join.partition-volume-mb&quot;, 128, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L345">    $DIST_QUERY_GROUPBY_PARTITION_VOLUME(&quot;tajo.dist-query.groupby.partition-volume-mb&quot;, 256, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L346">    $DIST_QUERY_TABLE_PARTITION_VOLUME(&quot;tajo.dist-query.table-partition.task-volume-mb&quot;, 256, Validators.min(&quot;1&quot;)),</span>
+
+<span class="fc" id="L348">    $GROUPBY_MULTI_LEVEL_ENABLED(&quot;tajo.dist-query.groupby.multi-level-aggr&quot;, true),</span>
+
+<span class="fc" id="L350">    $QUERY_EXECUTE_PARALLEL_MAX(&quot;tajo.query.execute.parallel.max&quot;, 10),</span>
+
+    // for physical Executors
+<span class="fc" id="L353">    $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE(&quot;tajo.executor.external-sort.buffer-mb&quot;, 200),</span>
+<span class="fc" id="L354">    $EXECUTOR_HASH_JOIN_SIZE_THRESHOLD(&quot;tajo.executor.join.common.in-memory-hash-threshold-mb&quot;, 64l, Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L355">    $EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD(&quot;tajo.executor.join.inner.in-memory-hash-threshold-mb&quot;, 64l,</span>
+<span class="fc" id="L356">        Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L357">    $EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD(&quot;tajo.executor.join.outer.in-memory-hash-threshold-mb&quot;, 64l,</span>
+<span class="fc" id="L358">        Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L359">    $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD(&quot;tajo.executor.groupby.in-memory-hash-threshold-mb&quot;, 64l,</span>
+<span class="fc" id="L360">        Validators.min(&quot;0&quot;)),</span>
+<span class="fc" id="L361">    $EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE(&quot;tajo.executor.hash-shuffle.buffer-mb&quot;, 100, Validators.min(&quot;1&quot;)),</span>
+<span class="fc" id="L362">    $MAX_OUTPUT_FILE_SIZE(&quot;tajo.query.max-outfile-size-mb&quot;, 0), // zero means infinite</span>
+<span class="fc" id="L363">    $CODEGEN(&quot;tajo.executor.codegen.enabled&quot;, false), // Runtime code generation (todo this is broken)</span>
+<span class="fc" id="L364">    $AGG_HASH_TABLE_SIZE(&quot;tajo.executor.aggregate.hash-table.size&quot;, 10000),</span>
+<span class="fc" id="L365">    $SORT_LIST_SIZE(&quot;tajo.executor.sort.list.size&quot;, 100000),</span>
+<span class="fc" id="L366">    $JOIN_HASH_TABLE_SIZE(&quot;tajo.executor.join.hash-table.size&quot;, 100000),</span>
+<span class="fc" id="L367">    $SORT_ALGORITHM(&quot;tajo.executor.sort.algorithm&quot;, &quot;TIM&quot;),</span>
+
+    // for index
+<span class="fc" id="L370">    $INDEX_ENABLED(&quot;tajo.query.index.enabled&quot;, false),</span>
+<span class="fc" id="L371">    $INDEX_SELECTIVITY_THRESHOLD(&quot;tajo.query.index.selectivity.threshold&quot;, 0.05f),</span>
+
+    // Client -----------------------------------------------------------------
+<span class="fc" id="L374">    $CLIENT_SESSION_EXPIRY_TIME(&quot;tajo.client.session.expiry-time-sec&quot;, 3600), // default time is one hour.</span>
+
+    // Command line interface and its behavior --------------------------------
+<span class="fc" id="L377">    $CLI_MAX_COLUMN(&quot;tajo.cli.max_columns&quot;, 120),</span>
+<span class="fc" id="L378">    $CLI_NULL_CHAR(&quot;tajo.cli.nullchar&quot;, &quot;&quot;),</span>
+<span class="fc" id="L379">    $CLI_PRINT_PAUSE_NUM_RECORDS(&quot;tajo.cli.print.pause.num.records&quot;, 100),</span>
+<span class="fc" id="L380">    $CLI_PRINT_PAUSE(&quot;tajo.cli.print.pause&quot;, true),</span>
+<span class="fc" id="L381">    $CLI_PRINT_ERROR_TRACE(&quot;tajo.cli.print.error.trace&quot;, true),</span>
+<span class="fc" id="L382">    $CLI_OUTPUT_FORMATTER_CLASS(&quot;tajo.cli.output.formatter&quot;, &quot;org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter&quot;),</span>
+<span class="fc" id="L383">    $CLI_ERROR_STOP(&quot;tajo.cli.error.stop&quot;, false),</span>
+
+    // Timezone &amp; Date ----------------------------------------------------------
+<span class="fc" id="L386">    $TIMEZONE(&quot;tajo.timezone&quot;, TimeZone.getDefault().getID()),</span>
+<span class="fc" id="L387">    $DATE_ORDER(&quot;tajo.datetime.date-order&quot;, &quot;YMD&quot;),</span>
+
+    // null character for text file output
+<span class="fc" id="L390">    $TEXT_NULL(&quot;tajo.text.null&quot;, NullDatum.DEFAULT_TEXT),</span>
+
+    // Only for Debug and Testing
+<span class="fc" id="L393">    $DEBUG_ENABLED(TajoConstants.DEBUG_KEY, false),</span>
+<span class="fc" id="L394">    $TEST_MODE(TajoConstants.TEST_KEY, false),</span>
+<span class="fc" id="L395">    $TEST_BROADCAST_JOIN_ENABLED(&quot;tajo.dist-query.join.auto-broadcast&quot;, true),</span>
+<span class="fc" id="L396">    $TEST_JOIN_OPT_ENABLED(&quot;tajo.test.plan.join-optimization.enabled&quot;, true),</span>
+<span class="fc" id="L397">    $TEST_FILTER_PUSHDOWN_ENABLED(&quot;tajo.test.plan.filter-pushdown.enabled&quot;, true),</span>
+<span class="fc" id="L398">    $TEST_MIN_TASK_NUM(&quot;tajo.test.min-task-num&quot;, -1),</span>
+<span class="fc" id="L399">    $TEST_PLAN_SHAPE_FIX_ENABLED(&quot;tajo.test.plan.shape.fix.enabled&quot;, false),  // used for explain statement test</span>
+<span class="fc" id="L400">    $TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT(&quot;tajo.test.executor.radix-sort.tim-sort-threshold&quot;, 65536),</span>
+
+    // Behavior Control ---------------------------------------------------------
+<span class="fc" id="L403">    $BEHAVIOR_ARITHMETIC_ABORT(&quot;tajo.behavior.arithmetic-abort&quot;, false),</span>
+
+    // If True, a partitioned table is overwritten even if a sub query leads to no result.
+    // Otherwise, the table data will be kept if there is no result
+<span class="fc" id="L407">    $PARTITION_NO_RESULT_OVERWRITE_ENABLED(&quot;tajo.partition.overwrite.even-if-no-result&quot;, false),</span>
+
+      // ResultSet ---------------------------------------------------------
+<span class="fc" id="L410">    $RESULT_SET_FETCH_ROWNUM(&quot;tajo.resultset.fetch.rownum&quot;, 200),</span>
+<span class="fc" id="L411">    $RESULT_SET_BLOCK_WAIT(&quot;tajo.resultset.block.wait&quot;, true),</span>
+<span class="fc" id="L412">    $COMPRESSED_RESULT_TRANSFER(&quot;tajo.resultset.compression&quot;, false),</span>
+    ;
+
+    public final String varname;
+    public final String defaultVal;
+    public final int defaultIntVal;
+    public final long defaultLongVal;
+    public final float defaultFloatVal;
+    public final Class&lt;?&gt; valClass;
+    public final boolean defaultBoolVal;
+
+    private final VarType type;
+    private Validator validator;
+
+<span class="fc" id="L426">    ConfVars(String varname, String defaultVal) {</span>
+<span class="fc" id="L427">      this.varname = varname;</span>
+<span class="fc" id="L428">      this.valClass = String.class;</span>
+<span class="fc" id="L429">      this.defaultVal = defaultVal;</span>
+<span class="fc" id="L430">      this.defaultIntVal = -1;</span>
+<span class="fc" id="L431">      this.defaultLongVal = -1;</span>
+<span class="fc" id="L432">      this.defaultFloatVal = -1;</span>
+<span class="fc" id="L433">      this.defaultBoolVal = false;</span>
+<span class="fc" id="L434">      this.type = VarType.STRING;</span>
+<span class="fc" id="L435">    }</span>
+
+    ConfVars(String varname, String defaultVal, Validator validator) {
+<span class="fc" id="L438">      this(varname, defaultVal);</span>
+<span class="fc" id="L439">      this.validator = validator;</span>
+<span class="fc" id="L440">    }</span>
+
+<span class="fc" id="L442">    ConfVars(String varname, int defaultIntVal) {</span>
+<span class="fc" id="L443">      this.varname = varname;</span>
+<span class="fc" id="L444">      this.valClass = Integer.class;</span>
+<span class="fc" id="L445">      this.defaultVal = Integer.toString(defaultIntVal);</span>
+<span class="fc" id="L446">      this.defaultIntVal = defaultIntVal;</span>
+<span class="fc" id="L447">      this.defaultLongVal = -1;</span>
+<span class="fc" id="L448">      this.defaultFloatVal = -1;</span>
+<span class="fc" id="L449">      this.defaultBoolVal = false;</span>
+<span class="fc" id="L450">      this.type = VarType.INT;</span>
+<span class="fc" id="L451">    }</span>
+
+    ConfVars(String varname, int defaultIntVal, Validator validator) {
+<span class="fc" id="L454">      this(varname, defaultIntVal);</span>
+<span class="fc" id="L455">      this.validator = validator;</span>
+<span class="fc" id="L456">    }</span>
+
+<span class="fc" id="L458">    ConfVars(String varname, long defaultLongVal) {</span>
+<span class="fc" id="L459">      this.varname = varname;</span>
+<span class="fc" id="L460">      this.valClass = Long.class;</span>
+<span class="fc" id="L461">      this.defaultVal = Long.toString(defaultLongVal);</span>
+<span class="fc" id="L462">      this.defaultIntVal = -1;</span>
+<span class="fc" id="L463">      this.defaultLongVal = defaultLongVal;</span>
+<span class="fc" id="L464">      this.defaultFloatVal = -1;</span>
+<span class="fc" id="L465">      this.defaultBoolVal = false;</span>
+<span class="fc" id="L466">      this.type = VarType.LONG;</span>
+<span class="fc" id="L467">    }</span>
+
+    ConfVars(String varname, long defaultLongVal, Validator validator) {
+<span class="fc" id="L470">      this(varname, defaultLongVal);</span>
+<span class="fc" id="L471">      this.validator = validator;</span>
+<span class="fc" id="L472">    }</span>
+
+<span class="fc" id="L474">    ConfVars(String varname, float defaultFloatVal) {</span>
+<span class="fc" id="L475">      this.varname = varname;</span>
+<span class="fc" id="L476">      this.valClass = Float.class;</span>
+<span class="fc" id="L477">      this.defaultVal = Float.toString(defaultFloatVal);</span>
+<span class="fc" id="L478">      this.defaultIntVal = -1;</span>
+<span class="fc" id="L479">      this.defaultLongVal = -1;</span>
+<span class="fc" id="L480">      this.defaultFloatVal = defaultFloatVal;</span>
+<span class="fc" id="L481">      this.defaultBoolVal = false;</span>
+<span class="fc" id="L482">      this.type = VarType.FLOAT;</span>
+<span class="fc" id="L483">    }</span>
+
+    ConfVars(String varname, float defaultFloatVal, Validator validator) {
+<span class="fc" id="L486">      this(varname, defaultFloatVal);</span>
+<span class="fc" id="L487">      this.validator = validator;</span>
+<span class="fc" id="L488">    }</span>
+
+<span class="fc" id="L490">    ConfVars(String varname, boolean defaultBoolVal) {</span>
+<span class="fc" id="L491">      this.varname = varname;</span>
+<span class="fc" id="L492">      this.valClass = Boolean.class;</span>
+<span class="fc" id="L493">      this.defaultVal = Boolean.toString(defaultBoolVal);</span>
+<span class="fc" id="L494">      this.defaultIntVal = -1;</span>
+<span class="fc" id="L495">      this.defaultLongVal = -1;</span>
+<span class="fc" id="L496">      this.defaultFloatVal = -1;</span>
+<span class="fc" id="L497">      this.defaultBoolVal = defaultBoolVal;</span>
+<span class="fc" id="L498">      this.type = VarType.BOOLEAN;</span>
+<span class="fc" id="L499">    }</span>
+
+    ConfVars(String varname, boolean defaultBoolVal, Validator validator) {
+<span class="fc" id="L502">      this(varname, defaultBoolVal);</span>
+<span class="fc" id="L503">      this.validator = validator;</span>
+<span class="fc" id="L504">    }</span>
+
+<span class="fc" id="L506">    enum VarType {</span>
+<span class="pc" id="L507">      STRING { void checkType(String value) throws Exception { } },</span>
+<span class="pc" id="L508">      INT { void checkType(String value) throws Exception { Integer.valueOf(value); } },</span>
+<span class="pc" id="L509">      LONG { void checkType(String value) throws Exception { Long.valueOf(value); } },</span>
+<span class="pc" id="L510">      FLOAT { void checkType(String value) throws Exception { Float.valueOf(value); } },</span>
+<span class="pc" id="L511">      BOOLEAN { void checkType(String value) throws Exception { Boolean.valueOf(value); } };</span>
+
+      boolean isType(String value) {
+<span class="nc" id="L514">        try { checkType(value); } catch (Exception e) { return false; }</span>
+<span class="nc" id="L515">        return true;</span>
+      }
+<span class="nc" id="L517">      String typeString() { return name().toUpperCase();}</span>
+      abstract void checkType(String value) throws Exception;
+    }
+
+    @Override
+    public String keyname() {
+<span class="fc" id="L523">      return varname;</span>
+    }
+
+    @Override
+    public ConfigType type() {
+<span class="nc" id="L528">      return ConfigType.SYSTEM;</span>
+    }
+
+    @Override
+    public Class&lt;?&gt; valueClass() {
+<span class="nc" id="L533">      return valClass;</span>
+    }
+
+    @Override
+    public Validator validator() {
+<span class="nc" id="L538">      return validator;</span>
+    }
+  }
+
+  public static int getIntVar(Configuration conf, ConfVars var) {
+<span class="nc bnc" id="L543" title="All 4 branches missed.">    assert (var.valClass == Integer.class);</span>
+<span class="nc" id="L544">    return conf.getInt(var.varname, var.defaultIntVal);</span>
+  }
+
+  public static void setIntVar(Configuration conf, ConfVars var, int val) {
+<span class="nc bnc" id="L548" title="All 4 branches missed.">    assert (var.valClass == Integer.class);</span>
+<span class="nc" id="L549">    conf.setInt(var.varname, val);</span>
+<span class="nc" id="L550">  }</span>
+
+  public int getIntVar(ConfVars var) {
+<span class="nc" id="L553">    return getIntVar(this, var);</span>
+  }
+
+  public void setIntVar(ConfVars var, int val) {
+<span class="nc" id="L557">    setIntVar(this, var, val);</span>
+<span class="nc" id="L558">  }</span>
+
+  public static long getLongVar(Configuration conf, ConfVars var) {
+<span class="nc bnc" id="L561" title="All 8 branches missed.">    assert (var.valClass == Long.class || var.valClass == Integer.class || var.valClass == Float.class);</span>
+<span class="nc bnc" id="L562" title="All 2 branches missed.">    if (var.valClass == Integer.class) {</span>
+<span class="nc" id="L563">      return conf.getInt(var.varname, var.defaultIntVal);</span>
+    } else {
+<span class="nc" id="L565">      return conf.getLong(var.varname, var.defaultLongVal);</span>
+    }
+  }
+
+  public static long getLongVar(Configuration conf, ConfVars var, long defaultVal) {
+<span class="nc" id="L570">    return conf.getLong(var.varname, defaultVal);</span>
+  }
+
+  public static void setLongVar(Configuration conf, ConfVars var, long val) {
+<span class="nc bnc" id="L574" title="All 4 branches missed.">    assert (var.valClass == Long.class);</span>
+<span class="nc" id="L575">    conf.setLong(var.varname, val);</span>
+<span class="nc" id="L576">  }</span>
+
+  public long getLongVar(ConfVars var) {
+<span class="nc" id="L579">    return getLongVar(this, var);</span>
+  }
+
+  public void setLongVar(ConfVars var, long val) {
+<span class="nc" id="L583">    setLongVar(this, var, val);</span>
+<span class="nc" id="L584">  }</span>
+
+  public static float getFloatVar(Configuration conf, ConfVars var) {
+<span class="nc bnc" id="L587" title="All 4 branches missed.">    assert (var.valClass == Float.class);</span>
+<span class="nc" id="L588">    return conf.getFloat(var.varname, var.defaultFloatVal);</span>
+  }
+
+  public static float getFloatVar(Configuration conf, ConfVars var, float defaultVal) {
+<span class="nc" id="L592">    return conf.getFloat(var.varname, defaultVal);</span>
+  }
+
+  public static void setFloatVar(Configuration conf, ConfVars var, float val) {
+<span class="nc bnc" id="L596" title="All 4 branches missed.">    assert (var.valClass == Float.class);</span>
+<span class="nc" id="L597">    conf.setFloat(var.varname, val);</span>
+<span class="nc" id="L598">  }</span>
+
+  public float getFloatVar(ConfVars var) {
+<span class="nc" id="L601">    return getFloatVar(this, var);</span>
+  }
+
+  public void setFloatVar(ConfVars var, float val) {
+<span class="nc" id="L605">    setFloatVar(this, var, val);</span>
+<span class="nc" id="L606">  }</span>
+
+  public static boolean getBoolVar(Configuration conf, ConfVars var) {
+<span class="pc bpc" id="L609" title="2 of 4 branches missed.">    assert (var.valClass == Boolean.class);</span>
+<span class="fc" id="L610">    return conf.getBoolean(var.varname, var.defaultBoolVal);</span>
+  }
+
+  public static boolean getBoolVar(Configuration conf, ConfVars var, boolean defaultVal) {
+<span class="nc" id="L614">    return conf.getBoolean(var.varname, defaultVal);</span>
+  }
+
+  public static void setBoolVar(Configuration conf, ConfVars var, boolean val) {
+<span class="nc bnc" id="L618" title="All 4 branches missed.">    assert (var.valClass == Boolean.class);</span>
+<span class="nc" id="L619">    conf.setBoolean(var.varname, val);</span>
+<span class="nc" id="L620">  }</span>
+
+  public boolean getBoolVar(ConfVars var) {
+<span class="fc" id="L623">    return getBoolVar(this, var);</span>
+  }
+
+  public void setBoolVar(ConfVars var, boolean val) {
+<span class="nc" id="L627">    setBoolVar(this, var, val);</span>
+<span class="nc" id="L628">  }</span>
+
+  // borrowed from HIVE-5799
+  public static long getTimeVar(Configuration conf, ConfVars var, TimeUnit outUnit) {
+<span class="nc" id="L632">    return toTime(getVar(conf, var), outUnit);</span>
+  }
+
+  public static void setTimeVar(Configuration conf, ConfVars var, long time, TimeUnit timeunit) {
+<span class="nc bnc" id="L636" title="All 4 branches missed.">    assert (var.valClass == String.class) : var.varname;</span>
+<span class="nc" id="L637">    conf.set(var.varname, time + stringFor(timeunit));</span>
+<span class="nc" id="L638">  }</span>
+
+  public long getTimeVar(ConfVars var, TimeUnit outUnit) {
+<span class="nc" id="L641">    return getTimeVar(this, var, outUnit);</span>
+  }
+
+  public void setTimeVar(ConfVars var, long time, TimeUnit outUnit) {
+<span class="nc" id="L645">    setTimeVar(this, var, time, outUnit);</span>
+<span class="nc" id="L646">  }</span>
+
+  public static long toTime(String value, TimeUnit outUnit) {
+<span class="nc" id="L649">    String[] parsed = parseTime(value.trim());</span>
+<span class="nc" id="L650">    return outUnit.convert(Long.valueOf(parsed[0].trim()), unitFor(parsed[1].trim()));</span>
+  }
+
+  private static String[] parseTime(String value) {
+<span class="nc" id="L654">    char[] chars = value.toCharArray();</span>
+<span class="nc" id="L655">    int i = 0;</span>
+<span class="nc bnc" id="L656" title="All 6 branches missed.">    for (; i &lt; chars.length &amp;&amp; (chars[i] == '-' || Character.isDigit(chars[i])); i++) {</span>
+    }
+<span class="nc" id="L658">    return new String[] {value.substring(0, i), value.substring(i)};</span>
+  }
+
+  public static TimeUnit unitFor(String unit) {
+<span class="nc" id="L662">    unit = unit.trim().toLowerCase();</span>
+<span class="nc bnc" id="L663" title="All 4 branches missed.">    if (unit.isEmpty() || unit.equals(&quot;l&quot;)) {</span>
+<span class="nc" id="L664">      return TimeUnit.MILLISECONDS;</span>
+<span class="nc bnc" id="L665" title="All 4 branches missed.">    } else if (unit.equals(&quot;d&quot;) || unit.startsWith(&quot;day&quot;)) {</span>
+<span class="nc" id="L666">      return TimeUnit.DAYS;</span>
+<span class="nc bnc" id="L667" title="All 4 branches missed.">    } else if (unit.equals(&quot;h&quot;) || unit.startsWith(&quot;hour&quot;)) {</span>
+<span class="nc" id="L668">      return TimeUnit.HOURS;</span>
+<span class="nc bnc" id="L669" title="All 4 branches missed.">    } else if (unit.equals(&quot;m&quot;) || unit.startsWith(&quot;min&quot;)) {</span>
+<span class="nc" id="L670">      return TimeUnit.MINUTES;</span>
+<span class="nc bnc" id="L671" title="All 4 branches missed.">    } else if (unit.equals(&quot;s&quot;) || unit.startsWith(&quot;sec&quot;)) {</span>
+<span class="nc" id="L672">      return TimeUnit.SECONDS;</span>
+<span class="nc bnc" id="L673" title="All 4 branches missed.">    } else if (unit.equals(&quot;ms&quot;) || unit.startsWith(&quot;msec&quot;)) {</span>
+<span class="nc" id="L674">      return TimeUnit.MILLISECONDS;</span>
+<span class="nc bnc" id="L675" title="All 4 branches missed.">    } else if (unit.equals(&quot;us&quot;) || unit.startsWith(&quot;usec&quot;)) {</span>
+<span class="nc" id="L676">      return TimeUnit.MICROSECONDS;</span>
+<span class="nc bnc" id="L677" title="All 4 branches missed.">    } else if (unit.equals(&quot;ns&quot;) || unit.startsWith(&quot;nsec&quot;)) {</span>
+<span class="nc" id="L678">      return TimeUnit.NANOSECONDS;</span>
+    }
+<span class="nc" id="L680">    throw new IllegalArgumentException(&quot;Invalid time unit &quot; + unit);</span>
+  }
+
+  public static String stringFor(TimeUnit timeunit) {
+<span class="nc bnc" id="L684" title="All 8 branches missed.">    switch (timeunit) {</span>
+<span class="nc" id="L685">      case DAYS: return &quot;day&quot;;</span>
+<span class="nc" id="L686">      case HOURS: return &quot;hour&quot;;</span>
+<span class="nc" id="L687">      case MINUTES: return &quot;min&quot;;</span>
+<span class="nc" id="L688">      case SECONDS: return &quot;sec&quot;;</span>
+<span class="nc" id="L689">      case MILLISECONDS: return &quot;msec&quot;;</span>
+<span class="nc" id="L690">      case MICROSECONDS: return &quot;usec&quot;;</span>
+<span class="nc" id="L691">      case NANOSECONDS: return &quot;nsec&quot;;</span>
+    }
+<span class="nc" id="L693">    throw new IllegalArgumentException(&quot;Invalid timeunit &quot; + timeunit);</span>
+  }
+
+  public void setClassVar(ConfVars var, Class&lt;?&gt; clazz) {
+<span class="nc" id="L697">    setVar(var, clazz.getCanonicalName());</span>
+<span class="nc" id="L698">  }</span>
+
+  public Class&lt;?&gt; getClassVar(ConfVars var) {
+<span class="nc" id="L701">    String valueString = getVar(var);</span>
+
+    try {
+<span class="nc" id="L704">      return getClassByName(valueString);</span>
+<span class="nc" id="L705">    } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L706">      throw new RuntimeException(e);</span>
+    }
+  }
+
+  public static String getVar(Configuration conf, ConfVars var) {
+<span class="nc" id="L711">    return conf.get(var.varname, var.defaultVal);</span>
+  }
+
+  public static String getVar(Configuration conf, ConfVars var, String defaultVal) {
+<span class="nc" id="L715">    return conf.get(var.varname, defaultVal);</span>
+  }
+
+  public static void setVar(Configuration conf, ConfVars var, String val) {
+<span class="nc bnc" id="L719" title="All 4 branches missed.">    assert (var.valClass == String.class);</span>
+<span class="nc" id="L720">    conf.set(var.varname, val);</span>
+<span class="nc" id="L721">  }</span>
+
+  public static ConfVars getConfVars(String name) {
+<span class="nc" id="L724">    return vars.get(name);</span>
+  }
+
+  public String getVar(ConfVars var) {
+<span class="nc" id="L728">    return getVar(this, var);</span>
+  }
+
+  public void setVar(ConfVars var, String val) {
+<span class="nc" id="L732">    setVar(this, var, val);</span>
+<span class="nc" id="L733">  }</span>
+
+  public void logVars(PrintStream ps) {
+<span class="nc bnc" id="L736" title="All 2 branches missed.">    for (ConfVars one : ConfVars.values()) {</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">      ps.println(one.varname + &quot;=&quot; + ((get(one.varname) != null) ? get(one.varname) : &quot;&quot;));</span>
+    }
+<span class="nc" id="L739">  }</span>
+
+  public InetSocketAddress getSocketAddrVar(ConfVars var) {
+<span class="nc" id="L742">    final String address = getVar(var);</span>
+<span class="nc" id="L743">    return NetUtils.createSocketAddr(address);</span>
+  }
+
+  /**
+   * Returns InetSocketAddress that a client can use to connect to the server.
+   * If the configured address is any local address(”0.0.0.0”), finds default host in defaultVar.
+   *
+   * @param var
+   * @param defaultVar
+   * @return InetSocketAddress
+   */
+  public InetSocketAddress getSocketAddrVar(ConfVars var, ConfVars defaultVar) {
+
+<span class="nc" id="L756">    InetSocketAddress addr = NetUtils.createSocketAddr(getVar(var));</span>
+
+<span class="nc bnc" id="L758" title="All 2 branches missed.">    if (addr.getAddress().isAnyLocalAddress()) {</span>
+<span class="nc" id="L759">      InetSocketAddress defaultAddr = NetUtils.createSocketAddr(getVar(defaultVar));</span>
+<span class="nc" id="L760">      addr = NetUtils.createSocketAddr(defaultAddr.getHostName(), addr.getPort());</span>
+    }
+
+<span class="nc" id="L763">    return addr;</span>
+  }
+
+  /////////////////////////////////////////////////////////////////////////////
+  // Tajo System Specific Methods
+  /////////////////////////////////////////////////////////////////////////////
+
+  public static Path getTajoRootDir(TajoConf conf) {
+<span class="nc" id="L771">    String rootPath = conf.getVar(ConfVars.ROOT_DIR);</span>
+<span class="nc" id="L772">    Preconditions.checkNotNull(rootPath,</span>
+        ConfVars.ROOT_DIR.varname + &quot; must be set before a Tajo Cluster starts up&quot;);
+
+    FileSystem fs;
+
+    try {
+<span class="nc" id="L778">      fs = FileSystem.get(conf);</span>
+<span class="nc" id="L779">    } catch (IOException e) {</span>
+<span class="nc" id="L780">      throw new TajoInternalError(e);</span>
+<span class="nc" id="L781">    }</span>
+<span class="nc" id="L782">    return fs.makeQualified(new Path(rootPath));</span>
+  }
+
+  public static Path getWarehouseDir(TajoConf conf) {
+<span class="nc" id="L786">    String warehousePath = conf.getVar(ConfVars.WAREHOUSE_DIR);</span>
+<span class="nc bnc" id="L787" title="All 4 branches missed.">    if (warehousePath == null || warehousePath.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L788">      Path rootDir = getTajoRootDir(conf);</span>
+<span class="nc" id="L789">      warehousePath = new Path(rootDir, TajoConstants.WAREHOUSE_DIR_NAME).toUri().toString();</span>
+<span class="nc" id="L790">      conf.setVar(ConfVars.WAREHOUSE_DIR, warehousePath);</span>
+<span class="nc" id="L791">      return new Path(warehousePath);</span>
+    } else {
+<span class="nc" id="L793">      return new Path(warehousePath);</span>
+    }
+  }
+
+  public static Path getSystemDir(TajoConf conf) {
+<span class="nc" id="L798">    Path rootPath = getTajoRootDir(conf);</span>
+<span class="nc" id="L799">    return new Path(rootPath, TajoConstants.SYSTEM_DIR_NAME);</span>
+  }
+
+  public static Path getSystemResourceDir(TajoConf conf) {
+<span class="nc" id="L803">    return new Path(getSystemDir(conf), TajoConstants.SYSTEM_RESOURCE_DIR_NAME);</span>
+  }
+
+  public static Path getSystemHADir(TajoConf conf) {
+<span class="nc" id="L807">    return new Path(getSystemDir(conf), TajoConstants.SYSTEM_HA_DIR_NAME);</span>
+  }
+
+  private static boolean hasScheme(String path) {
+<span class="nc bnc" id="L811" title="All 4 branches missed.">    return path.indexOf(&quot;file:/&quot;) == 0 || path.indexOf(&quot;hdfs:/&quot;) == 0;</span>
+  }
+
+  /**
+   * It returns the default root staging directory used by queries without a target table or
+   * a specified output directory. An example query is &lt;pre&gt;SELECT a,b,c FROM XXX;&lt;/pre&gt;.
+   *
+   * @param conf TajoConf
+   * @return Path which points the default staging directory
+   * @throws IOException
+   */
+  public static Path getDefaultRootStagingDir(TajoConf conf) throws IOException {
+<span class="nc" id="L823">    String stagingDirString = conf.getVar(ConfVars.STAGING_ROOT_DIR);</span>
+<span class="nc bnc" id="L824" title="All 2 branches missed.">    if (!hasScheme(stagingDirString)) {</span>
+<span class="nc" id="L825">      Path warehousePath = getWarehouseDir(conf);</span>
+<span class="nc" id="L826">      FileSystem fs = warehousePath.getFileSystem(conf);</span>
+<span class="nc" id="L827">      Path path = new Path(fs.getUri().toString(), stagingDirString);</span>
+<span class="nc" id="L828">      conf.setVar(ConfVars.STAGING_ROOT_DIR, path.toString());</span>
+<span class="nc" id="L829">      return path;</span>
+    }
+<span class="nc" id="L831">    return new Path(stagingDirString);</span>
+  }
+
+  /**
+   * It returns the temporal query directory
+   * An example dir is &lt;pre&gt;/{staging-dir}/{queryId}/RESULT&lt;/pre&gt;.
+   *
+   * @param conf TajoConf
+   * @param queryId queryId
+   * @throws IOException
+   */
+  public static Path getTemporalResultDir(TajoConf conf, QueryId queryId) throws IOException {
+<span class="nc" id="L843">    Path queryDir = new Path(getDefaultRootStagingDir(conf), queryId.toString());</span>
+<span class="nc" id="L844">    return new Path(queryDir, TajoConstants.RESULT_DIR_NAME);</span>
+  }
+
+  public static Path getQueryHistoryDir(TajoConf conf) throws IOException {
+<span class="nc" id="L848">    String historyDirString = conf.getVar(ConfVars.HISTORY_QUERY_DIR);</span>
+<span class="nc bnc" id="L849" title="All 2 branches missed.">    if (!hasScheme(historyDirString)) {</span>
+<span class="nc" id="L850">      Path stagingPath = getDefaultRootStagingDir(conf);</span>
+<span class="nc" id="L851">      FileSystem fs = stagingPath.getFileSystem(conf);</span>
+<span class="nc" id="L852">      Path path = new Path(fs.getUri().toString(), historyDirString);</span>
+<span class="nc" id="L853">      conf.setVar(ConfVars.HISTORY_QUERY_DIR, path.toString());</span>
+<span class="nc" id="L854">      return path;</span>
+    }
+<span class="nc" id="L856">    return new Path(historyDirString);</span>
+  }
+
+  public static Path getTaskHistoryDir(TajoConf conf) throws IOException {
+<span class="nc" id="L860">    String historyDirString = conf.getVar(ConfVars.HISTORY_TASK_DIR);</span>
+<span class="nc bnc" id="L861" title="All 2 branches missed.">    if (!hasScheme(historyDirString)) {</span>
+      //Local dir
+<span class="nc" id="L863">      historyDirString = &quot;file://&quot; + historyDirString;</span>
+    }
+<span class="nc" id="L865">    return new Path(historyDirString);</span>
+  }
+
+  public static Path getSystemConfPath(TajoConf conf) {
+<span class="nc" id="L869">    String systemConfPathStr = conf.getVar(ConfVars.SYSTEM_CONF_PATH);</span>
+<span class="nc bnc" id="L870" title="All 4 branches missed.">    if (systemConfPathStr == null || systemConfPathStr.equals(&quot;&quot;)) {</span>
+<span class="nc" id="L871">      Path systemResourcePath = getSystemResourceDir(conf);</span>
+<span class="nc" id="L872">      Path systemConfPath = new Path(systemResourcePath, TajoConstants.SYSTEM_CONF_FILENAME);</span>
+<span class="nc" id="L873">      conf.setVar(ConfVars.SYSTEM_CONF_PATH, systemConfPath.toString());</span>
+<span class="nc" id="L874">      return systemConfPath;</span>
+    } else {
+<span class="nc" id="L876">      return new Path(systemConfPathStr);</span>
+    }
+  }
+
+  /**
+   * validateProperty function will fetch pre-defined configuration property by keyname.
+   * If found, it will validate the supplied value with these validators.
+   *
+   * @param name - a string containing specific key
+   * @param value - a string containing value
+   * @throws ConstraintViolationException
+   */
+  public void validateProperty(String name, String value) throws ConstraintViolationException {
+<span class="nc" id="L889">    ConfigKey configKey = null;</span>
+<span class="nc" id="L890">    configKey = TajoConf.getConfVars(name);</span>
+<span class="nc bnc" id="L891" title="All 2 branches missed.">    if (configKey == null) {</span>
+<span class="nc" id="L892">      configKey = SessionVars.get(name);</span>
+    }
+<span class="nc bnc" id="L894" title="All 6 branches missed.">    if (configKey != null &amp;&amp; configKey.validator() != null &amp;&amp; configKey.valueClass() != null) {</span>
+<span class="nc" id="L895">      Object valueObj = value;</span>
+<span class="nc bnc" id="L896" title="All 2 branches missed.">      if (Number.class.isAssignableFrom(configKey.valueClass())) {</span>
+<span class="nc" id="L897">        valueObj = NumberUtil.numberValue(configKey.valueClass(), value);</span>
+<span class="nc bnc" id="L898" title="All 2 branches missed.">        if (valueObj == null) {</span>
+<span class="nc" id="L899">          return;</span>
+        }
+      }
+<span class="nc" id="L902">      configKey.validator().validate(valueObj, true);</span>
+    }
+<span class="nc" id="L904">  }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

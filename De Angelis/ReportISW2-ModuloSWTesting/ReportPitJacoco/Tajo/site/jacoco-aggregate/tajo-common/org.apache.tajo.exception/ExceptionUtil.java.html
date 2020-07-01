@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExceptionUtil.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.exception</a> &gt; <span class="el_source">ExceptionUtil.java</span></div><h1>ExceptionUtil.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.exception;
+
+import com.google.common.collect.Maps;
+import org.apache.commons.logging.Log;
+import org.apache.hadoop.util.StringUtils;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+
+import java.lang.reflect.Constructor;
+import java.util.Map;
+
+import static org.apache.tajo.error.Errors.ResultCode.*;
+import static org.apache.tajo.exception.ReturnStateUtil.isError;
+
+<span class="nc" id="L34">public class ExceptionUtil {</span>
+
+<span class="nc" id="L36">  static Map&lt;Errors.ResultCode, Class&lt;? extends DefaultTajoException&gt;&gt; EXCEPTIONS = Maps.newHashMap();</span>
+
+  static {
+
+    // General Errors
+<span class="nc" id="L41">    ADD_EXCEPTION(INTERNAL_ERROR, TajoInternalError.class);</span>
+<span class="nc" id="L42">    ADD_EXCEPTION(FEATURE_NOT_SUPPORTED, UnsupportedException.class);</span>
+<span class="nc" id="L43">    ADD_EXCEPTION(NOT_IMPLEMENTED, NotImplementedException.class);</span>
+
+    // Query Management and Scheduler
+<span class="nc" id="L46">    ADD_EXCEPTION(QUERY_NOT_FOUND, QueryNotFoundException.class);</span>
+
+    // Session
+<span class="nc" id="L49">    ADD_EXCEPTION(INVALID_SESSION, InvalidSessionException.class);</span>
+<span class="nc" id="L50">    ADD_EXCEPTION(NO_SUCH_SESSION_VARIABLE, NoSuchSessionVariableException.class);</span>
+<span class="nc" id="L51">    ADD_EXCEPTION(INVALID_SESSION_VARIABLE, InvalidSessionVariableException.class);</span>
+
+    // Data Exception (SQLState Class - 22)
+<span class="nc" id="L54">    ADD_EXCEPTION(DIVISION_BY_ZERO, DividedByZeroException.class);</span>
+<span class="nc" id="L55">    ADD_EXCEPTION(INVALID_URL, InvalidURLException.class);</span>
+<span class="nc" id="L56">    ADD_EXCEPTION(INVALID_VALUE_FOR_CAST, InvalidValueForCastException.class);</span>
+
+    // Syntax Error or Access Rule Violation
+<span class="nc" id="L59">    ADD_EXCEPTION(SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION, SQLSyntaxError.class);</span>
+<span class="nc" id="L60">    ADD_EXCEPTION(SYNTAX_ERROR, SQLSyntaxError.class);</span>
+<span class="nc" id="L61">    ADD_EXCEPTION(INSUFFICIENT_PRIVILEGE, InsufficientPrivilegeException.class);</span>
+<span class="nc" id="L62">    ADD_EXCEPTION(CANNOT_DROP_CURRENT_DATABASE, CannotDropCurrentDatabaseException.class);</span>
+
+<span class="nc" id="L64">    ADD_EXCEPTION(UNDEFINED_TABLESPACE, UndefinedTablespaceException.class);</span>
+<span class="nc" id="L65">    ADD_EXCEPTION(UNDEFINED_DATABASE, UndefinedDatabaseException.class);</span>
+    // ADD_EXCEPTION(UNDEFINED_SCHEMA, );
+<span class="nc" id="L67">    ADD_EXCEPTION(UNDEFINED_TABLE, UndefinedTableException.class);</span>
+<span class="nc" id="L68">    ADD_EXCEPTION(UNDEFINED_COLUMN, UndefinedColumnException.class);</span>
+<span class="nc" id="L69">    ADD_EXCEPTION(UNDEFINED_FUNCTION, UndefinedFunctionException.class);</span>
+<span class="nc" id="L70">    ADD_EXCEPTION(UNDEFINED_PARTITION_METHOD, UndefinedPartitionMethodException.class);</span>
+<span class="nc" id="L71">    ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);</span>
+<span class="nc" id="L72">    ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);</span>
+<span class="nc" id="L73">    ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);</span>
+<span class="nc" id="L74">    ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);</span>
+<span class="nc" id="L75">    ADD_EXCEPTION(UNDEFINED_TABLESPACE_HANDLER, UndefinedTablespaceHandlerException.class);</span>
+
+<span class="nc" id="L77">    ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTablespaceException.class);</span>
+<span class="nc" id="L78">    ADD_EXCEPTION(DUPLICATE_DATABASE, DuplicateDatabaseException.class);</span>
+    // ADD_EXCEPTION(DUPLICATE_SCHEMA, );
+<span class="nc" id="L80">    ADD_EXCEPTION(DUPLICATE_TABLE, DuplicateTableException.class);</span>
+<span class="nc" id="L81">    ADD_EXCEPTION(DUPLICATE_COLUMN, DuplicateColumnException.class);</span>
+    // ADD_EXCEPTION(DUPLICATE_ALIAS, );
+<span class="nc" id="L83">    ADD_EXCEPTION(DUPLICATE_INDEX, DuplicateIndexException.class);</span>
+<span class="nc" id="L84">    ADD_EXCEPTION(DUPLICATE_PARTITION, DuplicatePartitionException.class);</span>
+
+<span class="nc" id="L86">    ADD_EXCEPTION(AMBIGUOUS_TABLE, AmbiguousTableException.class);</span>
+<span class="nc" id="L87">    ADD_EXCEPTION(AMBIGUOUS_COLUMN, AmbiguousColumnException.class);</span>
+<span class="nc" id="L88">    ADD_EXCEPTION(AMBIGUOUS_FUNCTION, AmbiguousFunctionException.class);</span>
+
+    // Expressions
+<span class="nc" id="L91">    ADD_EXCEPTION(DATATYPE_MISMATCH, DataTypeMismatchException.class);</span>
+
+<span class="nc" id="L93">    ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);</span>
+<span class="nc" id="L94">    ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);</span>
+<span class="nc" id="L95">    ADD_EXCEPTION(UNSUPPORTED_DATATYPE, UnsupportedDataTypeException.class);</span>
+<span class="nc" id="L96">    ADD_EXCEPTION(INVALID_DATATYPE, InvalidDataTypeException.class);</span>
+<span class="nc" id="L97">    ADD_EXCEPTION(INVALID_TABLE_PROPERTY, InvalidTablePropertyException.class);</span>
+<span class="nc" id="L98">    ADD_EXCEPTION(MISSING_TABLE_PROPERTY, MissingTablePropertyException.class);</span>
+
+<span class="nc" id="L100">    ADD_EXCEPTION(TOO_LARGE_INPUT_FOR_CROSS_JOIN, TooLargeInputForCrossJoinException.class);</span>
+<span class="nc" id="L101">    ADD_EXCEPTION(INVALID_INPUTS_FOR_CROSS_JOIN, InvalidInputsForCrossJoin.class);</span>
+
+<span class="nc" id="L103">    ADD_EXCEPTION(CAT_UNSUPPORTED_CATALOG_STORE, UnsupportedCatalogStore.class);</span>
+<span class="nc" id="L104">  }</span>
+
+  private static void ADD_EXCEPTION(Errors.ResultCode code, Class&lt;? extends DefaultTajoException&gt; cls) {
+<span class="nc" id="L107">    EXCEPTIONS.put(code, cls);</span>
+<span class="nc" id="L108">  }</span>
+
+  /**
+   * If the exception is equivalent to the error corresponding to the expected exception, throws the exception.
+   * It is used to throw an exception for a error.
+   *
+   * @param state ReturnState
+   * @param clazz Exception class corresponding to the expected
+   * @param &lt;T&gt; Exception class
+   * @throws T Exception
+   */
+  public static &lt;T extends TajoException&gt; void throwsIfThisError(ReturnState state, Class&lt;T&gt; clazz) throws T {
+<span class="nc bnc" id="L120" title="All 2 branches missed.">    if (isError(state)) {</span>
+<span class="nc" id="L121">      T exception = (T) toTajoException(state);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">      if (exception.getClass().equals(clazz)) {</span>
+<span class="nc" id="L123">        throw exception;</span>
+      }
+    }
+<span class="nc" id="L126">  }</span>
+
+  /**
+   * It can throw any TajoException if any error occurs.
+   *
+   * @param state
+   * @throws TajoException
+   */
+  public static void throwIfError(ReturnState state) throws TajoException {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">    if (isError(state)) {</span>
+<span class="nc" id="L136">      throw toTajoException(state);</span>
+    }
+<span class="nc" id="L138">  }</span>
+
+  public static DefaultTajoException toTajoExceptionCommon(ReturnState state) {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    if (state.getReturnCode() == Errors.ResultCode.INTERNAL_ERROR) {</span>
+<span class="nc" id="L142">      return new TajoInternalError(state);</span>
+
+<span class="nc bnc" id="L144" title="All 2 branches missed.">    } else if (EXCEPTIONS.containsKey(state.getReturnCode())) {</span>
+      Object exception;
+      try {
+<span class="nc" id="L147">        Class clazz = EXCEPTIONS.get(state.getReturnCode());</span>
+<span class="nc" id="L148">        Constructor c = clazz.getConstructor(ReturnState.class);</span>
+<span class="nc" id="L149">        exception = c.newInstance(new Object[]{state});</span>
+<span class="nc" id="L150">      } catch (Throwable t) {</span>
+<span class="nc" id="L151">        throw new TajoInternalError(t);</span>
+<span class="nc" id="L152">      }</span>
+
+<span class="nc bnc" id="L154" title="All 2 branches missed.">      if (exception instanceof TajoException) {</span>
+<span class="nc" id="L155">        return (TajoException) exception;</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">      } else if (exception instanceof TajoRuntimeException) {</span>
+<span class="nc" id="L157">        return ((TajoRuntimeException) exception);</span>
+      } else {
+<span class="nc" id="L159">        return ((TajoError) exception);</span>
+      }
+
+    } else {
+<span class="nc" id="L163">      throw new TajoInternalError(</span>
+<span class="nc" id="L164">          &quot;Cannot restore the exception for [&quot; + state.getReturnCode().name() +&quot;] '&quot; + state.getMessage() +&quot;'&quot;);</span>
+    }
+  }
+
+  public static TajoException toTajoException(ReturnState state) throws TajoRuntimeException, TajoError {
+<span class="nc" id="L169">    DefaultTajoException e = toTajoExceptionCommon(state);</span>
+
+<span class="nc bnc" id="L171" title="All 2 branches missed.">    if (e instanceof TajoException) {</span>
+<span class="nc" id="L172">      return (TajoException) e;</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">    } else if (e instanceof TajoRuntimeException) {</span>
+<span class="nc" id="L174">      throw ((TajoRuntimeException) e);</span>
+    } else {
+<span class="nc" id="L176">      throw ((TajoError) e);</span>
+    }
+  }
+
+  /**
+   * Determine if a Throwable has Tajo's ReturnCode and error message.
+   *
+   * @param t Throwable
+   * @return true if a Throwable has Tajo's ReturnCode and error message.
+   */
+  public static boolean isExceptionWithResultCode(Throwable t) {
+<span class="nc" id="L187">    return t instanceof DefaultTajoException;</span>
+  }
+
+  /**
+   * Determine if a Throwable is caused by user's wrong input and invalid data instead of a bug.
+   *
+   * @param t Throwable
+   * @return true if a Throwable has Tajo's ReturnCode and error message.
+   */
+  public static boolean isManagedException(Throwable t) {
+<span class="nc bnc" id="L197" title="All 4 branches missed.">    return t instanceof TajoException || t instanceof TajoRuntimeException;</span>
+  }
+
+  private static void printStackTrace(Log log, Throwable t) {
+<span class="nc" id="L201">    log.error(&quot;\nStack Trace:\n&quot; + StringUtils.stringifyException(t));</span>
+<span class="nc" id="L202">  }</span>
+
+  public static void printStackTraceIfError(Log log, Throwable t) {
+    // if this runs as an actual cluster instance or a debug mode, it will print all stacktraces.
+    // In other cases (i.e., run as a test mode and not debug mode), it will print stacktraces
+    // if the query is managed mode.
+<span class="nc bnc" id="L208" title="All 6 branches missed.">    if (!TajoConstants.IS_TEST_MODE || TajoConstants.IS_DEBUG_MODE || !ExceptionUtil.isManagedException(t)) {</span>
+<span class="nc" id="L209">      ExceptionUtil.printStackTrace(log, t);</span>
+    }
+<span class="nc" id="L211">  }</span>
+
+  public static UnsupportedException makeNotSupported(String feature) {
+<span class="nc" id="L214">    return new UnsupportedException(feature);</span>
+  }
+
+  /**
+   * Return the string about the exception line ; e.g.,)
+   * &lt;code&gt;Line 195 in JdbcTablespace.java&lt;/code&gt;
+   *
+   * @return A string representing the line number and source file name at which the exception occurs.
+   */
+  @SuppressWarnings(&quot;unused&quot;)
+  public static String getExceptionLine() {
+<span class="nc" id="L225">    StackTraceElement stack = Thread.currentThread().getStackTrace()[3];</span>
+<span class="nc" id="L226">    return &quot;Line &quot; + stack.getLineNumber() + &quot; in &quot; + stack.getFileName();</span>
+  }
+
+  /**
+   * Return the string about the exception point; e.g.,)
+   * &lt;code&gt;org.apache.tajo.storage.mysql.JdbcTablespace::createTable&lt;/code&gt;
+   *
+   * @return A string representing the class and method names at which the exception occurs.
+   */
+  public static String getExceptionPoint() {
+<span class="nc" id="L236">    StackTraceElement stack = Thread.currentThread().getStackTrace()[3];</span>
+<span class="nc" id="L237">    return stack.getClassName() + &quot;::&quot; + stack.getMethodName();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

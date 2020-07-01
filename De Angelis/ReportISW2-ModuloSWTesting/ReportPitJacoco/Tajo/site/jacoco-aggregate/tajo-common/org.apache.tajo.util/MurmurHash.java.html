@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>MurmurHash.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.util</a> &gt; <span class="el_source">MurmurHash.java</span></div><h1>MurmurHash.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.util;
+
+/**
+ * This class is borrowed from the following source code
+ * https://github.com/addthis/stream-lib/blob/master/src/main/java/com/clearspring/analytics/hash/MurmurHash.java
+ */
+<span class="nc" id="L25">public class MurmurHash {</span>
+  public static int hash(Object o) {
+<span class="nc bnc" id="L27" title="All 2 branches missed.">    if (o == null) {</span>
+<span class="nc" id="L28">      return 0;</span>
+    }
+<span class="nc bnc" id="L30" title="All 2 branches missed.">    if (o instanceof Long) {</span>
+<span class="nc" id="L31">      return hashLong((Long) o);</span>
+    }
+<span class="nc bnc" id="L33" title="All 2 branches missed.">    if (o instanceof Integer) {</span>
+<span class="nc" id="L34">      return hashLong((Integer) o);</span>
+    }
+<span class="nc bnc" id="L36" title="All 2 branches missed.">    if (o instanceof Double) {</span>
+<span class="nc" id="L37">      return hashLong(Double.doubleToRawLongBits((Double) o));</span>
+    }
+<span class="nc bnc" id="L39" title="All 2 branches missed.">    if (o instanceof Float) {</span>
+<span class="nc" id="L40">      return hashLong(Float.floatToRawIntBits((Float) o));</span>
+    }
+<span class="nc bnc" id="L42" title="All 2 branches missed.">    if (o instanceof String) {</span>
+<span class="nc" id="L43">      return hash(((String) o).getBytes());</span>
+    }
+<span class="nc bnc" id="L45" title="All 2 branches missed.">    if (o instanceof byte[]) {</span>
+<span class="nc" id="L46">      return hash((byte[]) o);</span>
+    }
+<span class="nc" id="L48">    return hash(o.toString());</span>
+  }
+
+  public static int hash(byte[] data) {
+<span class="nc" id="L52">    return hash(data, data.length, -1);</span>
+  }
+
+  public static int hash(byte[] data, int seed) {
+<span class="nc" id="L56">    return hash(data, data.length, seed);</span>
+  }
+
+  public static int hash(byte[] data, int length, int seed) {
+<span class="nc" id="L60">    int m = 0x5bd1e995;</span>
+<span class="nc" id="L61">    int r = 24;</span>
+
+<span class="nc" id="L63">    int h = seed ^ length;</span>
+
+<span class="nc" id="L65">    int len_4 = length &gt;&gt; 2;</span>
+
+<span class="nc bnc" id="L67" title="All 2 branches missed.">    for (int i = 0; i &lt; len_4; i++) {</span>
+<span class="nc" id="L68">      int i_4 = i &lt;&lt; 2;</span>
+<span class="nc" id="L69">      int k = data[i_4 + 3];</span>
+<span class="nc" id="L70">      k = k &lt;&lt; 8;</span>
+<span class="nc" id="L71">      k = k | (data[i_4 + 2] &amp; 0xff);</span>
+<span class="nc" id="L72">      k = k &lt;&lt; 8;</span>
+<span class="nc" id="L73">      k = k | (data[i_4 + 1] &amp; 0xff);</span>
+<span class="nc" id="L74">      k = k &lt;&lt; 8;</span>
+<span class="nc" id="L75">      k = k | (data[i_4 + 0] &amp; 0xff);</span>
+<span class="nc" id="L76">      k *= m;</span>
+<span class="nc" id="L77">      k ^= k &gt;&gt;&gt; r;</span>
+<span class="nc" id="L78">      k *= m;</span>
+<span class="nc" id="L79">      h *= m;</span>
+<span class="nc" id="L80">      h ^= k;</span>
+    }
+
+    // avoid calculating modulo
+<span class="nc" id="L84">    int len_m = len_4 &lt;&lt; 2;</span>
+<span class="nc" id="L85">    int left = length - len_m;</span>
+
+<span class="nc bnc" id="L87" title="All 2 branches missed.">    if (left != 0) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">      if (left &gt;= 3) {</span>
+<span class="nc" id="L89">        h ^= (int) data[length - 3] &lt;&lt; 16;</span>
+      }
+<span class="nc bnc" id="L91" title="All 2 branches missed.">      if (left &gt;= 2) {</span>
+<span class="nc" id="L92">        h ^= (int) data[length - 2] &lt;&lt; 8;</span>
+      }
+<span class="nc bnc" id="L94" title="All 2 branches missed.">      if (left &gt;= 1) {</span>
+<span class="nc" id="L95">        h ^= (int) data[length - 1];</span>
+      }
+
+<span class="nc" id="L98">      h *= m;</span>
+    }
+
+<span class="nc" id="L101">    h ^= h &gt;&gt;&gt; 13;</span>
+<span class="nc" id="L102">    h *= m;</span>
+<span class="nc" id="L103">    h ^= h &gt;&gt;&gt; 15;</span>
+
+<span class="nc" id="L105">    return h;</span>
+  }
+
+  public static int hashLong(long data) {
+<span class="nc" id="L109">    int m = 0x5bd1e995;</span>
+<span class="nc" id="L110">    int r = 24;</span>
+
+<span class="nc" id="L112">    int h = 0;</span>
+
+<span class="nc" id="L114">    int k = (int) data * m;</span>
+<span class="nc" id="L115">    k ^= k &gt;&gt;&gt; r;</span>
+<span class="nc" id="L116">    h ^= k * m;</span>
+
+<span class="nc" id="L118">    k = (int) (data &gt;&gt; 32) * m;</span>
+<span class="nc" id="L119">    k ^= k &gt;&gt;&gt; r;</span>
+<span class="nc" id="L120">    h *= m;</span>
+<span class="nc" id="L121">    h ^= k * m;</span>
+
+<span class="nc" id="L123">    h ^= h &gt;&gt;&gt; 13;</span>
+<span class="nc" id="L124">    h *= m;</span>
+<span class="nc" id="L125">    h ^= h &gt;&gt;&gt; 15;</span>
+
+<span class="nc" id="L127">    return h;</span>
+  }
+
+  public static long hash64(Object o) {
+<span class="nc bnc" id="L131" title="All 2 branches missed.">    if (o == null) {</span>
+<span class="nc" id="L132">      return 0l;</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">    } else if (o instanceof String) {</span>
+<span class="nc" id="L134">      final byte[] bytes = ((String) o).getBytes();</span>
+<span class="nc" id="L135">      return hash64(bytes, bytes.length);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">    } else if (o instanceof byte[]) {</span>
+<span class="nc" id="L137">      final byte[] bytes = (byte[]) o;</span>
+<span class="nc" id="L138">      return hash64(bytes, bytes.length);</span>
+    }
+<span class="nc" id="L140">    return hash64(o.toString());</span>
+  }
+
+  // 64 bit implementation copied from here:  https://github.com/tnm/murmurhash-java
+
+  /**
+   * Generates 64 bit hash from byte array with default seed value.
+   *
+   * @param data   byte array to hash
+   * @param length length of the array to hash
+   * @return 64 bit hash of the given string
+   */
+  public static long hash64(final byte[] data, int length) {
+<span class="nc" id="L153">    return hash64(data, length, 0xe17a1465);</span>
+  }
+
+
+  /**
+   * Generates 64 bit hash from byte array of the given length and seed.
+   *
+   * @param data   byte array to hash
+   * @param length length of the array to hash
+   * @param seed   initial seed value
+   * @return 64 bit hash of the given array
+   */
+  public static long hash64(final byte[] data, int length, int seed) {
+<span class="nc" id="L166">    final long m = 0xc6a4a7935bd1e995L;</span>
+<span class="nc" id="L167">    final int r = 47;</span>
+
+<span class="nc" id="L169">    long h = (seed &amp; 0xffffffffl) ^ (length * m);</span>
+
+<span class="nc" id="L171">    int length8 = length / 8;</span>
+
+<span class="nc bnc" id="L173" title="All 2 branches missed.">    for (int i = 0; i &lt; length8; i++) {</span>
+<span class="nc" id="L174">      final int i8 = i * 8;</span>
+<span class="nc" id="L175">      long k = ((long) data[i8 + 0] &amp; 0xff) + (((long) data[i8 + 1] &amp; 0xff) &lt;&lt; 8)</span>
+          + (((long) data[i8 + 2] &amp; 0xff) &lt;&lt; 16) + (((long) data[i8 + 3] &amp; 0xff) &lt;&lt; 24)
+          + (((long) data[i8 + 4] &amp; 0xff) &lt;&lt; 32) + (((long) data[i8 + 5] &amp; 0xff) &lt;&lt; 40)
+          + (((long) data[i8 + 6] &amp; 0xff) &lt;&lt; 48) + (((long) data[i8 + 7] &amp; 0xff) &lt;&lt; 56);
+
+<span class="nc" id="L180">      k *= m;</span>
+<span class="nc" id="L181">      k ^= k &gt;&gt;&gt; r;</span>
+<span class="nc" id="L182">      k *= m;</span>
+
+<span class="nc" id="L184">      h ^= k;</span>
+<span class="nc" id="L185">      h *= m;</span>
+    }
+
+<span class="nc bnc" id="L188" title="All 8 branches missed.">    switch (length % 8) {</span>
+      case 7:
+<span class="nc" id="L190">        h ^= (long) (data[(length &amp; ~7) + 6] &amp; 0xff) &lt;&lt; 48;</span>
+      case 6:
+<span class="nc" id="L192">        h ^= (long) (data[(length &amp; ~7) + 5] &amp; 0xff) &lt;&lt; 40;</span>
+      case 5:
+<span class="nc" id="L194">        h ^= (long) (data[(length &amp; ~7) + 4] &amp; 0xff) &lt;&lt; 32;</span>
+      case 4:
+<span class="nc" id="L196">        h ^= (long) (data[(length &amp; ~7) + 3] &amp; 0xff) &lt;&lt; 24;</span>
+      case 3:
+<span class="nc" id="L198">        h ^= (long) (data[(length &amp; ~7) + 2] &amp; 0xff) &lt;&lt; 16;</span>
+      case 2:
+<span class="nc" id="L200">        h ^= (long) (data[(length &amp; ~7) + 1] &amp; 0xff) &lt;&lt; 8;</span>
+      case 1:
+<span class="nc" id="L202">        h ^= (long) (data[length &amp; ~7] &amp; 0xff);</span>
+<span class="nc" id="L203">        h *= m;</span>
+<span class="nc" id="L204">        break;</span>
+      default:
+        break;
+    }
+
+<span class="nc" id="L209">    h ^= h &gt;&gt;&gt; r;</span>
+<span class="nc" id="L210">    h *= m;</span>
+<span class="nc" id="L211">    h ^= h &gt;&gt;&gt; r;</span>
+
+<span class="nc" id="L213">    return h;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>

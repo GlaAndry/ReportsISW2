@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="it"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>BufferPool.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">Apache Tajo :: Tests Coverage</a> &gt; <a href="../index.html" class="el_bundle">tajo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.tajo.storage</a> &gt; <span class="el_source">BufferPool.java</span></div><h1>BufferPool.java</h1><pre class="source lang-java linenums">/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * &quot;License&quot;); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.tajo.storage;
+
+import io.netty.buffer.*;
+import io.netty.util.ResourceLeakDetector;
+import io.netty.util.internal.PlatformDependent;
+import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.conf.TajoConf;
+
+import java.lang.management.BufferPoolMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.List;
+
+/* this class is PooledBuffer holder */
+public class BufferPool {
+
+  public static final String ALLOW_CACHE = &quot;tajo.storage.buffer.thread-local.cache&quot;;
+  private static final ByteBufAllocator ALLOCATOR;
+
+  private BufferPool() {
+  }
+
+  static {
+
+<span class="nc bnc" id="L46" title="All 2 branches missed.">    if (TajoConstants.IS_TEST_MODE) {</span>
+      /* Disable pooling buffers for memory usage  */
+<span class="nc" id="L48">      ALLOCATOR = UnpooledByteBufAllocator.DEFAULT;</span>
+
+      /* if you are finding memory leak, please enable this line */
+<span class="nc" id="L51">      ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);</span>
+    } else {
+<span class="nc" id="L53">      TajoConf tajoConf = new TajoConf();</span>
+<span class="nc" id="L54">      ALLOCATOR = createPooledByteBufAllocator(true, tajoConf.getBoolean(ALLOW_CACHE, true), 0);</span>
+    }
+<span class="nc" id="L56">  }</span>
+
+  /**
+   * borrowed from Spark
+   */
+  public static PooledByteBufAllocator createPooledByteBufAllocator(
+      boolean allowDirectBufs,
+      boolean allowCache,
+      int numCores) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">    if (numCores == 0) {</span>
+<span class="nc" id="L66">      numCores = Runtime.getRuntime().availableProcessors();</span>
+    }
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    return new PooledByteBufAllocator(</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        allowDirectBufs &amp;&amp; PlatformDependent.directBufferPreferred(),</span>
+<span class="nc" id="L70">        Math.min(getPrivateStaticField(&quot;DEFAULT_NUM_HEAP_ARENA&quot;), numCores),</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        Math.min(getPrivateStaticField(&quot;DEFAULT_NUM_DIRECT_ARENA&quot;), allowDirectBufs ? numCores : 0),</span>
+<span class="nc" id="L72">        getPrivateStaticField(&quot;DEFAULT_PAGE_SIZE&quot;),</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        getPrivateStaticField(&quot;DEFAULT_MAX_ORDER&quot;),</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        allowCache ? getPrivateStaticField(&quot;DEFAULT_TINY_CACHE_SIZE&quot;) : 0,</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">        allowCache ? getPrivateStaticField(&quot;DEFAULT_SMALL_CACHE_SIZE&quot;) : 0,</span>
+<span class="nc" id="L76">        allowCache ? getPrivateStaticField(&quot;DEFAULT_NORMAL_CACHE_SIZE&quot;) : 0</span>
+    );
+  }
+
+  /** Used to get defaults from Netty's private static fields. */
+  private static int getPrivateStaticField(String name) {
+    try {
+<span class="nc" id="L83">      Field f = PooledByteBufAllocator.DEFAULT.getClass().getDeclaredField(name);</span>
+<span class="nc" id="L84">      f.setAccessible(true);</span>
+<span class="nc" id="L85">      return f.getInt(null);</span>
+<span class="nc" id="L86">    } catch (Exception e) {</span>
+<span class="nc" id="L87">      throw new RuntimeException(e);</span>
+    }
+  }
+
+  public static long maxDirectMemory() {
+<span class="nc" id="L92">    return PlatformDependent.maxDirectMemory();</span>
+  }
+
+
+  public static ByteBuf directBuffer(int size) {
+<span class="nc" id="L97">    return directBuffer(size, ByteOrder.LITTLE_ENDIAN);</span>
+  }
+
+  /**
+   * @param size  the initial capacity
+   * @param order the endianness
+   * @return allocated ByteBuf from pool
+   */
+  public static ByteBuf directBuffer(int size, ByteOrder order) {
+<span class="nc" id="L106">    ByteBuf byteBuf = ALLOCATOR.directBuffer(size);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">    if (byteBuf.order() != order) byteBuf.order(order);</span>
+<span class="nc" id="L108">    return byteBuf;</span>
+  }
+
+  /**
+   * @param size the initial capacity
+   * @param max  the max capacity
+   * @return allocated ByteBuf from pool
+   */
+  public static ByteBuf directBuffer(int size, int max) {
+<span class="nc" id="L117">    return directBuffer(size, max, ByteOrder.LITTLE_ENDIAN);</span>
+  }
+
+  /**
+   * @param size  the initial capacity
+   * @param max   the max capacity
+   * @param order the endianness
+   * @return allocated ByteBuf from pool
+   */
+  public static ByteBuf directBuffer(int size, int max, ByteOrder order) {
+<span class="nc" id="L127">    ByteBuf byteBuf = ALLOCATOR.directBuffer(size, max);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">    if (byteBuf.order() != order) byteBuf.order(order);</span>
+<span class="nc" id="L129">    return byteBuf;</span>
+  }
+
+  /**
+   *
+   * @param size the initial capacity
+   * @param max the max capacity
+   * @return heap ByteBuf
+   */
+  public static ByteBuf heapBuffer(int size, int max) {
+<span class="nc" id="L139">    return Unpooled.buffer(size, max).order(ByteOrder.LITTLE_ENDIAN);</span>
+  }
+
+  @InterfaceStability.Unstable
+  public static void forceRelease(ByteBuf buf) {
+<span class="nc" id="L144">    buf.release(buf.refCnt());</span>
+<span class="nc" id="L145">  }</span>
+
+  /**
+   * the ByteBuf will increase to writable size
+   * @param buf
+   * @param minWritableBytes required minimum writable size
+   */
+  public static ByteBuf ensureWritable(ByteBuf buf, int minWritableBytes) {
+<span class="nc" id="L153">    return buf.ensureWritable(minWritableBytes).order(ByteOrder.LITTLE_ENDIAN);</span>
+  }
+
+  /**
+   * deallocate the specified direct memory
+   * @param byteBuffer
+   */
+  public static void free(ByteBuffer byteBuffer) {
+<span class="nc" id="L161">    PlatformDependent.freeDirectBuffer(byteBuffer);</span>
+<span class="nc" id="L162">  }</span>
+
+  /**
+   * get the specified direct memory bean
+   */
+  public static BufferPoolMXBean getDirectBufferPool() {
+<span class="nc bnc" id="L168" title="All 2 branches missed.">    for (BufferPoolMXBean pool : getBufferPools()) {</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">      if (pool.getName().equals(&quot;direct&quot;)) {</span>
+<span class="nc" id="L170">        return pool;</span>
+      }
+<span class="nc" id="L172">    }</span>
+<span class="nc" id="L173">    return null;</span>
+  }
+
+  /**
+   * get the specified mapped memory bean
+   */
+  public static BufferPoolMXBean getMappedBufferPool() {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">    for (BufferPoolMXBean pool : getBufferPools()) {</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">      if (pool.getName().equals(&quot;mapped&quot;)) {</span>
+<span class="nc" id="L182">        return pool;</span>
+      }
+<span class="nc" id="L184">    }</span>
+<span class="nc" id="L185">    return null;</span>
+  }
+
+  private static List&lt;BufferPoolMXBean&gt; getBufferPools() {
+<span class="nc" id="L189">    return ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.5.201910111838</span></div></body></html>
