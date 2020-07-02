@@ -1,0 +1,7 @@
+Per eseguire i progetti in locale, dopo aver fatto la fork, sono stati eseguiti i seguenti comandi:
+
+Bookkeeper:
+	- mvn verify  -DfailIfNoTests=false  -PtestProfile org.pitest:pitest-maven:mutationCoverage
+	
+Tajo:
+	- mvn verify -DfailIfNoTests=false -Dhadoop.version=2.7.1 org.pitest:pitest-maven:mutationCoverage -Dlicense.skip=true
