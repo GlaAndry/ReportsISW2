@@ -5,3 +5,5 @@ Bookkeeper:
 	
 Tajo:
 	- mvn verify -DfailIfNoTests=false -Dhadoop.version=2.7.1 org.pitest:pitest-maven:mutationCoverage -Dlicense.skip=true
+	
+Con i seguenti comandi, per i due progetti, verranno eseguiti i test, Jacoco e Pit. 
